@@ -62,4 +62,21 @@ const pRows = [
   'pDecisions.map((p) => `<div class="hrow pstatement-row"'
 ];
 pRows.forEach((marker,index) => check('Article 28 row '+index+' uses code-aware layout',html.includes(marker)));
+// Viewer Settings must not interfere with the classification engine or exports.
+check('Viewer settings panel exists', html.includes('id="viewersettings"'));
+check('Viewer settings use independent local preference storage',
+  html.includes('const VIEWER_STORE = "clp_calc_viewer_settings_v1"'));
+check('Viewer settings controls are grouped and accessible',
+  html.includes('id="viewer-controls"') && html.includes('data-view-setting='));
+check('All section controls are present', ['classification','label','article26','article27','article28',
+  'sds','calculation','notes'].every(k=>html.includes('data-view="'+k+'"')));
+check('All label detail controls are present', ['labelSignal','labelPictograms','labelH',
+  'labelEUH','labelSupplemental','labelP','labelNoData'].every(k=>html.includes('data-view="'+k+'"')));
+check('Plain report is independent',html.includes('viewerSettings.report === false'));
+check('Visibility applied after result renderer',html.includes('applyViewerSettings();\n}\nlet tm = null;'));
+check('Preferences reset and article explanation preset available',
+  html.includes('id="viewer-show-all"')&&html.includes('id="viewer-hide-audits"')&&
+  html.includes('id="viewer-defaults"'));
+check('Mandatory warnings remain outside hideable cards',
+  !html.includes('data-view="warnings"')&&!html.includes('data-view="incomplete"'));
 console.log(pass + ' UI source checks passed');

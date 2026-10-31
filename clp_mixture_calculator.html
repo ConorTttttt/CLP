@@ -17,6 +17,13 @@ header .sub{color:var(--mute);font-size:12.5px}
 @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 8px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
+[hidden]{display:none!important}
+#viewersettings>summary{cursor:pointer;font-weight:700;list-style:revert}
+.viewer-settings-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-top:10px}
+.viewer-settings-groups fieldset{border:1px solid var(--line);border-radius:8px;min-width:0;padding:8px 10px}
+.viewer-settings-groups legend{font-size:12px;font-weight:700;color:var(--mute);padding:0 5px}
+.viewer-settings-groups label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:13px;margin:6px 0}
+.viewer-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
 input,select,textarea,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-width:0}
 input[type=checkbox]{padding:0;width:auto;flex:none;margin:0}
 button{cursor:pointer}
@@ -218,6 +225,17 @@ img[src$="GHS05.svg"] {
 </section>
 
 <section id="results">
+  <details class="card noprint" id="viewersettings">
+    <summary aria-label="Open Viewer Settings">⚙ Viewer Settings — show / hide results</summary>
+    <div class="hint" style="margin-top:8px">Only changes which results you see. Calculations, warning messages, saved formulations and the full text report are not changed. Important calculation errors always remain visible.</div>
+    <div id="viewer-controls" class="viewer-settings-groups"></div>
+    <div class="viewer-settings-actions">
+      <button type="button" class="small" id="viewer-show-all">Show all</button>
+      <button type="button" class="small" id="viewer-hide-audits">Hide Article explanations</button>
+      <button type="button" class="small" id="viewer-defaults">Reset to defaults</button>
+    </div>
+    <div class="hint" id="viewer-count" aria-live="polite"></div>
+  </details>
   <div id="res"></div>
   <details class="card" id="repbox"><summary style="cursor:pointer;font-weight:600">Plain-text report</summary>
     <div class="row noprint" style="margin:8px 0"><button class="small" id="copyrep">Copy</button><button class="small" id="dlrep">Download .txt</button><button class="small" id="print">Print / save PDF</button><span class="hint" id="copystat"></span></div>
@@ -1526,6 +1544,74 @@ img[src$="GHS05.svg"] {
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STORE = "clp_calc_state_v1";
+const VIEWER_STORE = "clp_calc_viewer_settings_v1";
+/* Display preferences are stored independently of formulation JSON: hiding
+   a result never changes hazard classification, label selection or exports. */
+const VIEWER_OPTIONS = Object.freeze([
+  { key:"classification", label:"Mixture classification", group:"Result sections" },
+  { key:"label", label:"Label elements", group:"Result sections" },
+  { key:"article26", label:"Article 26 — pictograms", group:"Result sections" },
+  { key:"article27", label:"Article 27 — H/EUH decisions", group:"Result sections" },
+  { key:"article28", label:"Article 28 — P decisions", group:"Result sections" },
+  { key:"sds", label:"SDS-on-request triggers", group:"Result sections" },
+  { key:"calculation", label:"Calculation trail", group:"Result sections" },
+  { key:"notes", label:"Notes & limitations", group:"Result sections" },
+  { key:"report", label:"Plain-text report panel", group:"Result sections" },
+  { key:"labelSignal", label:"Signal word", group:"Inside label elements" },
+  { key:"labelPictograms", label:"GHS pictograms", group:"Inside label elements" },
+  { key:"labelH", label:"Hazard statements (H)", group:"Inside label elements" },
+  { key:"labelEUH", label:"EUH statements", group:"Inside label elements" },
+  { key:"labelSupplemental", label:"Supplemental information", group:"Inside label elements" },
+  { key:"labelP", label:"Precautionary statements (P)", group:"Inside label elements" },
+  { key:"labelNoData", label:"Not-assessed warnings", group:"Inside label elements" }
+]);
+const VIEWER_DEFAULTS = Object.freeze(Object.fromEntries(VIEWER_OPTIONS.map((o) => [o.key,true])));
+function loadViewerSettings() {
+  let stored = {};
+  try {
+    const value = localStorage.getItem(VIEWER_STORE);
+    if (value) stored = JSON.parse(value);
+  } catch (e) { /* private mode or invalid JSON: use safe defaults */ }
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) stored = {};
+  return Object.fromEntries(VIEWER_OPTIONS.map((o) => [o.key,
+    typeof stored[o.key] === "boolean" ? stored[o.key] : true
+  ]));
+}
+let viewerSettings = loadViewerSettings();
+function saveViewerSettings() {
+  try { localStorage.setItem(VIEWER_STORE, JSON.stringify(viewerSettings)); } catch (e) { /* storage disabled */ }
+}
+function renderViewerControls() {
+  const groups = ["Result sections", "Inside label elements"];
+  $("viewer-controls").innerHTML = groups.map((group) => `<fieldset><legend>${group}</legend>${VIEWER_OPTIONS
+    .filter((o) => o.group === group)
+    .map((o) => `<label><input type="checkbox" data-view-setting="${o.key}"${viewerSettings[o.key] ? " checked" : ""}> ${esc(o.label)}</label>`).join("")}</fieldset>`).join("");
+}
+function applyViewerSettings() {
+  document.querySelectorAll("[data-view]").forEach((element) => {
+    element.hidden = viewerSettings[element.dataset.view] === false;
+  });
+  $("repbox").hidden = viewerSettings.report === false;
+  const sectionKeys = VIEWER_OPTIONS.filter((o) => o.group === "Result sections");
+  $("viewer-count").textContent = sectionKeys.filter((o) => viewerSettings[o.key]).length +
+    " of " + sectionKeys.length + " result sections visible. Settings saved on this browser.";
+}
+function setViewerPreferences(preferences) {
+  for (const option of VIEWER_OPTIONS) if (typeof preferences[option.key] === "boolean")
+    viewerSettings[option.key] = preferences[option.key];
+  saveViewerSettings();
+  renderViewerControls();
+  applyViewerSettings();
+}
+$("viewer-controls").addEventListener("change", (event) => {
+  const input = event.target.closest("input[data-view-setting]");
+  if (!input || !Object.prototype.hasOwnProperty.call(viewerSettings, input.dataset.viewSetting)) return;
+  setViewerPreferences({ [input.dataset.viewSetting]: input.checked });
+});
+$("viewer-show-all").addEventListener("click", () => setViewerPreferences({ ...VIEWER_DEFAULTS }));
+$("viewer-hide-audits").addEventListener("click", () => setViewerPreferences({ article26:false, article27:false, article28:false }));
+$("viewer-defaults").addEventListener("click", () => setViewerPreferences({ ...VIEWER_DEFAULTS }));
+renderViewerControls();
 
 let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
@@ -1744,7 +1830,7 @@ function renderResult(r) {
   const cls = r.outcomes.length
     ? r.outcomes.map((o) => `<div class="hrow"><code>${esc(o.h.join(", ") || "–")}</code><div><b>${esc(o.label)}</b>${o.omitOnLabel ? ' <small>(may be omitted on label)</small>' : ""}${o.ate ? ` <small>ATEmix ${esc(CLP.fmt(o.ate))}</small>` : ""}<br><small>${esc(o.hazard)}${o.signal ? " · " + esc(o.signal) : ""}${o.picto.length ? " · " + esc(o.picto.join(", ")) : ""}</small></div></div>`).join("")
     : '<div class="hint">Not classified in any hazard class covered by the calculator.</div>';
-  L.push(`<div class="card"><h2>Classification of the mixture</h2>${cls}</div>`);
+  L.push(`<div class="card" data-view="classification"><h2>Classification of the mixture</h2>${cls}</div>`);
   const pics = L0.pictograms.map((p) => `
   <div class="pic" title="${esc(p.from.join(", "))}">
     <img
@@ -1756,23 +1842,24 @@ function renderResult(r) {
     <small>${esc(p.name)}</small>
   </div>
 `).join("");
-  L.push(`<div class="card"><h2>Label elements (H/EUH Article 27 rules applied)</h2>
+  L.push(`<div class="card" data-view="label"><h2>Label elements (H/EUH Article 27 rules applied)</h2>
     <div class="hint">Pictograms reflect Article 26 precedence; H/EUH statements reflect the Article 27 Annex III rules. Manual classifications and Article 28 P-statements still require review. Not a final label.</div>
-    <div>Signal word: ${L0.signal ? `<span class="sig ${L0.signal}">${esc(L0.signal)}</span>` : '<span class="hint">none</span>'}</div>
-    <div class="pics">${pics || '<span class="hint">No pictograms</span>'}</div>
-    ${L0.hazardStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from)}</small></div></div>`).join("")}
-    ${L0.euhStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from || "")}</small></div></div>`).join("")}
-    ${L0.supplemental.map((s) => `<div class="hrow"><code>Suppl.</code><div>${esc(s)}</div></div>`).join("")}
+    <div data-view="labelSignal">Signal word: ${L0.signal ? `<span class="sig ${L0.signal}">${esc(L0.signal)}</span>` : '<span class="hint">none</span>'}</div>
+    <div class="pics" data-view="labelPictograms">${pics || '<span class="hint">No pictograms</span>'}</div>
+    <div data-view="labelH">${L0.hazardStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from)}</small></div></div>`).join("")}</div>
+    <div data-view="labelEUH">${L0.euhStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from || "")}</small></div></div>`).join("")}</div>
+    <div data-view="labelSupplemental">${L0.supplemental.map((s) => `<div class="hrow"><code>Suppl.</code><div>${esc(s)}</div></div>`).join("")}</div>
+    <div data-view="labelP">
     ${(L0.precautionaryStatements || []).length ? '<h3>Draft P-statements — Article 28 (not final)</h3>' : ""}
-    ${(L0.precautionaryStatements || []).map((p) => `<div class="hrow pstatement-row"><code>${esc(p.code)}</code><div>${esc(p.text)}<br><small>${esc(p.legalStatus)} — provisional; check Annex IV wording and conditions</small></div></div>`).join("")}
-    ${r.nodata.length ? `<div class="note">No data entered for: ${r.nodata.map(esc).join("; ")} &mdash; not assessed.</div>` : ""}
+    ${(L0.precautionaryStatements || []).map((p) => `<div class="hrow pstatement-row"><code>${esc(p.code)}</code><div>${esc(p.text)}<br><small>${esc(p.legalStatus)} — provisional; check Annex IV wording and conditions</small></div></div>`).join("")}</div>
+    <div data-view="labelNoData">${r.nodata.length ? `<div class="note">No data entered for: ${r.nodata.map(esc).join("; ")} &mdash; not assessed.</div>` : ""}</div>
   </div>`);
 
   const pictogramArt26 = L0.pictogramDecisions || [];
   const omittedArt26 = L0.omittedPictograms || [];
   const reviewArt26 = L0.pictogramReview || [];
   const explanationsArt26 = L0.pictogramExplanations || [];
-  L.push(`<div class="card"><h2>Article 26 — pictogram decisions</h2>
+  L.push(`<div class="card" data-view="article26"><h2>Article 26 — pictogram decisions</h2>
     <div class="hint">${esc(omittedArt26.length)} pictogram(s) omitted; ${L0.omitOptionalPictograms ? "optional physical pictogram omissions enabled" : "optional physical pictogram omissions disabled"}. Mandatory Article 26 rules still apply.</div>
     ${explanationsArt26.map((x) => `<div class="note" style="margin-top:8px">
       <b>${x.kind === "omittedByArticle26"
@@ -1797,7 +1884,7 @@ function renderResult(r) {
 
   const omittedArt27 = (L0.decisions || []).filter((d) => d.decision === "omitted");
   const decisionsArt27 = (L0.decisions || []);
-  L.push(`<div class="card"><h2>Article 27 — hazard-statement decisions</h2>
+  L.push(`<div class="card" data-view="article27"><h2>Article 27 — hazard-statement decisions</h2>
     <div class="hint">${L0.omitOptional ? "Optional omissions enabled" : "All triggered statements retained by user choice"}; ${esc(omittedArt27.length)} statement(s) omitted under Annex III. The complete classifications remain above.</div>
     <details class="h"${omittedArt27.length || (L0.review || []).length ? " open" : ""}>
       <summary>Show retained and omitted H/EUH statements (${decisionsArt27.length})</summary>
@@ -1816,7 +1903,7 @@ function renderResult(r) {
   const pDecisions = P28.candidates || [];
   const pReview = P28.review || [];
   const pObligations = P28.requiredObligations || [];
-  L.push(`<div class="card"><h2>Article 28 — precautionary-statement decisions</h2>
+  L.push(`<div class="card" data-view="article28"><h2>Article 28 — precautionary-statement decisions</h2>
     <div class="hint"><b>PROVISIONAL / partial Annex IV coverage.</b> ${(P28.selected || []).length} statements proposed; up to ${P28.limit || 6} normally, unless more are needed. ${esc(P28.scope || "")}</div>
     <div class="note"><b>Mandatory under CLP:</b> Article 22 requires relevant P-statements to be chosen by Annex IV criteria. Article 28(2) generally requires a disposal statement for products supplied to consumers, subject to Article 22. Individual P-codes below are <b>candidates</b> unless a stated obligation applies.</div>
     ${pObligations.map((o) => `<div class="alert ${o.status === "satisfied-draft" ? "" : "bad"}"><b>Legal obligation — ${esc(o.id)}: ${esc(o.status)}</b><br>${esc(o.description)} <small>[${esc(o.basis)}]</small></div>`).join("")}
@@ -1833,13 +1920,14 @@ function renderResult(r) {
     ${(P28.uncovered || []).length ? `<div class="alert bad"><b>Unmapped hazards:</b> ${esc(P28.uncovered.join(", "))}</div>` : ""}
   </div>`);
 
-  if (r.sds.length) L.push(`<div class="card"><h2>SDS-on-request triggers</h2>${r.sds.map((s) => `<div class="note">${esc(s)}</div>`).join("")}</div>`);
+  if (r.sds.length) L.push(`<div class="card" data-view="sds"><h2>SDS-on-request triggers</h2>${r.sds.map((s) => `<div class="note">${esc(s)}</div>`).join("")}</div>`);
   const shown = r.hazards.filter((h) => h.status !== "na" && (h.status !== "not" || h.steps.some((s) => !BOILER.test(s))));
   const hidden = r.hazards.filter((h) => !shown.includes(h) && h.status !== "na");
-  L.push(`<div class="card"><h2>Calculation trail</h2>${shown.map((h) => `<details class="h"${h.status === "classified" || h.status === "incomplete" ? " open" : ""}><summary>${esc(h.name)}<span class="badge ${h.status}">${{ classified: "classified", not: "not classified", incomplete: "incomplete", nodata: "no data" }[h.status] || h.status}</span></summary><div class="ref">${esc(h.ref)}</div>${h.steps.map((s) => `<div class="step">${esc(s)}</div>`).join("")}${h.notes.map((s) => `<div class="note">Note: ${esc(s)}</div>`).join("")}</details>`).join("") || '<div class="hint">Nothing to show yet.</div>'}
+  L.push(`<div class="card" data-view="calculation"><h2>Calculation trail</h2>${shown.map((h) => `<details class="h"${h.status === "classified" || h.status === "incomplete" ? " open" : ""}><summary>${esc(h.name)}<span class="badge ${h.status}">${{ classified: "classified", not: "not classified", incomplete: "incomplete", nodata: "no data" }[h.status] || h.status}</span></summary><div class="ref">${esc(h.ref)}</div>${h.steps.map((s) => `<div class="step">${esc(s)}</div>`).join("")}${h.notes.map((s) => `<div class="note">Note: ${esc(s)}</div>`).join("")}</details>`).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
-  L.push(`<div class="card"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, SCLs for skin/eye/acute toxicity, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, partial Article 28 Annex I/IV P-statement catalogue and final regulatory review, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
+  L.push(`<div class="card" data-view="notes"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, SCLs for skin/eye/acute toxicity, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, partial Article 28 Annex I/IV P-statement catalogue and final regulatory review, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
   $("res").innerHTML = L.join("");
+  applyViewerSettings();
 }
 let tm = null;
 function update() { save(); clearTimeout(tm); tm = setTimeout(compute, 60); }
