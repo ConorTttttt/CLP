@@ -232,6 +232,41 @@ pre.rep{padding:14px}
   .wrap{padding:0}
 }
 
+
+/* Searchable, removable physical / health / environmental ingredient hazards */
+.hazard-editor{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:5px 0 12px;min-width:0}
+.hazard-editor-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.hazard-editor-head>b{font-size:13px}
+.hazard-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hazard-picker{background:var(--bg);border:1px solid var(--line);border-radius:9px;min-width:0;padding:10px;position:relative}
+.hazard-picker>strong{display:block;font-size:12.5px}
+.hazard-picker>.hint{display:block;font-size:11px}
+.hazard-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;min-height:24px;align-items:center}
+.hazard-chip{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--soft);color:var(--ink);border-radius:8px;padding:2px 3px 2px 7px;font-size:11.5px}
+.hazard-chip strong{font-size:11.5px;flex:none;color:var(--accent)}
+.hazard-chip span{min-width:0;overflow-wrap:anywhere}
+.hazard-chip button{flex:none;border:0;background:transparent;min-width:22px;min-height:23px;padding:1px 4px;border-radius:5px;color:var(--bad);font-size:17px;line-height:1;font-weight:700}
+.hazard-chip button:hover{background:var(--panel)}
+.hazard-search-wrap{position:relative}
+.hazard-search-wrap>input{width:100%;min-width:0;font-size:12px}
+.hazard-suggestions{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;min-width:240px;max-height:290px;overflow-y:auto;background:var(--panel);border:1px solid var(--accent);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.13);padding:4px}
+.hazard-suggestion{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;text-align:left;align-items:start;min-height:43px;width:100%;border:0;border-radius:6px;padding:7px;background:var(--panel);font-weight:400}
+.hazard-suggestion:hover,.hazard-suggestion[aria-selected=true]{background:var(--soft)}
+.hazard-suggestion code{font-weight:700;color:var(--accent)}
+.hazard-suggestion b{display:block;font-size:12px}
+.hazard-suggestion small{display:block;color:var(--mute);font-size:11px;overflow-wrap:anywhere}
+.hazard-no-matches{padding:10px}
+.hazard-resolution{font-size:12px;color:var(--mute);margin:9px 0;overflow-wrap:anywhere}
+.hazard-resolution b{font-weight:650}
+.hazard-advanced{padding-top:8px;border-top:1px solid var(--line)}
+.hazard-advanced>summary{font-size:12px;font-weight:600;color:var(--mute);cursor:pointer}
+.hazard-advanced input{width:100%;margin-top:6px}
+.hazard-table-count{font-size:12px;font-weight:650;color:var(--ink)}
+@media(max-width:1320px){.hazard-groups{grid-template-columns:1fr}}
+@media(max-width:1100px){.hazard-groups{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:780px){.hazard-groups{grid-template-columns:1fr}}
+@media print{.hazard-search-wrap,.hazard-advanced,.hazard-chip button{display:none!important}}
+
 </style>
 </head>
 <body>
@@ -2226,6 +2261,79 @@ function summaryChips(i) {
   return c.map((x) => `<span class="chip on">${esc(x)}</span>`).join("") || '<span class="hint">no classification</span>';
 }
 
+
+const HAZARD_DERIVED_FIELDS=[
+ "skinCorr","eye","skinSens","respSens","muta","carc","carcRoute","repro","reproFert",
+ "reproDev","lact","stotSE","stotSEresp","stotSEnarc","stotRE","asp","aquaAcute",
+ "aquaChronic","edHH","edEnv","pbt","vpvb","pmt","vpvm","ozone",
+ "acute.oral.cat","acute.dermal.cat","acute.inh.cat"
+];
+const hazardPath=(obj,key)=>key.split(".").reduce((v,k)=>v?.[k],obj);
+function setHazardPath(obj,path,value){
+ const keys=path.split(".");let target=obj;
+ keys.slice(0,-1).forEach(k=>target=target[k]);
+ target[keys.at(-1)]=value;
+}
+/* Do not discard manually selected source subcategories for hazards unaffected
+   by the changed code. Changing H314 itself correctly re-evaluates skinCorr. */
+function applyIngredientHazards(ing,nextText){
+ const oldCodes=ingredientHCodes(ing),newCodes=CLP.parseHCodeTokens(nextText).codes.map(x=>x.code);
+ const changed=[...new Set([...oldCodes,...newCodes])].filter(code=>oldCodes.includes(code)!==newCodes.includes(code));
+ const before=new Map(HAZARD_DERIVED_FIELDS.map(key=>[key,hazardPath(ing,key)]));
+ const blank=CLP.blankIngredient(),affected=new Set();
+ changed.forEach(code=>{
+   const probe=CLP.blankIngredient();CLP.applyHCodes(probe,code);
+   HAZARD_DERIVED_FIELDS.forEach(key=>{
+     if(hazardPath(probe,key)!==hazardPath(blank,key))affected.add(key);
+   });
+ });
+ const result=CLP.applyHCodes(ing,nextText);
+ HAZARD_DERIVED_FIELDS.forEach(key=>{if(!affected.has(key))setHazardPath(ing,key,before.get(key));});
+ $("parsenotes").innerHTML=result.notes.length
+   ? '<div class="alert" style="margin-top:8px"><b>'+esc(ing.name||"Ingredient")+':</b> '+
+      result.notes.map(esc).join(" ")+'</div>':"";
+ return result;
+}
+function changeIngredientHazard(ing,code,adding){
+ const tokens=String(ing.hcodes||"").split(/[\s,;]+/).filter(Boolean);
+ const normalized=token=>CLP.parseHCodeTokens(token).codes[0]?.code||null;
+ const next=adding?(tokens.some(token=>normalized(token)===code)?tokens:[...tokens,code])
+   :tokens.filter(token=>normalized(token)!==code);
+ return applyIngredientHazards(ing,next.join(" "));
+}
+function renderHazardSuggestions(input){
+ const area=input.closest("[data-hazard-picker]"),list=area?.querySelector("[role=listbox]");
+ if(!list)return [];
+ const root=input.closest("[data-id]"),ing=mix.ingredients.find(i=>i._id===+(root?.dataset.id||0));
+ const choices=ing?searchHazards(input.dataset.group,input.value,ingredientHCodes(ing)):[];
+ list.innerHTML=choices.map((item,n)=>`<button type="button" class="hazard-suggestion"
+   role="option" aria-selected="false" id="${list.id}-opt-${n}"
+   data-hazard-option="${esc(item.code)}"><code>${esc(item.code)}</code>
+   <span><b>${esc(item.classification)}</b><small>${esc(item.text)}</small></span>
+ </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification in this group. Use Advanced for another H/EUH code.</div>':"");
+ list.hidden=!input.value.trim();
+ input.setAttribute("aria-expanded",String(!list.hidden));
+ input.removeAttribute("aria-activedescendant");
+ input.dataset.activeIndex="-1";
+ return choices;
+}
+function closeHazardSuggestions(input){
+ const list=input.closest("[data-hazard-picker]")?.querySelector("[role=listbox]");
+ if(list)list.hidden=true;
+ input.setAttribute("aria-expanded","false");
+ input.removeAttribute("aria-activedescendant");
+ input.dataset.activeIndex="-1";
+}
+function chooseIngredientHazard(input,code){
+ const holder=input.closest("[data-id]"),id=+(holder?.dataset.id||0);
+ const ing=mix.ingredients.find(item=>item._id===id);
+ if(!ing||HAZARD_MAP.get(code)?.group!==input.dataset.group)return;
+ changeIngredientHazard(ing,code,true);
+ refreshRow(id);update();
+ const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
+ if(replacement){replacement.value="";replacement.focus();}
+}
+
 function renderIngs() {
   const tb = $("ings");
   if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Start with <b>+ Add ingredient</b>, or use <b>Load example</b> to explore.</td></tr>'; return; }
@@ -2242,10 +2350,16 @@ function renderIngs() {
 }
 function refreshRow(id) {
   const i = mix.ingredients.find((x) => x._id === id); if (!i) return;
-  const s = document.querySelector(`tr[data-sum="${id}"] td`); if (s) s.innerHTML = summaryChips(i);
+  const s = document.querySelector(`tr[data-sum="${id}"] td`); if (s) s.innerHTML = hazardEditorHTML(i);
+  const n=document.querySelector(`tr[data-id="${id}"] [data-hazard-count]`);
+  if(n)n.textContent=ingredientHCodes(i).length+" selected";
   const d = document.querySelector(`tr[data-detrow="${id}"] td`); if (d) d.innerHTML = detailHTML(i);
 }
-function refreshSummaryOnly(id) { const i = mix.ingredients.find((x) => x._id === id); const s = document.querySelector(`tr[data-sum="${id}"] td`); if (i && s) s.innerHTML = summaryChips(i); }
+function refreshSummaryOnly(id) {
+ const ing=mix.ingredients.find(x=>x._id===id);
+ const section=document.querySelector(`tr[data-sum="${id}"] [data-resolved]`);
+ if(section&&ing)section.innerHTML=summaryChips(ing);
+}
 
 $("ings").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
@@ -2270,14 +2384,14 @@ function onIngInput(e) {
     i.reproDev = reproOnly.reproDev;
     i.hcodes = revisedCodes;
     i.hcodeDetails = CLP.parseHCodeTokens(revisedCodes).codes;
-    const codeInput = document.querySelector(`tr[data-id="${id}"] input[data-p="hcodes"]`);
+    const codeInput = document.querySelector(`tr[data-sum="${id}"] input[data-p="hcodes"]`);
     if (codeInput) codeInput.value = i.hcodes;
     $("parsenotes").innerHTML = applied.notes.length ? `<div class="alert"><b>${esc(i.name || "Ingredient")}:</b> ${applied.notes.map(esc).join(" ")}</div>` : "";
     refreshRow(id); update(); return;
   }
   if (p === "hcodes") {
-    const r = CLP.applyHCodes(i, v);
-    $("parsenotes").innerHTML = r.notes.length ? '<div class="alert" style="margin-top:8px"><b>' + esc(i.name || "Ingredient") + ":</b> " + r.notes.map(esc).join(" ") + "</div>" : "";
+    if(e.type==="input")return; // Preserve typing position; commit advanced codes on change/blur.
+    applyIngredientHazards(i,v);
     refreshRow(id);
   } else if (p.startsWith("scl.")) {
     i.scl[p.slice(4)] = v;
@@ -2304,6 +2418,59 @@ $("ings").addEventListener("click",(event)=>{
   const expanded=button.dataset.detailAction==="expand";
   detail.querySelectorAll("details[data-detail-section]").forEach(group=>group.open=expanded);
 });
+
+$("ings").addEventListener("input",event=>{
+ const input=event.target.closest("input[data-hazard-query]");
+ if(input)renderHazardSuggestions(input);
+});
+$("ings").addEventListener("keydown",event=>{
+ const input=event.target.closest("input[data-hazard-query]");
+ if(!input)return;
+ const list=input.closest("[data-hazard-picker]")?.querySelector("[role=listbox]");
+ if(!list)return;
+ const options=[...list.querySelectorAll("button[data-hazard-option]")];
+ if(event.key==="Escape"){closeHazardSuggestions(input);return;}
+ if(event.key==="ArrowDown"||event.key==="ArrowUp"){
+   if(list.hidden)renderHazardSuggestions(input);
+   const choices=[...list.querySelectorAll("button[data-hazard-option]")];
+   if(!choices.length)return;
+   event.preventDefault();
+   const current=Number(input.dataset.activeIndex??-1);
+   const next=event.key==="ArrowDown"?(current+1)%choices.length:(current<=0?choices.length-1:current-1);
+   input.dataset.activeIndex=String(next);
+   choices.forEach((option,i)=>option.setAttribute("aria-selected",String(i===next)));
+   input.setAttribute("aria-activedescendant",choices[next].id);
+   choices[next].scrollIntoView({block:"nearest"});
+ }
+ if(event.key==="Enter"&&!list.hidden&&options.length){
+   event.preventDefault();
+   const index=Math.max(0,Number(input.dataset.activeIndex??-1));
+   chooseIngredientHazard(input,options[Math.min(index,options.length-1)].dataset.hazardOption);
+ }
+});
+$("ings").addEventListener("click",event=>{
+ const option=event.target.closest("button[data-hazard-option]");
+ if(option){
+   const input=option.closest("[data-hazard-picker]")?.querySelector("input[data-hazard-query]");
+   if(input)chooseIngredientHazard(input,option.dataset.hazardOption);
+   return;
+ }
+ const remove=event.target.closest("button[data-remove-hazard]");
+ if(remove){
+   const owner=remove.closest("[data-id]"),id=+(owner?.dataset.id||0);
+   const ing=mix.ingredients.find(i=>i._id===id);
+   if(!ing)return;
+   const group=groupForCode(remove.dataset.removeHazard);
+   changeIngredientHazard(ing,remove.dataset.removeHazard,false);
+   refreshRow(id);update();
+   document.querySelector(`tr[data-sum="${id}"] input[data-hazard-query][data-group="${group}"]`)?.focus();
+ }
+});
+document.addEventListener("click",event=>{
+ if(event.target.closest("[data-hazard-picker]"))return;
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+});
+
 $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
