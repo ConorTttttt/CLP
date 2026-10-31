@@ -22,6 +22,15 @@ for (const code of ['H350i', 'H360F', 'H360D', 'H360FD', 'H360Fd', 'H360Df', 'H3
 check('Browser load migrates legacy data', html.includes('CLP.normalise({ ingredients: [{...r, pct: 100}] })'));
 check('Article 27 decisions shown', html.includes('Article 27 — hazard-statement decisions'));
 check('Article 27 toggle exists', html.includes('id="mart27"'));
+check('Article 26 toggle exists', html.includes('id="mart26"'));
+check('Article 26 toggle stored in mix', html.includes('mix.article26Mode = $("mart26").checked ? "omitOptional" : "retainOptional"'));
+check('Article 26 audit visible', html.includes('Article 26 — pictogram decisions'));
+check('Article 26 per-hazard audit visible', html.includes('item.decision === "omitted"'));
+check('Article 26 H319 vs H314 explanation rendered prominently', html.includes('explanationsArt26.map') &&
+  html.includes('H319 / GHS07 (exclamation mark): omitted for the H319 hazard'));
+check('Article 26 distinguishes ingredient-only H319', html.includes('Ingredient H319: no GHS07 omission occurred'));
+check('Article 26 audit shows source H codes', html.includes('item.hazardStatements.join(", ")'));
+check('Article 26 default retains optional physical pictograms', html.includes('article26Mode: "retainOptional"'));
 check('Article 27 toggle saved to mixture', html.includes('mix.article27Mode = $("mart27").checked ? "apply" : "keepAll"'));
 check('Article 27 old JSON gets default', html.includes('article27Mode: "apply"'));
 

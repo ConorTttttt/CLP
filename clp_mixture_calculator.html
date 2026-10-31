@@ -106,7 +106,7 @@ img[src$="GHS05.svg"] {
   <h1>CLP Mixture Classification Calculator</h1>
   <span class="sub">Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026 &middot; ingredient-based method &middot; works offline, no AI needed</span>
 </header>
-<div class="banner"><b>Decision-support only.</b> You supply the ingredient classifications (from Annex VI / C&amp;L Inventory / SDS); the calculator applies the Annex I mixture rules and shows every step. It does <u>not</u> model bridging principles, tested-mixture data, physical hazards other than flammable liquids, Art. 26 pictogram precedence, full Article 27 case-by-case redundancy review, or Article 28 P-statement selection. It applies the explicit Article 27 Annex III H/EUH omission pairs, with an audit trail. Verify against the official text before relying on a result.</div>
+<div class="banner"><b>Decision-support only.</b> You supply the ingredient classifications (from Annex VI / C&amp;L Inventory / SDS); the calculator applies the Annex I mixture rules and shows every step. It does <u>not</u> model bridging principles, tested-mixture data, physical hazards other than flammable liquids, independent validation of manual hazard classifications under Article 26(2), full Article 27 case-by-case redundancy review, or Article 28 P-statement selection. It applies Article 26 pictogram precedence and explicit Article 27 Annex III H/EUH omission pairs, each with an audit trail. Verify against the official text before relying on a result.</div>
 
 <div class="wrap">
 <section id="inputs">
@@ -123,6 +123,7 @@ img[src$="GHS05.svg"] {
     </div>
     <div class="hint" style="margin-top:6px">Flash point, viscosity and pH belong to the <i>mixture</i> (measured or calculated). Leave blank if unknown &mdash; the matching hazard is then reported as "no data".</div>
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="mart27" checked> Apply optional Article 27 Annex III H/EUH statement omissions (see audit; untick to retain all)</label>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="mart26"> Omit optional Article 26 physical pictograms (GHS02/GHS03/GHS04, where eligible; mandatory rules always apply)</label>
   </div>
 
   <div class="card">
@@ -940,6 +941,125 @@ img[src$="GHS05.svg"] {
     };
   }
 
+  /* CLP Article 26 pictogram selection: operate on hazard-specific contributions.
+     In particular GHS05/GHS08 do NOT suppress unrelated GHS07 hazards.
+     Physical-hazard optional omissions are opt-in; manual Type B exceptions are protected. */
+  function selectArticle26(outcomes, options) {
+    const omitOptional = !!(options && options.omitOptional);
+    const sources = [];
+    (outcomes || []).filter((o) => !o.omitOnLabel).forEach((o) => {
+      (o.picto || []).forEach((code) => {
+        if (!PICTO[code]) return;
+        sources.push({
+          code, from: o.label, hazardId: o.hazardId || '',
+          h: Array.isArray(o.h) ? o.h.slice() : [],
+          isManual: /^manual/.test(o.hazardId || '')
+        });
+      });
+    });
+    const grouped = {};
+    sources.forEach((s) => ((grouped[s.code] = grouped[s.code] || []).push(s)));
+    const has = (c) => !!grouped[c];
+    const respirSens = (grouped.GHS08 || []).some((s) =>
+      s.h.includes('H334') || /^Resp(?:iratory)?\.?\s*Sens/i.test(s.from));
+    const ghs05HCodes = new Set((grouped.GHS05 || []).flatMap((s) => s.h));
+    const ghs05Cause = ghs05HCodes.has('H314') ? 'H314 (skin corrosion)' :
+      ghs05HCodes.has('H318') ? 'H318 (serious eye damage)' :
+      'a GHS05-classified hazard';
+    const protectedTypeB = sources.some((s) =>
+      (s.code === 'GHS01' || s.code === 'GHS02') &&
+      /(?:Self[-\s]*react(?:ive)?\.?|Org(?:anic)?\.?\s*Perox(?:ide)?\.?)\s*(?:Type\s*)?B\b/i.test(s.from));
+    const decisions = [], omitted = [], retained = [], review = [];
+
+    Object.keys(grouped).sort().forEach((code) => {
+      const contributions = grouped[code].map((s) => {
+        let decision = 'retained', basis = 'CLP Article 26', reason = 'Required for this classification; no precedence rule removes its pictogram.';
+        const irritation = s.h.some((h) => h === 'H315' || h === 'H319') ||
+          /^Skin Irrit\.|^Eye Irrit\./i.test(s.from);
+        const skinSens = s.h.includes('H317') || /^Skin Sens\./i.test(s.from);
+        if (code === 'GHS07' && has('GHS06')) {
+          decision = 'omitted'; basis = 'CLP Article 26(1)(b)';
+          reason = 'GHS06 applies; GHS07 shall not appear on the label, regardless of the GHS07 hazard.';
+        } else if (code === 'GHS07' && has('GHS05') && irritation) {
+          decision = 'omitted'; basis = 'CLP Article 26(1)(c)';
+          const irritationCode = s.h.includes('H319') ? 'H319 (eye irritation)' :
+            s.h.includes('H315') ? 'H315 (skin irritation)' :
+            'the skin/eye irritation classification';
+          reason = 'The GHS07 (exclamation mark) contribution from ' + irritationCode +
+            ' is omitted because ' + ghs05Cause +
+            ' requires GHS05 (corrosion). Article 26(1)(c) changes only the pictogram selection; the mixture classification and H-statement decisions remain separate.';
+        } else if (code === 'GHS07' && respirSens && (irritation || skinSens)) {
+          decision = 'omitted'; basis = 'CLP Article 26(1)(d)';
+          reason = 'GHS08 applies for respiratory sensitisation; GHS07 shall not appear for skin sensitisation or skin/eye irritation.';
+        } else if ((code === 'GHS02' || code === 'GHS03') && has('GHS01')) {
+          if (code === 'GHS02' && protectedTypeB) {
+            basis = 'CLP Article 26(1)(a), exception for mandatory physical pictograms';
+            reason = 'GHS01 and GHS02 are both mandatory for the identified Self-reactive Type B / Organic Peroxide Type B classification; GHS02 is retained.';
+          } else if (omitOptional) {
+            decision = 'omitted'; basis = 'CLP Article 26(1)(a)';
+            reason = 'GHS01 also applies. This GHS02/GHS03 pictogram is optionally omitted; verify any mandatory co-pictogram exceptions for the physical classification.';
+          } else {
+            basis = 'CLP Article 26(1)(a)';
+            reason = 'GHS01 also applies. Omission is optional; retained by the current user preference.';
+          }
+        } else if (code === 'GHS04' && (has('GHS02') || has('GHS06'))) {
+          if (omitOptional) {
+            decision = 'omitted'; basis = 'CLP Article 26(1)(e)';
+            reason = 'GHS02 or GHS06 also applies; optional omission of GHS04 selected.';
+          } else {
+            basis = 'CLP Article 26(1)(e)';
+            reason = 'GHS02 or GHS06 also applies; GHS04 may be omitted but is retained by the user preference.';
+          }
+        }
+        return {
+          from: s.from, hazardId: s.hazardId, hazardStatements: s.h,
+          decision, basis, reason
+        };
+      });
+      const visible = contributions.some((s) => s.decision === 'retained');
+      const d = {
+        code, name: PICTO[code], from: [...new Set(grouped[code].map((s) => s.from))],
+        decision: visible ? 'retained' : 'omitted',
+        contributions,
+        basis: [...new Set(contributions.map((s) => s.basis))].join('; '),
+        reason: visible
+          ? contributions.some((s) => s.decision === 'omitted')
+            ? 'Retained because at least one classification still requires this pictogram after precedence.'
+            : contributions.map((s) => s.reason).filter((v,i,a)=>a.indexOf(v)===i).join(' ')
+          : contributions.map((s) => s.reason).filter((v,i,a)=>a.indexOf(v)===i).join(' ')
+      };
+      decisions.push(d);
+      (visible ? retained : omitted).push(d);
+    });
+
+    if (has('GHS01') && has('GHS02') && !protectedTypeB)
+      review.push({
+        codes: ['GHS01', 'GHS02'], basis: 'CLP Article 26(1)(a)',
+        reason: 'Verify whether the physical hazard is a Self-reactive Type B or Organic Peroxide Type B or has another mandatory co-pictogram requirement before omitting GHS02. Manual classifications require supporting data.'
+      });
+    if (has('GHS01') && has('GHS03'))
+      review.push({
+        codes: ['GHS01', 'GHS03'], basis: 'CLP Article 26(1)(a)',
+        reason: 'Check whether an exception makes multiple physical pictograms compulsory; otherwise GHS03 omission is optional.'
+      });
+    if (sources.some((s) => s.isManual && s.code))
+      review.push({
+        codes: [...new Set(sources.filter((s) => s.isManual).map((s) => s.code))],
+        basis: 'CLP Article 26(2)',
+        reason: 'Manual physical or health hazard entries are not independently validated for severity within a hazard class. Confirm required pictograms and the most severe applicable hazard category.'
+      });
+
+    return {
+      pictograms: retained.map(({code,name,from})=>({code,name,from})),
+      triggeredPictograms: Object.keys(grouped).sort().map((code)=>({
+        code, name: PICTO[code], from: [...new Set(grouped[code].map((s) => s.from))]
+      })),
+      omittedPictograms: omitted,
+      pictogramDecisions: decisions, pictogramReview: review,
+      omitOptionalPictograms: omitOptional
+    };
+  }
+
   /* ---------------- main ---------------- */
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
@@ -1003,8 +1123,7 @@ img[src$="GHS05.svg"] {
     const classified = hazards.filter((h) => h.status === 'classified');
     const outcomes = [];
     classified.forEach((h) => h.outcomes.forEach((o) => outcomes.push(Object.assign({}, o, { hazardId: h.id, hazard: h.name }))));
-    const pict = {};
-    outcomes.filter((o) => !o.omitOnLabel).forEach((o) => o.picto.forEach((p) => ((pict[p] = pict[p] || []).push(o.label))));
+    const art26 = selectArticle26(outcomes, { omitOptional: m.article26Mode === 'omitOptional' });
     const hs = [];
     const seen = new Set();
     outcomes.filter((o) => !o.omitOnLabel).forEach((o) => o.h.forEach((c) => { if (!seen.has(c)) { seen.add(c); hs.push({ code: c, text: HTEXT[c] || '', from: o.label }); } else { const e = hs.find((x) => x.code === c); if (e && !e.from.includes(o.label)) e.from += ', ' + o.label; } }));
@@ -1013,15 +1132,43 @@ img[src$="GHS05.svg"] {
       [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))],
       { omitOptional: m.article27Mode !== 'keepAll' }
     );
+    /* A source ingredient's H319 does not itself trigger GHS07 for the MIXTURE.
+       Record that distinction explicitly; do not falsely report an Article 26 omission. */
+    const pictogramExplanations = [];
+    const mixtureH314 = outcomes.some((o) => o.h.includes('H314'));
+    const mixtureH319 = outcomes.some((o) => o.h.includes('H319'));
+    const ingredientH319 = ings.some((i) =>
+      i.eye === '2' || i.hcodeDetails.some((d) => d.code === 'H319'));
+    const h319Contribution = art26.pictogramDecisions
+      .flatMap((d) => d.contributions)
+      .find((c) => c.hazardStatements.includes('H319') && c.decision === 'omitted');
+    if (mixtureH314 && mixtureH319 && h319Contribution) {
+      const ghs07Retained = art26.pictograms.some((p) => p.code === 'GHS07');
+      pictogramExplanations.push({
+        kind: 'omittedByArticle26', code: 'H319',
+        basis: 'CLP Article 26(1)(c)',
+        reason: 'H319 is classified for the mixture and would trigger GHS07. Because H314 requires GHS05, the H319-derived GHS07 contribution is omitted under Article 26(1)(c). ' +
+          (ghs07Retained
+            ? 'GHS07 is nevertheless retained because a different classified hazard also requires it.'
+            : 'No other classification requires GHS07, so the exclamation-mark pictogram is absent from the proposed label.') +
+          ' The H319 classification remains; Article 27 governs any H-statement omission.'
+      });
+    } else if (mixtureH314 && ingredientH319 && !mixtureH319) {
+      pictogramExplanations.push({
+        kind: 'ingredientOnly', code: 'H319',
+        basis: 'CLP mixture classification and Article 26(1)(c)',
+        reason: 'H319 appears in an ingredient classification, but it was not assigned to the mixture. The mixture is classified with H314 and GHS05 instead. The mixture therefore never triggered GHS07 for H319: this is not an Article 26 omission. Check the mixture calculation trail for the eye-hazard result.'
+      });
+    }
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
     const notes = [];
     if (ings.some((i) => i.carcRoute === 'inhalation'))
       notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
-    if (pict.GHS07 && (pict.GHS05 || pict.GHS06 || pict.GHS08))
-      notes.push('Pictogram precedence (CLP Art. 26 – not in the supplied package): where GHS05, GHS06 or GHS08 apply, GHS07 may be omitted for certain classes (e.g. skin/eye irritation, acute toxicity Cat. 4). Check the Article before dropping GHS07.');
-    notes.push('Label H/EUH selection: the four explicitly permitted Annex III Part 1 Article 27 omissions are applied, with a complete audit of triggered, retained and omitted statements. Other redundant statements require expert review. Pictogram precedence (Art. 26) and P-statement selection (Art. 28) remain outstanding.');
+    notes.push('Article 26 pictogram precedence applied with per-hazard contributions and explanations; physical pictogram omissions are optional and off by default. Article 26(2) severity for manual entries requires review.');
+    if (art26.pictogramReview.length) notes.push('Article 26 human review required for: ' + art26.pictogramReview.map((r) => r.codes.join(' / ')).join('; ') + '.');
+    notes.push('Article 27 H/EUH omission rules applied with an audit. Additional case-specific Article 27 reviews and Article 28 P-statement selection remain outstanding.');
     if (art27.review.length) notes.push('Article 27 case-specific statement review required: ' + art27.review.map((x) => x.codes.join(' / ')).join('; ') + '.');
     if (outcomes.some((o) => ['ED HH 1', 'ED HH 2', 'ED ENV 1', 'ED ENV 2', 'PBT', 'vPvB', 'PMT', 'vPvM'].includes(o.label)))
       notes.push('New hazard classes: mixtures placed on the market before 1 May 2026 need not be classified/labelled for these classes until 1 May 2028 (3.11.3.4, 4.2.3.4, 4.3.3.2, 4.4.3.2).');
@@ -1029,7 +1176,8 @@ img[src$="GHS05.svg"] {
       total, ingredientsUsed: ings.length, hazards, outcomes,
       label: {
         signal: hasDanger ? 'Danger' : hasWarn ? 'Warning' : null,
-        pictograms: Object.keys(pict).sort().map((c) => ({ code: c, name: PICTO[c], from: pict[c] })),
+        ...art26,
+        pictogramExplanations,
         ...art27,
         supplemental: ctx.supplemental
       },
@@ -1077,11 +1225,22 @@ img[src$="GHS05.svg"] {
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
     result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}`));
-    L.push('', 'LABEL ELEMENTS (Article 27 Annex III H/EUH omissions applied; pictogram/P-statement rules pending): ',
+    L.push('', 'LABEL ELEMENTS (Article 26 pictograms and Article 27 H/EUH decisions applied; Article 28 pending): ',
       `Signal word: ${result.label.signal || 'none'}`,
-      `Pictograms (as triggered, Article 26 pending): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
+      `Pictograms (Article 26 selected): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
       `Retained EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
+    L.push('', 'ARTICLE 26 PICTOGRAM AUDIT:',
+      'Physical pictogram optional omissions: ' + (result.label.omitOptionalPictograms ? 'enabled' : 'disabled (retained)'));
+    (result.label.pictogramDecisions || []).forEach((d) => {
+      L.push('- ' + d.code + ': ' + d.decision + '. ' + d.reason + ' [' + d.basis + ']');
+      d.contributions.forEach((c) =>
+        L.push('  - ' + c.from + ': ' + c.decision + ' — ' + c.reason + ' [' + c.basis + ']'));
+    });
+    (result.label.pictogramReview || []).forEach((r) =>
+      L.push('- REVIEW ' + r.codes.join(' / ') + ': ' + r.reason + ' [' + r.basis + ']'));
+    (result.label.pictogramExplanations || []).forEach((d) =>
+      L.push('- H319 / GHS07 CLARIFICATION (' + d.kind + '): ' + d.reason + ' [' + d.basis + ']'));
     L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:',
       'Optional Annex III omissions: ' + (result.label.omitOptional ? 'enabled' : 'disabled (keep all triggered statements)'));
     (result.label.decisions || []).forEach((d) => {
@@ -1099,7 +1258,7 @@ img[src$="GHS05.svg"] {
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
-    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, Article 26 pictogram precedence, Article 28 P-statements, and case-specific Article 27 label reviews.');
+    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, Article 28 P-statements, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
     return L.join('\n');
   }
   function anonymiseText(s, ings) {
@@ -1108,7 +1267,7 @@ img[src$="GHS05.svg"] {
     return t;
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle27, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
 });
 </script>
 <script>
@@ -1117,7 +1276,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STORE = "clp_calc_state_v1";
 
-let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", ingredients: [], manual: [] };
+let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
 let uid = 1;
 let last = null;
@@ -1129,7 +1288,7 @@ function newIng(p) { const i = CLP.blankIngredient(); i._id = uid++; return Obje
 function save() { try { localStorage.setItem(STORE, JSON.stringify(mix)); } catch (e) {} }
 function loadSaved() { try { const s = localStorage.getItem(STORE); if (s) return JSON.parse(s); } catch (e) {} return null; }
 function adopt(obj) {
-  const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", ingredients: [], manual: [] }, obj || {});
+  const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
   mix = m; open = new Set();
@@ -1137,10 +1296,11 @@ function adopt(obj) {
 
 /* ---------- mixture fields ---------- */
 const MF = { mname: "name", mstate: "state", mfp: "flashPoint", mibp: "ibp", mvisc: "viscosity40", mph: "pH" };
-function syncMixInputs() { Object.entries(MF).forEach(([id, k]) => ($(id).value = mix[k] || "")); $("mres").checked = !!mix.pHReserveOk; $("mart27").checked = mix.article27Mode !== "keepAll"; }
+function syncMixInputs() { Object.entries(MF).forEach(([id, k]) => ($(id).value = mix[k] || "")); $("mres").checked = !!mix.pHReserveOk; $("mart27").checked = mix.article27Mode !== "keepAll"; $("mart26").checked = mix.article26Mode === "omitOptional"; }
 Object.entries(MF).forEach(([id, k]) => $(id).addEventListener("input", () => { mix[k] = $(id).value; update(); }));
 $("mres").addEventListener("change", () => { mix.pHReserveOk = $("mres").checked; update(); });
 $("mart27").addEventListener("change", () => { mix.article27Mode = $("mart27").checked ? "apply" : "keepAll"; update(); });
+$("mart26").addEventListener("change", () => { mix.article26Mode = $("mart26").checked ? "omitOptional" : "retainOptional"; update(); });
 
 /* ---------- ingredient table ---------- */
 const SEL = (path, opts, cur) => `<select data-p="${path}">${opts.map(([v, l]) => `<option value="${v}"${String(cur) === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
@@ -1344,13 +1504,40 @@ function renderResult(r) {
   </div>
 `).join("");
   L.push(`<div class="card"><h2>Label elements (H/EUH Article 27 rules applied)</h2>
-    <div class="hint">H/EUH statements reflect the four explicit Annex III omissions. Pictograms are still shown as triggered (Article 26 pending). Not a final label.</div>
+    <div class="hint">Pictograms reflect Article 26 precedence; H/EUH statements reflect the Article 27 Annex III rules. Manual classifications and Article 28 P-statements still require review. Not a final label.</div>
     <div>Signal word: ${L0.signal ? `<span class="sig ${L0.signal}">${esc(L0.signal)}</span>` : '<span class="hint">none</span>'}</div>
     <div class="pics">${pics || '<span class="hint">No pictograms</span>'}</div>
     ${L0.hazardStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from)}</small></div></div>`).join("")}
     ${L0.euhStatements.map((h) => `<div class="hrow"><code>${esc(h.code)}</code><div>${esc(h.text)}<br><small>${esc(h.from || "")}</small></div></div>`).join("")}
     ${L0.supplemental.map((s) => `<div class="hrow"><code>Suppl.</code><div>${esc(s)}</div></div>`).join("")}
     ${r.nodata.length ? `<div class="note">No data entered for: ${r.nodata.map(esc).join("; ")} &mdash; not assessed.</div>` : ""}
+  </div>`);
+
+  const pictogramArt26 = L0.pictogramDecisions || [];
+  const omittedArt26 = L0.omittedPictograms || [];
+  const reviewArt26 = L0.pictogramReview || [];
+  const explanationsArt26 = L0.pictogramExplanations || [];
+  L.push(`<div class="card"><h2>Article 26 — pictogram decisions</h2>
+    <div class="hint">${esc(omittedArt26.length)} pictogram(s) omitted; ${L0.omitOptionalPictograms ? "optional physical pictogram omissions enabled" : "optional physical pictogram omissions disabled"}. Mandatory Article 26 rules still apply.</div>
+    ${explanationsArt26.map((x) => `<div class="note" style="margin-top:8px">
+      <b>${x.kind === "omittedByArticle26"
+        ? "H319 / GHS07 (exclamation mark): omitted for the H319 hazard"
+        : "Ingredient H319: no GHS07 omission occurred"}</b>
+      <br>${esc(x.reason)}<br><small>${esc(x.basis)}</small></div>`).join("")}
+    <details class="h"${omittedArt26.length || reviewArt26.length ? " open" : ""}>
+      <summary>Show retained / omitted pictograms and contributing hazards (${pictogramArt26.length})</summary>
+      ${pictogramArt26.map((d) => `<div class="hrow"><code>${esc(d.code)}</code><div>
+        <b>${d.decision === "omitted" ? "Omitted" : "Retained"}</b> — ${esc(d.name)}
+        <br><small>${esc(d.reason)} — ${esc(d.basis)}</small>
+        ${d.contributions.map((item) => `<div class="note">
+          ${esc(item.from)} ${item.hazardStatements.length ? "(" + esc(item.hazardStatements.join(", ")) + ")" : ""}:
+          <b>${item.decision === "omitted" ? "contribution omitted" : "contribution retained"}</b>.
+          ${esc(item.reason)} <small>[${esc(item.basis)}]</small>
+        </div>`).join("")}</div></div>`).join("") || '<div class="hint">No pictograms triggered.</div>'}
+    </details>
+    ${reviewArt26.map((item) => `<div class="alert">
+      <b>Review: ${esc(item.codes.join(" / "))}</b><br>${esc(item.reason)}
+      <br><small>${esc(item.basis)}</small></div>`).join("")}
   </div>`);
 
   const omittedArt27 = (L0.decisions || []).filter((d) => d.decision === "omitted");
@@ -1375,7 +1562,7 @@ function renderResult(r) {
   const hidden = r.hazards.filter((h) => !shown.includes(h) && h.status !== "na");
   L.push(`<div class="card"><h2>Calculation trail</h2>${shown.map((h) => `<details class="h"${h.status === "classified" || h.status === "incomplete" ? " open" : ""}><summary>${esc(h.name)}<span class="badge ${h.status}">${{ classified: "classified", not: "not classified", incomplete: "incomplete", nodata: "no data" }[h.status] || h.status}</span></summary><div class="ref">${esc(h.ref)}</div>${h.steps.map((s) => `<div class="step">${esc(s)}</div>`).join("")}${h.notes.map((s) => `<div class="note">Note: ${esc(s)}</div>`).join("")}</details>`).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
-  L.push(`<div class="card"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, SCLs for skin/eye/acute toxicity, physical hazards other than flammable liquids, Article 26 pictogram precedence, Article 28 P-statements, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
+  L.push(`<div class="card"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, SCLs for skin/eye/acute toxicity, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, Article 28 P-statements, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
   $("res").innerHTML = L.join("");
 }
 let tm = null;
