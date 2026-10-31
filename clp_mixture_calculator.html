@@ -122,6 +122,7 @@ img[src$="GHS05.svg"] {
       <div style="align-self:end"><label class="chk" title="Tick if data show the acid/alkaline reserve is NOT corrosive despite extreme pH"><input type="checkbox" id="mres"> reserve acidity/alkalinity shown non-corrosive</label></div>
     </div>
     <div class="hint" style="margin-top:6px">Flash point, viscosity and pH belong to the <i>mixture</i> (measured or calculated). Leave blank if unknown &mdash; the matching hazard is then reported as "no data".</div>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="mart27" checked> Apply optional Article 27 Annex III H/EUH statement omissions (see audit; untick to retain all)</label>
   </div>
 
   <div class="card">
@@ -899,17 +900,18 @@ img[src$="GHS05.svg"] {
     { keep: 'EUH451', omit: 'EUH450', basis: 'CLP Annex III Part 1(d), Regulation (EU) 2023/707', reason: 'The stronger vPvM water-contamination statement covers the PMT statement.' }
   ]);
 
-  function selectArticle27(hazardStatements, euhStatements) {
+  function selectArticle27(hazardStatements, euhStatements, options) {
+    const omitOptional = !options || options.omitOptional !== false;
     const hazard = (hazardStatements || []).map((x) => Object.assign({}, x));
     const euh = (euhStatements || []).map((x) => Object.assign({}, x));
     const all = hazard.concat(euh);
     const present = new Set(all.map((x) => x.code));
     const decisions = [], omitted = [], selectedHazard = [], selectedEuh = [];
     all.forEach((entry) => {
-      const rule = ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
+      const rule = omitOptional && ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
       const decision = Object.assign({}, entry, {
         decision: rule ? 'omitted' : 'retained',
-        reason: rule ? rule.reason : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
+        reason: rule ? rule.reason : !omitOptional ? 'User elected to retain all triggered H/EUH statements (optional Annex III omissions disabled).' : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
         basis: rule ? rule.basis : 'CLP Article 27',
         overriddenBy: rule ? rule.keep : null
       });
@@ -930,7 +932,7 @@ img[src$="GHS05.svg"] {
       triggeredHazardStatements: hazard, triggeredEuhStatements: euh,
       omittedHazardStatements: omitted.filter((x) => !x.code.startsWith('EUH')),
       omittedEuhStatements: omitted.filter((x) => x.code.startsWith('EUH')),
-      decisions, review
+      decisions, review, omitOptional
     };
   }
 
@@ -1004,7 +1006,8 @@ img[src$="GHS05.svg"] {
     outcomes.filter((o) => !o.omitOnLabel).forEach((o) => o.h.forEach((c) => { if (!seen.has(c)) { seen.add(c); hs.push({ code: c, text: HTEXT[c] || '', from: o.label }); } else { const e = hs.find((x) => x.code === c); if (e && !e.from.includes(o.label)) e.from += ', ' + o.label; } }));
     const art27 = selectArticle27(
       hs.filter((x) => !/^EUH/.test(x.code)),
-      [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))]
+      [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))],
+      { omitOptional: m.article27Mode !== 'keepAll' }
     );
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
@@ -1075,7 +1078,8 @@ img[src$="GHS05.svg"] {
       `Pictograms (as triggered, Article 26 pending): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
       `Retained EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
-    L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:');
+    L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:',
+      'Optional Annex III omissions: ' + (result.label.omitOptional ? 'enabled' : 'disabled (keep all triggered statements)'));
     (result.label.decisions || []).forEach((d) => {
       L.push('- ' + d.code + ': ' + d.decision +
         (d.overriddenBy ? ' (covered by ' + d.overriddenBy + ')' : '') +
@@ -1109,7 +1113,7 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STORE = "clp_calc_state_v1";
 
-let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, ingredients: [], manual: [] };
+let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
 let uid = 1;
 let last = null;
@@ -1121,7 +1125,7 @@ function newIng(p) { const i = CLP.blankIngredient(); i._id = uid++; return Obje
 function save() { try { localStorage.setItem(STORE, JSON.stringify(mix)); } catch (e) {} }
 function loadSaved() { try { const s = localStorage.getItem(STORE); if (s) return JSON.parse(s); } catch (e) {} return null; }
 function adopt(obj) {
-  const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, ingredients: [], manual: [] }, obj || {});
+  const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
   mix = m; open = new Set();
@@ -1129,9 +1133,10 @@ function adopt(obj) {
 
 /* ---------- mixture fields ---------- */
 const MF = { mname: "name", mstate: "state", mfp: "flashPoint", mibp: "ibp", mvisc: "viscosity40", mph: "pH" };
-function syncMixInputs() { Object.entries(MF).forEach(([id, k]) => ($(id).value = mix[k] || "")); $("mres").checked = !!mix.pHReserveOk; }
+function syncMixInputs() { Object.entries(MF).forEach(([id, k]) => ($(id).value = mix[k] || "")); $("mres").checked = !!mix.pHReserveOk; $("mart27").checked = mix.article27Mode !== "keepAll"; }
 Object.entries(MF).forEach(([id, k]) => $(id).addEventListener("input", () => { mix[k] = $(id).value; update(); }));
 $("mres").addEventListener("change", () => { mix.pHReserveOk = $("mres").checked; update(); });
+$("mart27").addEventListener("change", () => { mix.article27Mode = $("mart27").checked ? "apply" : "keepAll"; update(); });
 
 /* ---------- ingredient table ---------- */
 const SEL = (path, opts, cur) => `<select data-p="${path}">${opts.map(([v, l]) => `<option value="${v}"${String(cur) === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
@@ -1347,7 +1352,7 @@ function renderResult(r) {
   const omittedArt27 = (L0.decisions || []).filter((d) => d.decision === "omitted");
   const decisionsArt27 = (L0.decisions || []);
   L.push(`<div class="card"><h2>Article 27 — hazard-statement decisions</h2>
-    <div class="hint">${esc(omittedArt27.length)} statement(s) omitted by the four Annex III rules. The full classifications remain above.</div>
+    <div class="hint">${L0.omitOptional ? "Optional omissions enabled" : "All triggered statements retained by user choice"}; ${esc(omittedArt27.length)} statement(s) omitted under Annex III. The complete classifications remain above.</div>
     <details class="h"${omittedArt27.length || (L0.review || []).length ? " open" : ""}>
       <summary>Show retained and omitted H/EUH statements (${decisionsArt27.length})</summary>
       ${decisionsArt27.map((d) => `<div class="hrow"><code>${esc(d.code)}</code><div>
