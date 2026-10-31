@@ -99,7 +99,7 @@
   /* ---------------- H-code parser ---------------- */
   function blankIngredient() {
     return {
-      name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [],
+      name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [], valueSource: '',
       acute: { oral: { cat: '', ate: '', unknown: false }, dermal: { cat: '', ate: '', unknown: false }, inh: { form: 'vapour', cat: '', ate: '', unknown: false }, unknown: false },
       skinCorr: '', eye: '', nonAdditive: false,
       skinSens: '', respSens: '', muta: '', carc: '', carcRoute: '', repro: '', reproFert: '', reproDev: '', lact: false,
@@ -1209,7 +1209,7 @@
       for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
         if (!entered(raw[field])) continue;
         const mFactor = num(raw[field]);
-        if (!has(mFactor) || mFactor < 1 || !Number.isInteger(mFactor))
+        if (!has(mFactor) || mFactor < 1 || !Number.isSafeInteger(mFactor))
           invalid(field,raw[field],'M-factor must be an integer of at least 1; do not use a silent default.');
         if (!applicable)
           warnings.push('INPUT REVIEW: '+id+' — '+field+' supplied but the corresponding aquatic Category 1 classification is not selected.');
@@ -1219,6 +1219,12 @@
         const n=num(value);
         if (!has(n) || n <= 0 || n > 100) invalid('SCL '+field,value,'SCL must be a percentage greater than 0 and at most 100.');
       }
+      if (!entered(raw.valueSource) &&
+          (['oral','dermal','inh'].some(route=>validPositive(((raw.acute||{})[route]||{}).ate)) ||
+          Object.values(raw.scl || {}).some(entered) ||
+          (raw.aquaAcute && entered(raw.mAcute)) ||
+          (raw.aquaChronic==='1' && entered(raw.mChronic))))
+        warnings.push('EVIDENCE REVIEW: '+id+' — ATE/SCL/M-factor values are entered but no source reference is recorded. Verify against Annex VI, measured data or supplier evidence.');
       if (raw.acute && raw.acute.unknown &&
           ['oral','dermal','inh'].some((route)=>{
             const a=raw.acute[route] || {};
