@@ -2275,21 +2275,19 @@ function setHazardPath(obj,path,value){
  keys.slice(0,-1).forEach(k=>target=target[k]);
  target[keys.at(-1)]=value;
 }
-/* Do not discard manually selected source subcategories for hazards unaffected
-   by the changed code. Changing H314 itself correctly re-evaluates skinCorr. */
+/* Compare the engine-derived classification BEFORE and AFTER editing codes.
+   When the derived category stays identical, keep any manually refined
+   category (e.g. Skin Corr. 1B when H314 remains and H315 is removed).
+   When the underlying source code actually changes that field, re-evaluate. */
 function applyIngredientHazards(ing,nextText){
- const oldCodes=ingredientHCodes(ing),newCodes=CLP.parseHCodeTokens(nextText).codes.map(x=>x.code);
- const changed=[...new Set([...oldCodes,...newCodes])].filter(code=>oldCodes.includes(code)!==newCodes.includes(code));
  const before=new Map(HAZARD_DERIVED_FIELDS.map(key=>[key,hazardPath(ing,key)]));
- const blank=CLP.blankIngredient(),affected=new Set();
- changed.forEach(code=>{
-   const probe=CLP.blankIngredient();CLP.applyHCodes(probe,code);
-   HAZARD_DERIVED_FIELDS.forEach(key=>{
-     if(hazardPath(probe,key)!==hazardPath(blank,key))affected.add(key);
-   });
- });
+ const baseline=CLP.blankIngredient();
+ CLP.applyHCodes(baseline,ing.hcodes);
  const result=CLP.applyHCodes(ing,nextText);
- HAZARD_DERIVED_FIELDS.forEach(key=>{if(!affected.has(key))setHazardPath(ing,key,before.get(key));});
+ HAZARD_DERIVED_FIELDS.forEach(key=>{
+   if(hazardPath(baseline,key)===hazardPath(ing,key))
+     setHazardPath(ing,key,before.get(key));
+ });
  $("parsenotes").innerHTML=result.notes.length
    ? '<div class="alert" style="margin-top:8px"><b>'+esc(ing.name||"Ingredient")+':</b> '+
       result.notes.map(esc).join(" ")+'</div>':"";
