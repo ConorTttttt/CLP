@@ -332,6 +332,13 @@ t('FP not entered -> nodata', fl('', '').nodata.length === 1);
   const review = testCase(['EUH071','H335','H314','H319']);
   t('Art27 potential EUH071/H335 overlap review only', review.review.some((r)=>r.codes.includes('EUH071')) && review.hazardStatements.some((x)=>x.code==='H335'));
   t('Art27 H314/H319 review only', review.review.some((r)=>r.codes.includes('H319')) && review.hazardStatements.some((x)=>x.code==='H319'));
+  const allRetained = CLP.selectArticle27([{code:'H410'},{code:'H400'}], [], {omitOptional:false});
+  t('Art27 user option retains H400', allRetained.hazardStatements.length === 2 && allRetained.omittedHazardStatements.length === 0);
+  t('Art27 user option gives audit reason', allRetained.decisions.find((x)=>x.code==='H400').reason.includes('User elected'));
+  const keepAllMix = CLP.classify({ingredients:[water(100)],article27Mode:'keepAll',manual:[
+    {label:'Aquatic Acute 1',h:'H400'}, {label:'Aquatic Chronic 1',h:'H410'}]});
+  t('Art27 keep-all mode leaves both labels', keepAllMix.label.hazardStatements.some(x=>x.code==='H400') &&
+    keepAllMix.label.hazardStatements.some(x=>x.code==='H410') && keepAllMix.label.omitOptional === false);
   const combined = testCase(['H410','H400','EUH441','EUH440','EUH451','EUH450','H314','H318']);
   t('Art27 four omissions in combined case', combined.omittedHazardStatements.length===2 && combined.omittedEuhStatements.length===2);
   t('Art27 preserves caller inputs', (()=>{const src=[{code:'H400',text:'source'}];testCase(['H410','H400']);CLP.selectArticle27(src,[{code:'EUH441'}]);return src.length===1&&src[0].text==='source'})());
