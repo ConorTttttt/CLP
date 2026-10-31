@@ -20,6 +20,35 @@ and shows every calculation step with the Annex I table/page reference:
 - Flammable liquid from flash point / initial boiling point
 - Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
 
+WORKSPACE UI (PRESENTATION ONLY)
+The single-file calculator now uses a cleaner two-column workspace on wide screens
+and a single-column workspace on tablets or narrow devices. A section navigation
+bar links directly to Mixture, Ingredients, Labelling context and Results.
+The mandatory decision-support warning remains visible; detailed regulatory
+limitations are available via its disclosure.
+
+For a typical workflow:
+1. Enter the mixture details and ingredient rows.
+2. Open Details on a row, then expand only the hazard groups you need.
+   Available groups: Acute toxicity / ATE; Skin and eye / SCL; Sensitisation
+   and CMR; STOT and aspiration; Aquatic / M-factors; New hazard classes;
+   Other SCLs; Value source evidence. Entered classifications automatically
+   expand the corresponding groups when opening the ingredient details.
+3. Use Expand all / Collapse all to inspect or reduce that ingredient's fields.
+   Expanded selections are remembered while you edit the current formulation.
+4. Expand Labelling context (Article 28) or Manual classifications only when
+   needed. Imported manual classification rows are automatically revealed.
+5. Review the results overview: number of identified classifications, input
+   warnings, and unresolved review checks. The counts are informational;
+   a zero does NOT mean that the formulation or label is regulator-approved.
+   Important warnings remain outside optional Viewer Settings sections.
+
+On narrow displays, the ingredient table scrolls horizontally within its
+own clearly labelled region instead of overlapping fields. Keyboard access
+is provided for the scroll region, details summaries and form controls.
+Colours, typography and responsive spacing were refined; no classification,
+Article 26/27/28 or report calculation rules were changed by this UI commit.
+
 VIEWER SETTINGS
 Open the collapsible "Viewer Settings — show / hide results" panel in the right-hand
 results viewer. Tick or untick:
@@ -83,6 +112,7 @@ Run from repository root:
   node verification/test_article28.js
   node verification/test_ui_structure.js
   node verification/test_viewer_settings.js
+  node verification/test_ui_cleanup.js
 The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
