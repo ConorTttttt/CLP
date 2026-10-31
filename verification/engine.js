@@ -865,6 +865,203 @@
     };
   }
 
+
+  /* ARTICLE 22 + ARTICLE 28 / ANNEX IV.
+     This is a conservative, explicitly PARTIAL candidate selector, not a final
+     regulatory P-statement database. It keeps candidate and review trails separate.
+     No individual P-code is automatically labelled "mandatory" solely by H-code.
+     Article 28(2) does impose a qualified CONSUMER DISPOSAL statement requirement.
+     Annex IV Part 1 tables 6.1-6.5 are the selection source; Part 2 is wording.
+  */
+  const P28_RULES = Object.freeze([
+    {code:'P101', text:'If medical advice is needed, have product container or label at hand.', consumer:true, priority:30, group:'general', basis:'Annex IV Table 6.1, consumer products'},
+    {code:'P102', text:'Keep out of reach of children.', consumer:true, priority:80, group:'general', basis:'Annex IV Table 6.1, consumer products'},
+    {code:'P103', text:'Read carefully and follow all instructions.', consumer:true, priority:25, group:'general', basis:'Annex IV Table 6.1, consumer products; omit if P202 is used'},
+    {code:'P210', text:'Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.', h:['H224','H225','H226'], priority:95, group:'prevention', basis:'Annex IV Table 6.2, flammable liquids 1-3'},
+    {code:'P202', text:'Do not handle until all safety precautions have been read and understood.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:86, group:'prevention', basis:'Annex IV Table 6.2, CMR / lactation'},
+    {code:'P280', text:'Wear protective gloves/protective clothing/eye protection/face protection/…', h:['H224','H225','H226','H314','H315','H317','H318','H319','H340','H341','H350','H350i','H351','H360*','H361*'], priority:65, group:'prevention', needs:'ppe', basis:'Annex IV Table 6.2; specify suitable protective equipment'},
+    {code:'P273', text:'Avoid release to the environment.', h:['H400','H410','H411','H412','H413'], priority:64, group:'prevention', condition:'only where release is not the intended use', basis:'Annex IV Table 6.2, aquatic hazard; intended use'},
+    {code:'P261', text:'Avoid breathing dust/fume/gas/mist/vapours/spray.', h:['H317','H334','H335','H336','H332'], priority:57, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; specify exposure medium'},
+    {code:'P260', text:'Do not breathe dust/fume/gas/mist/vapours/spray.', h:['H330','H370','H371','H372','H373','H362'], priority:79, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; check exact category/exposure medium'},
+    {code:'P301+P330+P331', text:'IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.', h:['H314'], priority:90, group:'response', basis:'Annex IV Table 6.3, skin corrosion'},
+    {code:'P305+P351+P338', text:'IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.', h:['H314','H318','H319'], priority:95, group:'response', basis:'Annex IV Table 6.3, skin corrosion / eye damage or irritation'},
+    {code:'P303+P361+P353', text:'IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water [or shower].', h:['H314','H224','H225','H226'], priority:71, group:'response', basis:'Annex IV Table 6.3, skin corrosion / flammable liquids', condition:'square-bracket alternatives require review'},
+    {code:'P302+P352', text:'IF ON SKIN: Wash with plenty of water/…', h:['H315','H317'], priority:62, group:'response', needs:'wash', basis:'Annex IV Table 6.3, irritation/sensitisation'},
+    {code:'P333+P313', text:'If skin irritation or rash occurs: Get medical advice/attention.', h:['H317'], priority:62, group:'response', basis:'Annex IV Table 6.3, skin sensitisation'},
+    {code:'P337+P313', text:'If eye irritation persists: Get medical advice/attention.', h:['H319'], priority:50, group:'response', basis:'Annex IV Table 6.3, eye irritation 2'},
+    {code:'P301+P310', text:'IF SWALLOWED: Immediately call a POISON CENTER/doctor/…', h:['H300','H301','H304'], priority:94, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 1-3 / aspiration 1'},
+    {code:'P301+P312', text:'IF SWALLOWED: Call a POISON CENTER/doctor/… if you feel unwell.', h:['H302'], priority:78, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 4'},
+    {code:'P331', text:'Do NOT induce vomiting.', h:['H304'], priority:86, group:'response', basis:'Annex IV Table 6.3, aspiration hazard 1'},
+    {code:'P304+P340', text:'IF INHALED: Remove person to fresh air and keep comfortable for breathing.', h:['H330','H331','H332','H334','H335','H336'], priority:78, group:'response', basis:'Annex IV Table 6.3, acute inhalation / respiratory sensitisation / STOT SE3'},
+    {code:'P308+P313', text:'IF exposed or concerned: Get medical advice/attention.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:81, group:'response', basis:'Annex IV Table 6.3, CMR / lactation'},
+    {code:'P501', text:'Dispose of contents/container to …', h:['H224','H225','H226','H300','H301','H302','H310','H311','H312','H314','H317','H330','H331','H334','H340','H341','H350','H350i','H351','H360*','H361*','H370','H371','H372','H373','H304','H335','H336','H400','H410','H411','H412','H413'], priority:65, group:'disposal', needs:'disposal', basis:'Annex IV Table 6.5; Article 28(2) for the general public, subject to Article 22'}
+  ]);
+  const P28_MAP = Object.freeze(Object.fromEntries(P28_RULES.map((r) => [r.code, r])));
+  const P28_REVIEW_LIMIT = 6;
+
+  function selectArticle28(outcomes, settings) {
+    const m = settings || {};
+    const audience = ['consumer','professional','industrial'].includes(m.audience) ? m.audience : 'unknown';
+    const hazards = (outcomes || []).filter((o) => !o.omitOnLabel)
+      .flatMap((o) => (o.h || []).filter((h) => /^H\d{3}(?:[A-Za-z]*)$/.test(h))
+        .map((h) => ({h, from:o.label})));
+    const hs = [...new Set(hazards.map((h) => h.h))];
+    const matches = (pattern, h) => pattern.endsWith('*') ? h.startsWith(pattern.slice(0,-1)) : pattern === h;
+    const active = new Map(), review = [], warnings = [];
+    const add = (rule, why, manual) => {
+      const existing = active.get(rule.code);
+      if (existing) {
+        if (why && !existing.triggeredBy.includes(why)) existing.triggeredBy.push(why);
+      } else active.set(rule.code, {
+        code:rule.code,text:rule.text || '',
+        basis:rule.basis || 'Manual entry — independently verify against Annex IV',
+        reason:rule.consumer ? 'Annex IV general precautionary statement for consumer products; include as appropriate.'
+          : 'Eligible for the identified hazard classification under Annex IV. Select by use, packaging and relevance.',
+        triggeredBy:why ? [why] : [], group:rule.group || 'manual',
+        priority:rule.priority || 0, needs:rule.needs || '',
+        condition:rule.condition || '', manual:!!manual, legalStatus:'candidate'
+      });
+    };
+    P28_RULES.forEach((rule) => {
+      if (rule.consumer && audience === 'consumer' && hs.length) add(rule,'consumer products (where relevant)');
+      if (rule.h) hazards.forEach(({h,from}) => {
+        if (rule.h.some((x) => matches(x,h))) add(rule,from + ' (' + h + ')');
+      });
+    });
+
+    const supplied = (text) => String(text || '').trim();
+    const parseCodes = (raw) => supplied(raw).split(/[,;\n]+/).map((x) => x.trim().toUpperCase().replace(/\s*\+\s*/g,'+')).filter(Boolean);
+    const explicitCodes = [...new Set(parseCodes(m.manualPExtra))];
+    const exclusions = new Set(parseCodes(m.manualPExcluded));
+    const reasonText = supplied(m.manualPReason);
+    explicitCodes.forEach((code) => {
+      if (!/^P\d{3}(?:\+P\d{3})*$/.test(code)) {
+        warnings.push('Invalid manual P-statement code: '+code+'. Use codes such as P280 or P305+P351+P338.');
+        return;
+      }
+      const rule=P28_MAP[code];
+      if (!rule) {
+        add({code,text:'[Official Annex IV wording must be verified before use]',group:'manual',priority:110},'manual selection',true);
+        warnings.push('Manual '+code+' has no verified wording in this limited catalogue: check Annex IV Part 2 and eligibility.');
+        review.push({severity:'blocker',code,reason:'Manual P-code '+code+' has no independently verified Annex IV wording/eligibility in this catalogue. Do not print as a final statement until checked.'});
+      } else {
+        add(rule,'manual selection',true);
+        if (rule.h && !hs.some(h => rule.h.some(pattern => matches(pattern,h))))
+          review.push({severity:'review',code,reason:'Manually added '+code+' does not match any mapped classification for this mixture. Confirm applicability against Annex I and IV.'});
+      }
+      const entry=active.get(code);
+      if (entry) { entry.manual=true; entry.priority=Math.max(entry.priority,110); }
+    });
+
+    const publicSupply = audience === 'consumer';
+    const P501 = active.get('P501');
+    const consumerDisposalApplies = publicSupply && hs.length>0 && !!P501;
+    if (consumerDisposalApplies) {
+      P501.legalStatus='conditional statutory disposal obligation';
+      P501.reason='Consumer supply: Article 28(2) generally requires a disposal precaution addressing both contents and packaging, subject to Article 22. P501 is the available Annex IV Table 6.5 statement for this classification; text must be completed by the supplier.';
+      P501.priority=1000;
+      const dest=supplied(m.disposalDestination);
+      if (dest) P501.text='Dispose of contents and container to '+dest.replace(/\.+$/,'')+'.';
+      else {
+        P501.text='Dispose of contents and container to [SPECIFY APPROPRIATE DISPOSAL ROUTE].';
+        review.push({severity:'blocker',code:'P501',
+          reason:'Consumer disposal wording is incomplete. Specify the correct destination/route before approving a label. Confirm Article 22 applicability.'});
+      }
+    } else if (publicSupply && hs.length>0) {
+      review.push({severity:'blocker',code:'disposal',
+        reason:'Article 28(2) generally requires a disposal statement for consumer supply unless not required under Article 22. No P501 eligibility was matched in this partial ruleset; manually verify Annex IV P501/P502/P503 and any applicable exception.'});
+    }
+    if (audience==='unknown' && hs.length)
+      review.push({severity:'blocker',code:'audience',
+        reason:'Supply audience not selected: cannot determine whether the consumer-disposal obligation and consumer-only general precautions apply.'});
+    if (!supplied(m.intendedUse) && hs.length)
+      review.push({severity:'review',code:'intendedUse',
+        reason:'Intended or identified use is missing. Article 22(3) and Annex IV require use-specific selection; verify candidates against actual product use and packaging.'});
+
+    const candidates=[...active.values()];
+    for(const c of candidates) {
+      if(c.needs==='ppe') {
+        const ppe=supplied(m.ppeDescription);
+        c.text=ppe ? 'Wear '+ppe.replace(/\.+$/,'')+'.' : '[Specify protective gloves/clothing/eye/face protection appropriate for the product]';
+        if(!ppe) review.push({severity:'review',code:c.code,reason:'P280 protective equipment type has not been specified; Annex IV requires supplier selection.'});
+      }
+      if(c.needs==='disposal' && !consumerDisposalApplies) {
+        const dest=supplied(m.disposalDestination);
+        if(dest) c.text='Dispose of contents and container to '+dest.replace(/\.+$/,'')+'.';
+        else review.push({severity:'review',code:c.code,reason:'P501 requires a supplier-specified disposal destination and contents/container scope.'});
+      }
+      if(c.needs==='emergency') review.push({severity:'review',code:c.code,
+        reason:c.code+' requires supplier choice of suitable poison-centre/medical-advice wording. The stored text contains unresolved alternatives.'});
+      if(c.needs==='exposure') review.push({severity:'review',code:c.code,
+        reason:c.code+' requires supplier choice of relevant dust/fume/gas/mist/vapour/spray forms.'});
+      if(c.condition && c.code==='P273') review.push({severity:'review',code:c.code,
+        reason:'P273 is conditional: if environmental release is the intended use, applicability must be reconsidered.'});
+      if(c.condition && c.condition.includes('square-bracket'))
+        review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
+    }
+
+    // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
+    const explicitPairs=[['P103','P202','Annex IV Table 6.1: P103 may be omitted when P202 is used'],
+                         ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used']];
+    const omittedByRedundancy=new Map();
+    for(const [weaker,stronger,basis] of explicitPairs)
+      if(active.has(weaker)&&active.has(stronger)&&!explicitCodes.includes(weaker)) omittedByRedundancy.set(weaker,{stronger,basis});
+    // The consumer-only optional P201 statement is not generated; P202 is used
+    // as a candidate when relevant, and P103 is excluded if redundant.
+    const manualExclusions=[];
+    for(const code of exclusions){
+      if(!active.has(code)) {warnings.push('Manual exclusion '+code+' does not match a candidate.');continue;}
+      if(code==='P501' && consumerDisposalApplies){
+        review.push({severity:'blocker',code,reason:'Manual exclusion of consumer disposal statement is not automatically allowed. Article 28(2) obligation must be addressed or an Article 22 exception justified.'});
+        continue;
+      }
+      if(!reasonText) review.push({severity:'blocker',code,reason:'Excluding '+code+' requires a documented regulatory reason; the exclusion has not been applied.'});
+      else manualExclusions.push(code);
+    }
+    const validExclusions=new Set(manualExclusions);
+    const eligible=candidates.filter(c=>!omittedByRedundancy.has(c.code)&&!validExclusions.has(c.code))
+      .sort((a,b)=>b.priority-a.priority || a.code.localeCompare(b.code));
+    const selected=eligible.slice(0,P28_REVIEW_LIMIT);
+    const picked=new Set(selected.map(x=>x.code));
+    const decisions=candidates.map((c)=>{
+      const redundant=omittedByRedundancy.get(c.code);
+      const manualExcluded=validExclusions.has(c.code);
+      const selectedNow=picked.has(c.code);
+      const reason=selectedNow ? c.reason
+        : redundant ? 'Omitted as redundant with '+redundant.stronger+'; '+redundant.basis+'.'
+        : manualExcluded ? 'Manually excluded with justification: '+reasonText
+        : 'Not selected in six-statement draft; review product-specific priority and whether more than six are necessary.';
+      return {...c,decision:selectedNow?'proposed':redundant?'redundant':manualExcluded?'excluded':'not selected',
+        decisionReason:reason, redundancyBasis:redundant?redundant.basis:null};
+    });
+    if(eligible.length>6) review.push({severity:'blocker',code:'six-statements',
+      reason:eligible.length+' eligible P-statement candidates exceed the six-statement default. The proposed six are a provisional priority shortlist, NOT a legally determined final set. Verify all requirements; Article 28(3) permits more when needed.'});
+    const unresolved=decisions.filter(d=>d.decision==='proposed' &&
+      (d.text.includes('…')||d.text.includes('[')||d.text.includes('/doctor/')||d.text.includes('/…')));
+    if(unresolved.length) review.push({severity:'blocker',code:'wording',
+      reason:'Selected P statements with supplier choices/unfinished wording: '+unresolved.map(x=>x.code).join(', ')+'. Complete Annex IV wording before release.'});
+    const matchedHS=new Set();
+    P28_RULES.filter(r=>r.h).forEach(r=>hs.forEach(h=>{if(r.h.some(v=>matches(v,h)))matchedHS.add(h)}));
+    const uncovered=hs.filter(h=>!matchedHS.has(h));
+    if(uncovered.length) review.push({severity:'blocker',code:'unmapped',
+      reason:'Partial Annex IV coverage: no candidate mapping yet for '+uncovered.join(', ')+'. Assess the full Annex I/IV selection tables; absence of a candidate is not proof of no P-statements.'});
+    if(!hs.length && outcomes.some(o=>(o.h||[]).some(h=>/^EUH/.test(h))))
+      review.push({severity:'review',code:'supplemental',reason:'Supplemental-only hazard statements may need case-specific labelling assessment. No P-statement is inferred solely from an EUH code.'});
+    const requiredObligations=[];
+    if (consumerDisposalApplies)requiredObligations.push({id:'consumer-disposal',status:P501&&picked.has('P501')&&supplied(m.disposalDestination)?'satisfied-draft':'unresolved',
+      basis:'CLP Article 28(2), subject to Article 22',description:'Disposal precautionary statement addressing product contents and packaging for consumer supply.'});
+    else if(publicSupply&&hs.length)requiredObligations.push({id:'consumer-disposal',status:'requires-review',
+      basis:'CLP Article 28(2), subject to Article 22',description:'Check an eligible Annex IV disposal statement and any legal exception.'});
+    return {
+      audience, intendedUse:supplied(m.intendedUse), selected:decisions.filter(x=>x.decision==='proposed'),
+      candidates:decisions, manualOverrides:{extra:explicitCodes,excluded:[...exclusions]},
+      requiredObligations, review, warnings, uncovered,
+      limit:P28_REVIEW_LIMIT, excessCandidateCount:Math.max(0,eligible.length-6),
+      readyForFinalLabel:false,
+      scope:'Partial verified Annex IV catalogue: decision support; must validate full Annex I/IV tables, conditions, all selected text and product uses before release.'
+    };
+  }
+
   /* ---------------- main ---------------- */
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
@@ -965,6 +1162,7 @@
         reason: 'H319 appears in an ingredient classification, but it was not assigned to the mixture. The mixture is classified with H314 and GHS05 instead. The mixture therefore never triggered GHS07 for H319: this is not an Article 26 omission. Check the mixture calculation trail for the eye-hazard result.'
       });
     }
+    const art28 = selectArticle28(outcomes, m);
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
@@ -973,8 +1171,12 @@
       notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
     notes.push('Article 26 pictogram precedence applied with per-hazard contributions and explanations; physical pictogram omissions are optional and off by default. Article 26(2) severity for manual entries requires review.');
     if (art26.pictogramReview.length) notes.push('Article 26 human review required for: ' + art26.pictogramReview.map((r) => r.codes.join(' / ')).join('; ') + '.');
-    notes.push('Article 27 H/EUH omission rules applied with an audit. Additional case-specific Article 27 reviews and Article 28 P-statement selection remain outstanding.');
+    notes.push('Articles 26 and 27 label precedence are applied with audits. Article 28 P-statement selection is now implemented as a PARTIAL candidate catalogue: Annex I/IV selection coverage, supplier-specific wording, and final label approval remain outstanding.');
     if (art27.review.length) notes.push('Article 27 case-specific statement review required: ' + art27.review.map((x) => x.codes.join(' / ')).join('; ') + '.');
+    if (art28.review.some((x) => x.severity === 'blocker'))
+      notes.push('Article 28 P-statement selection is provisional and has blocking gaps (audience, disposal, wording, coverage, or six-statement prioritisation). Review the Article 28 audit.');
+    else if (art28.review.length)
+      notes.push('Article 28 P-statements require confirmation of uses, relevant conditional wording and omissions before release.');
     if (outcomes.some((o) => ['ED HH 1', 'ED HH 2', 'ED ENV 1', 'ED ENV 2', 'PBT', 'vPvB', 'PMT', 'vPvM'].includes(o.label)))
       notes.push('New hazard classes: mixtures placed on the market before 1 May 2026 need not be classified/labelled for these classes until 1 May 2028 (3.11.3.4, 4.2.3.4, 4.3.3.2, 4.4.3.2).');
     return {
@@ -984,6 +1186,8 @@
         ...art26,
         pictogramExplanations,
         ...art27,
+        precautionaryStatements: art28.selected,
+        article28: art28,
         supplemental: ctx.supplemental
       },
       sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name)
@@ -1030,7 +1234,7 @@
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
     result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}`));
-    L.push('', 'LABEL ELEMENTS (Article 26 pictograms and Article 27 H/EUH decisions applied; Article 28 pending): ',
+    L.push('', 'LABEL ELEMENTS (Article 26/27 applied; Article 28 P statements are provisional, NOT a final label): ',
       `Signal word: ${result.label.signal || 'none'}`,
       `Pictograms (Article 26 selected): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
@@ -1055,6 +1259,18 @@
     });
     (result.label.review || []).forEach((r) =>
       L.push('- REVIEW ' + r.codes.join(' / ') + ': ' + r.reason + ' [' + r.basis + ']'));
+    L.push('', 'ARTICLE 28 PRECAUTIONARY-STATEMENT AUDIT (PROVISIONAL):',
+      'Audience: ' + result.label.article28.audience,
+      'Proposed P statements: ' + (result.label.precautionaryStatements.map((x)=>x.code).join(', ') || 'none'));
+    result.label.article28.requiredObligations.forEach((o) =>
+      L.push('- OBLIGATION '+o.id+' ('+o.status+'): '+o.description+' ['+o.basis+']'));
+    result.label.article28.candidates.forEach((c) =>
+      L.push('- '+c.code+' '+c.decision+': '+c.text+
+        ' — '+c.decisionReason+' ['+c.basis+']' +
+        (c.triggeredBy.length ? ' triggered by '+c.triggeredBy.join('; ') : '')));
+    result.label.article28.review.forEach((r) =>
+      L.push('- '+r.severity.toUpperCase()+' '+r.code+': '+r.reason));
+    result.label.article28.warnings.forEach((w) => L.push('- INPUT: '+w));
     L.push('', 'CALCULATION TRAIL:');
     result.hazards.filter((h) => h.status !== 'na' && (h.status !== 'not' || h.steps.some((s) => !/No ingredient carries|No ingredient classified|No Aspiration|No skin-corrosive|No eye-damaging/.test(s)))).forEach((h) => {
       L.push(`[${h.name}] (${h.ref})`);
@@ -1063,7 +1279,7 @@
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
-    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, Article 28 P-statements, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
+    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
     return L.join('\n');
   }
   function anonymiseText(s, ings) {
@@ -1072,5 +1288,5 @@
     return t;
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
 });
