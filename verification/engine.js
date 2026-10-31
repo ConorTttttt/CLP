@@ -767,6 +767,10 @@
     const has = (c) => !!grouped[c];
     const respirSens = (grouped.GHS08 || []).some((s) =>
       s.h.includes('H334') || /^Resp(?:iratory)?\.?\s*Sens/i.test(s.from));
+    const ghs05HCodes = new Set((grouped.GHS05 || []).flatMap((s) => s.h));
+    const ghs05Cause = ghs05HCodes.has('H314') ? 'H314 (skin corrosion)' :
+      ghs05HCodes.has('H318') ? 'H318 (serious eye damage)' :
+      'a GHS05-classified hazard';
     const protectedTypeB = sources.some((s) =>
       (s.code === 'GHS01' || s.code === 'GHS02') &&
       /(?:Self[-\s]*react(?:ive)?\.?|Org(?:anic)?\.?\s*Perox(?:ide)?\.?)\s*(?:Type\s*)?B\b/i.test(s.from));
@@ -783,7 +787,12 @@
           reason = 'GHS06 applies; GHS07 shall not appear on the label, regardless of the GHS07 hazard.';
         } else if (code === 'GHS07' && has('GHS05') && irritation) {
           decision = 'omitted'; basis = 'CLP Article 26(1)(c)';
-          reason = 'GHS05 applies; GHS07 shall not appear for skin or eye irritation.';
+          const irritationCode = s.h.includes('H319') ? 'H319 (eye irritation)' :
+            s.h.includes('H315') ? 'H315 (skin irritation)' :
+            'the skin/eye irritation classification';
+          reason = 'The GHS07 (exclamation mark) contribution from ' + irritationCode +
+            ' is omitted because ' + ghs05Cause +
+            ' requires GHS05 (corrosion). Article 26(1)(c) changes only the pictogram selection; the mixture classification and H-statement decisions remain separate.';
         } else if (code === 'GHS07' && respirSens && (irritation || skinSens)) {
           decision = 'omitted'; basis = 'CLP Article 26(1)(d)';
           reason = 'GHS08 applies for respiratory sensitisation; GHS07 shall not appear for skin sensitisation or skin/eye irritation.';
@@ -928,6 +937,34 @@
       [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))],
       { omitOptional: m.article27Mode !== 'keepAll' }
     );
+    /* A source ingredient's H319 does not itself trigger GHS07 for the MIXTURE.
+       Record that distinction explicitly; do not falsely report an Article 26 omission. */
+    const pictogramExplanations = [];
+    const mixtureH314 = outcomes.some((o) => o.h.includes('H314'));
+    const mixtureH319 = outcomes.some((o) => o.h.includes('H319'));
+    const ingredientH319 = ings.some((i) =>
+      i.eye === '2' || i.hcodeDetails.some((d) => d.code === 'H319'));
+    const h319Contribution = art26.pictogramDecisions
+      .flatMap((d) => d.contributions)
+      .find((c) => c.hazardStatements.includes('H319') && c.decision === 'omitted');
+    if (mixtureH314 && mixtureH319 && h319Contribution) {
+      const ghs07Retained = art26.pictograms.some((p) => p.code === 'GHS07');
+      pictogramExplanations.push({
+        kind: 'omittedByArticle26', code: 'H319',
+        basis: 'CLP Article 26(1)(c)',
+        reason: 'H319 is classified for the mixture and would trigger GHS07. Because H314 requires GHS05, the H319-derived GHS07 contribution is omitted under Article 26(1)(c). ' +
+          (ghs07Retained
+            ? 'GHS07 is nevertheless retained because a different classified hazard also requires it.'
+            : 'No other classification requires GHS07, so the exclamation-mark pictogram is absent from the proposed label.') +
+          ' The H319 classification remains; Article 27 governs any H-statement omission.'
+      });
+    } else if (mixtureH314 && ingredientH319 && !mixtureH319) {
+      pictogramExplanations.push({
+        kind: 'ingredientOnly', code: 'H319',
+        basis: 'CLP mixture classification and Article 26(1)(c)',
+        reason: 'H319 appears in an ingredient classification, but it was not assigned to the mixture. The mixture is classified with H314 and GHS05 instead. The mixture therefore never triggered GHS07 for H319: this is not an Article 26 omission. Check the mixture calculation trail for the eye-hazard result.'
+      });
+    }
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
@@ -945,6 +982,7 @@
       label: {
         signal: hasDanger ? 'Danger' : hasWarn ? 'Warning' : null,
         ...art26,
+        pictogramExplanations,
         ...art27,
         supplemental: ctx.supplemental
       },
@@ -1006,6 +1044,8 @@
     });
     (result.label.pictogramReview || []).forEach((r) =>
       L.push('- REVIEW ' + r.codes.join(' / ') + ': ' + r.reason + ' [' + r.basis + ']'));
+    (result.label.pictogramExplanations || []).forEach((d) =>
+      L.push('- H319 / GHS07 CLARIFICATION (' + d.kind + '): ' + d.reason + ' [' + d.basis + ']'));
     L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:',
       'Optional Annex III omissions: ' + (result.label.omitOptional ? 'enabled' : 'disabled (keep all triggered statements)'));
     (result.label.decisions || []).forEach((d) => {
