@@ -56,7 +56,7 @@ VERIFICATION
 Run from repository root:
   node verification/test_engine.js
   node verification/test_ui_structure.js
-The engine suite currently has 219 checks. UI structure checks verify that the HTML scripts compile,
+The engine suite currently has 221 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
