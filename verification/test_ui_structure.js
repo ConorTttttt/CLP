@@ -48,7 +48,8 @@ check('Article 28 new JSON default is safe unknown audience',html.includes('audi
 check('Article 28 results panel exists',html.includes('Article 28 — precautionary-statement decisions'));
 check('Article 28 has legal-obligation rendering',html.includes('Legal obligation — '));
 check('Article 28 selected statements visible on label',html.includes('Draft P-statements — Article 28 (not final)'));
-check('Article 28 Annex IV input clarification exists',html.includes('not a claim that every candidate P-code is mandatory'));
+check('Article 28 Annex IV input clarification exists',html.includes('Consumer disposal: Article 28(2)') &&
+ html.includes('P502/P503 alone may not satisfy the packaging requirement'));
 check('Article 28 renders complete candidate audit',html.includes('All eligible and non-selected candidates'));
 
 // Regression: three Article 28 surfaces must NOT use the 62px general H-code grid.
