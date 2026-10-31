@@ -157,7 +157,7 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
 {
  const r=choose(['H225'],{audience:'professional'});
  t('Expanded catalogue metadata indicates broad coverage',r.catalogueSize>=95);
- t('Annex IV source version recorded',r.annexIVVersion==='01.07.2026');
+ t('Annex IV source version tracked but legal cross-check still pending',r.annexIVVersion.includes('01.07.2026')&&r.annexIVVersion.includes('reconciliation'));
 }
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'P305 + P351 + P338'});
@@ -192,4 +192,59 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
  t('Article28 report includes audit',CLP.report(mixture,r).includes('ARTICLE 28 PRECAUTIONARY-STATEMENT AUDIT'));
  t('Article26 and Article27 still present',!!r.label.pictogramDecisions&&!!r.label.decisions);
 }
+{
+ const r=choose(['H319'],{audience:'professional',manualPExtra:'P305'});
+ t('Incomplete IF IN EYES P305 recognised but not proposed as standalone',r.candidates.some(x=>x.code==='P305'&&x.decision==='component only'));
+ t('Bare P305 triggers human review blocker',r.review.some(x=>x.code==='P305'&&x.severity==='blocker'));
+ t('Complete P305+P351+P338 remains available',!!cand(r,'P305+P351+P338'));
+}
+{
+ const r=choose(['H225'],{audience:'professional'});
+ t('Combined P370+P378 requires water risk condition',cand(r,'P370+P378')?.decision==='condition pending');
+ t('Routine flammable solvent P210 is eligible and shown',picked(r,'P210'));
+}
+{
+ const r=choose(['H302'],{audience:'professional'});
+ t('Oral toxicity hygiene P264 appears as supplier-specific conditional',cand(r,'P264')?.decision==='condition pending');
+ t('Oral toxicity P270 is a candidate',!!cand(r,'P270'));
+ t('Acute toxicity Cat 4 has P301+P312',!!cand(r,'P301+P312'));
+}
+{
+ const r=choose(['H315','H317'],{audience:'professional'});
+ t('Skin sensitisation and irritation P332+P313 redundancy handled',cand(r,'P332+P313')?.decision==='redundant');
+}
+{
+ const r=choose(['H220'],{audience:'industrial'});
+ t('Flammable gas P210 mapping implemented',!!cand(r,'P210'));
+ t('Flammable gas P377 gas fire response implemented',!!cand(r,'P377'));
+ t('Flammable gas P381 leakage response implemented',!!cand(r,'P381'));
+}
+{
+ const r=choose(['H260'],{audience:'professional'});
+ t('Water reactive P232',!!cand(r,'P232'));
+ t('Water reactive P402+P404',!!cand(r,'P402+P404'));
+}
+{
+ const r=choose(['H312'],{audience:'professional'});
+ t('Dermal Cat 4 protective equipment P280',!!cand(r,'P280'));
+ t('Dermal Cat 4 skin washing P302+P352',!!cand(r,'P302+P352'));
+}
+{
+ const r=choose(['H331'],{audience:'industrial'});
+ t('Acute inhalation Cat 3 P261',!!cand(r,'P261'));
+}
+{
+ const professional=choose(['H350'],{audience:'professional'});
+ const consumer=choose(['H350'],{audience:'consumer'});
+ t('Consumer CMR P201 conditional on audience',!cand(professional,'P201')&&!!cand(consumer,'P201'));
+}
+{
+ const professional=choose(['H200'],{audience:'professional'});
+ t('Unstable explosive P201 is not consumer-only',!!cand(professional,'P201'));
+}
+{
+ const r=choose(['H225'],{audience:'professional'});
+ t('Comprehensive Annex IV candidate code index includes components',r.catalogueSize>=125);
+}
+
 console.log('\n'+pass+' Article 28 tests passed, '+fail+' failed');process.exit(fail?1:0);
