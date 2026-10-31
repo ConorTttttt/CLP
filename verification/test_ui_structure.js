@@ -38,4 +38,17 @@ check('Article 27 label header clearly qualified', html.includes('H/EUH Article 
 check('Article 27 includes omission rationale', html.includes('d.reason') && html.includes('d.basis'));
 check('Quick pick preserves other manual category edits', html.includes('i.reproFert = reproOnly.reproFert') &&
   html.includes('i.reproDev = reproOnly.reproDev') && !html.includes('CLP.applyHCodes(i, (otherCodes'));
+for (const id of ['maudience','muse','mdisposal','mppe','mpextra','mpexclude','mpreason']) {
+  check('Article 28 setting field exists '+id, html.includes('id="'+id+'"'));
+}
+check('Article 28 settings map to mixture',html.includes('maudience: "audience"') &&
+  html.includes('mdisposal: "disposalDestination"') &&
+  html.includes('mpextra: "manualPExtra"'));
+check('Article 28 new JSON default is safe unknown audience',html.includes('audience: "unknown"'));
+check('Article 28 results panel exists',html.includes('Article 28 — precautionary-statement decisions'));
+check('Article 28 has legal-obligation rendering',html.includes('Legal obligation — '));
+check('Article 28 selected statements visible on label',html.includes('Draft P-statements — Article 28 (not final)'));
+check('Article 28 Annex IV input clarification exists',html.includes('not a claim that every candidate P-code is mandatory'));
+check('Article 28 renders complete candidate audit',html.includes('All eligible and non-selected candidates'));
+
 console.log(pass + ' UI source checks passed');
