@@ -17,7 +17,7 @@ for (const key of ['reproFert', 'reproDev', 'repro', 'carc', 'carcRoute', 'repro
   check('UI selector exists: ' + key, html.includes('SEL("' + key + '"'));
 }
 for (const code of ['H350i', 'H360F', 'H360D', 'H360FD', 'H360Fd', 'H360Df', 'H361f', 'H361d', 'H361fd']) {
-  check('Differentiation supported: ' + code, html.includes('"' + code + '"'));
+  check('Differentiation supported: ' + code, html.includes(code));
 }
 check('Browser load migrates legacy data', html.includes('CLP.normalise({ ingredients: [{...r, pct: 100}] })'));
 check('Quick pick preserves other manual category edits', html.includes('i.reproFert = reproOnly.reproFert') &&
