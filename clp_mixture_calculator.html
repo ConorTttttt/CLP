@@ -74,6 +74,31 @@ textarea{width:100%;min-height:90px}
 pre.rep{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;max-height:420px;overflow:auto}
 footer{padding:6px 20px 24px;color:var(--mute);font-size:12px}
 @media print{header .row,.banner,#inputs,details.ai,footer,.noprint{display:none!important}.wrap{display:block;padding:0}body{background:#fff;color:#000}.card{border-color:#999;break-inside:avoid}details.h:not([open])>*:not(summary){display:block}}
+
+/* Official GHS pictogram images */
+.ghs-pictogram {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 8px;
+}
+
+@media print {
+    .ghs-pictogram {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+
+/* Correct GHS05 pictogram orientation */
+img[src$="GHS05.svg"] {
+    
+
+    transform: rotate(-45deg) scale(0.85);
+}
+
 </style>
 </head>
 <body>
@@ -1058,7 +1083,17 @@ function renderResult(r) {
     ? r.outcomes.map((o) => `<div class="hrow"><code>${esc(o.h.join(", ") || "–")}</code><div><b>${esc(o.label)}</b>${o.omitOnLabel ? ' <small>(may be omitted on label)</small>' : ""}${o.ate ? ` <small>ATEmix ${esc(CLP.fmt(o.ate))}</small>` : ""}<br><small>${esc(o.hazard)}${o.signal ? " · " + esc(o.signal) : ""}${o.picto.length ? " · " + esc(o.picto.join(", ")) : ""}</small></div></div>`).join("")
     : '<div class="hint">Not classified in any hazard class covered by the calculator.</div>';
   L.push(`<div class="card"><h2>Classification of the mixture</h2>${cls}</div>`);
-  const pics = L0.pictograms.map((p) => `<div class="pic" title="${esc(p.from.join(", "))}"><div class="dia"><b>${esc(p.code.replace("GHS", ""))}</b></div>${esc(p.code)}<br>${esc(p.name)}</div>`).join("");
+  const pics = L0.pictograms.map((p) => `
+  <div class="pic" title="${esc(p.from.join(", "))}">
+    <img
+      src="pictograms/${esc(p.code)}.svg"
+      alt="${esc(p.name)}"
+      class="ghs-pictogram"
+    >
+    <div>${esc(p.code)}</div>
+    <small>${esc(p.name)}</small>
+  </div>
+`).join("");
   L.push(`<div class="card"><h2>Label elements (as triggered)</h2>
     <div>Signal word: ${L0.signal ? `<span class="sig ${L0.signal}">${esc(L0.signal)}</span>` : '<span class="hint">none</span>'}</div>
     <div class="pics">${pics || '<span class="hint">No pictograms</span>'}</div>
