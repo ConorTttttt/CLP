@@ -1209,7 +1209,15 @@ function onIngInput(e) {
   if (p === "reproQuick") {
     if (!v) return;
     const otherCodes = String(i.hcodes || "").replace(/\bH36[01][A-Za-z]*\b/gi, " ").replace(/\s+/g, " ").trim();
-    const applied = CLP.applyHCodes(i, (otherCodes + " " + v).trim());
+    // Reparse reproductive fields without resetting manually reviewed unrelated hazards.
+    const revisedCodes = (otherCodes + " " + v).trim();
+    const reproOnly = CLP.blankIngredient();
+    const applied = CLP.applyHCodes(reproOnly, revisedCodes);
+    i.repro = reproOnly.repro;
+    i.reproFert = reproOnly.reproFert;
+    i.reproDev = reproOnly.reproDev;
+    i.hcodes = revisedCodes;
+    i.hcodeDetails = CLP.parseHCodeTokens(revisedCodes).codes;
     const codeInput = document.querySelector(`tr[data-id="${id}"] input[data-p="hcodes"]`);
     if (codeInput) codeInput.value = i.hcodes;
     $("parsenotes").innerHTML = applied.notes.length ? `<div class="alert"><b>${esc(i.name || "Ingredient")}:</b> ${applied.notes.map(esc).join(" ")}</div>` : "";
