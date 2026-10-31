@@ -29,6 +29,23 @@ Before this update, `result.label.pictograms` was simply a sorted collection of 
 - The explicit Type B physical hazard exception is protected where the manual classification identifies Self-reactive Type B or Organic Peroxide Type B. Since the application does not independently classify most physical hazards, manual physical entries must be reviewed to exclude exceptions and confirm category severity.
 - The result is a **draft label-element selection**, not a substitute for a complete CLP labelling assessment.
 
+## H314/H319 explanation — important distinction
+
+- **Both H314 and H319 assigned to the mixture:** H314 requires GHS05. If Eye Irrit. 2 (H319)
+  separately triggers GHS07, its **GHS07 contribution is omitted** under Article 26(1)(c).
+  The Article 26 panel calls this out with the exact H314 and H319 codes, and retains
+  the underlying classifications. The text report also records the decision.
+- **H319 appears only in an ingredient:** H319 does **not** necessarily become an H319
+  classification of the mixture. If the mixture instead has Skin Corr. 1 (H314) and
+  Eye Dam. 1 (H318), only GHS05 is triggered. The Article 26 panel explicitly states
+  that **no GHS07 omission took place**, rather than inaccurately claiming it was
+  removed by precedence. The mixture calculation trail shows the actual outcome.
+- **Other GHS07 hazard remains:** If H314/H319 plus an unrelated hazard such as Acute
+  Tox. 4 (H302) requires GHS07, the eye-irritation **contribution** is omitted but
+  the GHS07 pictogram remains on the proposed label for the unrelated hazard.
+- **Article 27 independence:** Whether H319 is displayed as a hazard **statement**
+  is a distinct Article 27 question. Article 26 affects only the pictogram.
+
 ## UI behaviour
 
 The main **Label elements** panel now shows only the selected Article 26 pictograms. An **Article 26 — pictogram decisions** panel follows it, providing:
@@ -76,7 +93,7 @@ node verification/test_article26.js
 node verification/test_ui_structure.js
 ```
 
-The specific Article 26 suite covers the rules, exceptions, mixed-hazard GHS07 triggers, default-versus-optional behaviour, preservation of classifications, generated audit and report. The UI suite verifies source integration and syntax. **The UI suite is not an interactive browser test.**
+The specific Article 26 suite also distinguishes H314/H319 mixture classification from ingredient-only H319 and confirms that the UI report provides the precise reason. It covers the rules, exceptions, mixed-hazard GHS07 triggers, default-versus-optional behaviour, preservation of classifications, generated audit and report. The UI suite verifies source integration and syntax. **The UI suite is not an interactive browser test.**
 
 ## Regulatory sources
 
