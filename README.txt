@@ -14,7 +14,7 @@ and shows every calculation step with the Annex I table/page reference:
 - Aquatic acute / chronic summation with M-factors
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
-- Label summary: signal word, triggered pictograms, Article 27-selected H/EUH statements with an omission audit, SDS-on-request triggers
+- Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, SDS-on-request triggers
 
 HOW TO USE
 1. Enter mixture data (flash point, IBP, viscosity at 40 C, pH where known).
@@ -28,7 +28,7 @@ HOW TO USE
    An H360* code initially sets Category 1B; select 1A instead where substantiated by source data.
    Carcinogenicity has a separate source-route selector (H350i), but does not assign the
    inhalation-only statement to the mixture without substantiating route-specific evidence.
-4. Read the full classification, selected H/EUH label elements, and the Article 27 statement audit (retained/omitted and reason). Pictograms are currently shown as triggered and require Article 26 review. Save as JSON, print, or copy the report.
+4. Read the full classification, Article 26-selected pictograms and their audit (retained/omitted and contributing classifications), and the Article 27 H/EUH audit. Optional Article 26 physical-pictogram omissions can be enabled in the Mixture panel; mandatory GHS07 precedence is always enforced. Save as JSON, print, or copy the report.
 Click "Load example" for a worked degreaser.
 
 OPTIONAL GEMINI (Gemini panel at the bottom left)
@@ -39,7 +39,7 @@ The classification is always computed locally; Gemini never changes it.
 NOT MODELLED (do these yourself)
 Bridging principles; tested-mixture data (use "Manual classifications"); aquatic additivity formula for
 tested ingredients; SCLs for skin/eye/acute toxicity; physical hazards other than flammable liquids;
-Article 26 pictogram precedence, Article 28 P-statement selection, and additional case-specific Article 27 redundancy decisions. Four explicit Annex III Article 27 omissions are implemented and tested.
+Article 26(2) severity for unverified manual classifications, Article 28 P-statement selection, and additional case-specific Article 27 redundancy decisions. Four explicit Annex III Article 27 omissions are implemented and tested.
 H-codes only give default categories (H300 -> Cat 1, H314 -> Skin Corr. 1 etc.): set sub-categories yourself.
 The parser preserves differentiated ingredient codes (H350i, H360F/D/FD/Fd/Df and H361f/d/fd)
 in hcodeDetails and rejects ambiguous suffixes. Fertility and developmental endpoints are evaluated
@@ -55,8 +55,9 @@ reviewed category fields intact.
 VERIFICATION
 Run from repository root:
   node verification/test_engine.js
+  node verification/test_article26.js
   node verification/test_ui_structure.js
-The engine suite currently has 221 checks. UI structure checks verify that the HTML scripts compile,
+The original engine suite currently has 221 checks; the additional Article 26-specific suite has 36 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -79,9 +80,34 @@ retain every triggered H/EUH statement on the proposed label. This preference is
 The system flags some additional potential redundancies for expert review without automatically
 removing them (including EUH071/H335, H314/H319 and generic/differentiated H360).
 Article 27 is not a blanket instruction to suppress every related or weaker H-code.
-Article 26 pictograms, Article 28 P statements, optional combined Annex III phrases, and
+Article 26 pictograms are applied separately with an audit. Article 28 P statements, optional combined Annex III phrases, and
 other case-specific redundancy decisions require a separate regulatory review.
 Source: Regulation (EC) 1272/2008 Article 27 and Annex III Part 1, as amended by
 Commission Delegated Regulation (EU) 2023/707 Annex III.
 
 Regulatory rule details and references: docs/article_27_hazard_statement_precedence.md
+
+ARTICLE 26 — PICTOGRAM DECISIONS
+Previously all triggered pictograms were displayed; Article 26 was only mentioned in a note.
+The calculator now determines selected pictograms from underlying classified-hazard contributions.
+It preserves the full mixture classification and stores the originally triggered pictograms for audit.
+Mandatory and conditional rules:
+  26(1)(b) GHS06 present -> GHS07 must not appear.
+  26(1)(c) GHS05 present -> suppress only GHS07 contributions from skin/eye irritation.
+  26(1)(d) GHS08 required for respiratory sensitisation -> suppress only GHS07 contributions
+           from skin sensitisation and skin/eye irritation.
+  If GHS07 is still required for e.g. Acute Tox. 4, STOT SE 3 or ozone, it remains visible.
+Optional physical rules, OFF by default:
+  26(1)(a) GHS01 present -> GHS02 and GHS03 may be omitted; do not omit mandatory
+           GHS02 in Self-reactive Type B or Organic Peroxide Type B cases.
+  26(1)(e) GHS02 or GHS06 present -> GHS04 may be omitted.
+The user can turn on optional physical omission in the Mixture panel. Manual physical hazard
+entries are not validated by this tool; check the Type B exception and Article 26(2) most-severe
+category requirements against actual physical test data before approving the final pictograms.
+The Article 26 audit lists retained/omitted pictograms and the individual hazard contributions
+with the legal basis for each decision.
+Output: result.label.pictograms (selected), triggeredPictograms (original), omittedPictograms,
+pictogramDecisions (including per-hazard contributions), pictogramReview (manual review cases),
+omitOptionalPictograms (user preference). Article 27 label fields remain unchanged.
+Source: Regulation (EC) No 1272/2008, Article 26(1)(a)-(e) and 26(2).
+Detailed reference: docs/article_26_pictogram_precedence.md
