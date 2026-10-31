@@ -7,7 +7,7 @@ function check(name,fn){try{fn();passed++}catch(e){throw Error(name+": "+e.messa
 function section(a,b){const i=source.indexOf(a),j=source.indexOf(b,i);assert(i>=0&&j>i,a);return source.slice(i,j)}
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const makeEditor=()=>{
- const openState=new Map(),code=section("const SEL = ","\nfunction summaryChips(i)");
+ const openState=new Map(),code=section("const SEL = ","\nconst HAZARD_PHYSICAL=");
  return {openState,...new Function("esc","detailPanels",code+"\nreturn {detailHTML};")(esc,openState)};
 };
 function ing(id,override={}){
