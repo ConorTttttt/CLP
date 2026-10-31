@@ -275,7 +275,7 @@ img[src$="GHS05.svg"] {
   /* ---------------- H-code parser ---------------- */
   function blankIngredient() {
     return {
-      name: '', cas: '', pct: '', hcodes: '',
+      name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [],
       acute: { oral: { cat: '', ate: '' }, dermal: { cat: '', ate: '' }, inh: { form: 'vapour', cat: '', ate: '' }, unknown: false },
       skinCorr: '', eye: '', nonAdditive: false,
       skinSens: '', respSens: '', muta: '', carc: '', repro: '', lact: false,
@@ -289,19 +289,75 @@ img[src$="GHS05.svg"] {
   const CLEAR_KEYS = ['skinCorr', 'eye', 'skinSens', 'respSens', 'muta', 'carc', 'repro', 'stotSE', 'stotRE', 'aquaChronic', 'edHH', 'edEnv'];
   const CLEAR_BOOL = ['lact', 'stotSEresp', 'stotSEnarc', 'asp', 'aquaAcute', 'pbt', 'vpvb', 'pmt', 'vpvm', 'ozone'];
 
-  /* Applies H/EUH codes to an ingredient (mutates). Returns {notes:[]} */
+  /* Annex VI 1.1.2.1.2 differentiations are CASE-SENSITIVE, notably H360FD/Fd/Df.
+     This is source-ingredient metadata; mixture H-statement selection is a separate step. */
+  const REPRO_DIFFERENTIATIONS = {
+    H360F:  [1, null], H360D:  [null, 1], H360FD: [1, 1],
+    H360Fd: [1, 2],    H360Df: [2, 1],
+    H361f:  [2, null], H361d:  [null, 2], H361fd: [2, 2]
+  };
+
+  function canonicalHCode(raw) {
+    const m = String(raw).replace(/\s/g, '').match(/^(EUH|H)(\d{3})([A-Za-z]*)$/i);
+    if (!m) return null;
+    const base = m[1].toUpperCase() + m[2], suffix = m[3];
+    if (base === 'H350') return !suffix ? base : suffix.toLowerCase() === 'i' ? 'H350i' : null;
+    if (base === 'H360') {
+      if (!suffix) return base;
+      if (suffix.length === 1 && /^[FD]$/i.test(suffix)) return base + suffix.toUpperCase();
+      // Do not guess from "H360fd": FD vs Fd mean different things.
+      const candidate = base + suffix;
+      return Object.prototype.hasOwnProperty.call(REPRO_DIFFERENTIATIONS, candidate) ? candidate : null;
+    }
+    if (base === 'H361') {
+      if (!suffix) return base;
+      const candidate = base + suffix.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(REPRO_DIFFERENTIATIONS, candidate) ? candidate : null;
+    }
+    return suffix ? null : base;
+  }
+
+  /* Does not alter classification fields; can safely derive metadata for older JSON saves. */
+  function parseHCodeTokens(text) {
+    const tokens = String(text || '').match(/\b(?:EUH|H)\s*\d{3}[A-Za-z]*\b/gi) || [];
+    const codes = [], invalid = [], seen = new Set();
+    tokens.forEach((token) => {
+      const canonical = canonicalHCode(token);
+      if (!canonical) { invalid.push(token.replace(/\s/g, '')); return; }
+      if (seen.has(canonical)) return;
+      seen.add(canonical);
+      const base = canonical.replace(/^(EUH|H)(\d{3}).*$/, '$1$2');
+      const suffix = canonical.slice(base.length);
+      const effects = REPRO_DIFFERENTIATIONS[canonical] || [null, null];
+      codes.push({
+        code: canonical, base, suffix,
+        route: canonical === 'H350i' ? 'inhalation' : null,
+        fertility: effects[0], development: effects[1]
+      });
+    });
+    return { codes, invalid };
+  }
+
+  /* Applies ingredient H/EUH codes (mutates classifications). Returns {notes, codes, invalid}.
+     Input H-codes alone do not identify all subcategories, ATEs or route-specific details. */
   function applyHCodes(ing, text) {
     const notes = [];
     CLEAR_KEYS.forEach((k) => (ing[k] = ''));
     CLEAR_BOOL.forEach((k) => (ing[k] = false));
     ing.acute.oral.cat = ''; ing.acute.dermal.cat = ''; ing.acute.inh.cat = '';
     ing.hcodes = text || '';
-    const codes = (String(text || '').toUpperCase().match(/(?:EUH|H)\s?\d{3}[A-Z]{0,3}/g) || []).map((c) => c.replace(/\s/g, ''));
-    const seen = new Set();
+    const parsed = parseHCodeTokens(text);
+    ing.hcodeDetails = parsed.codes;
+    parsed.invalid.forEach((c) => notes.push(c + ': invalid or ambiguous H/EUH suffix; check the exact code and letter case. Not used for classification.'));
+    if (!parsed.codes.length && String(text || '').trim() && !parsed.invalid.length)
+      notes.push('No H/EUH codes recognised. Check the input format.');
+    // Once set, a more severe CMR category must not be overwritten by a later code.
+    const setCMR = (field, cat) => {
+      const rank = { '2': 1, '1B': 2, '1A': 3 };
+      if (!ing[field] || rank[cat] > rank[ing[field]]) ing[field] = cat;
+    };
     const setChronic = (c) => { if (!ing.aquaChronic || c < ing.aquaChronic) ing.aquaChronic = c; };
-    codes.forEach((raw) => {
-      const base = raw.replace(/^(EUH|H)(\d{3}).*$/, '$1$2');
-      if (seen.has(base)) return; seen.add(base);
+    parsed.codes.forEach(({ code, base, suffix }) => {
       switch (base) {
         case 'H300': ing.acute.oral.cat = '1'; notes.push('H300 read as Acute Tox. 1 (oral) – change to Category 2 if applicable.'); break;
         case 'H301': ing.acute.oral.cat = '3'; break;
@@ -320,12 +376,25 @@ img[src$="GHS05.svg"] {
         case 'H334': ing.respSens = '1'; break;
         case 'H335': ing.stotSE = ing.stotSE && ing.stotSE !== '3' ? ing.stotSE : '3'; ing.stotSEresp = true; break;
         case 'H336': ing.stotSE = ing.stotSE && ing.stotSE !== '3' ? ing.stotSE : '3'; ing.stotSEnarc = true; break;
-        case 'H340': ing.muta = '1B'; notes.push('H340 read as Muta. 1B – set 1A if applicable (same concentration limit).'); break;
-        case 'H341': ing.muta = '2'; break;
-        case 'H350': ing.carc = '1B'; notes.push('H350 read as Carc. 1B – set 1A if applicable (same concentration limit).'); break;
-        case 'H351': ing.carc = '2'; break;
-        case 'H360': ing.repro = '1B'; notes.push('H360 read as Repr. 1B – set 1A if applicable (same concentration limit).'); break;
-        case 'H361': ing.repro = '2'; break;
+        case 'H340': setCMR('muta', '1B'); notes.push('H340 read as Muta. 1B – set 1A if applicable (same concentration limit).'); break;
+        case 'H341': setCMR('muta', '2'); break;
+        case 'H350':
+          setCMR('carc', '1B');
+          notes.push(code === 'H350i'
+            ? 'H350i: inhalation-specific carcinogenicity preserved in hcodeDetails; verify the exposure route and final mixture hazard-statement wording.'
+            : 'H350 read as Carc. 1B – set 1A if applicable (same concentration limit).');
+          break;
+        case 'H351': setCMR('carc', '2'); break;
+        case 'H360':
+          setCMR('repro', '1B');
+          notes.push((suffix ? code : 'H360') + ': reproductive-effect differentiation ' +
+            (suffix ? 'retained in hcodeDetails' : 'unspecified') +
+            '; mixture-specific fertility/development statement selection requires review. Set Category 1A if applicable.');
+          break;
+        case 'H361':
+          setCMR('repro', '2');
+          if (suffix) notes.push(code + ': reproductive-effect differentiation retained in hcodeDetails; review the mixture statement wording.');
+          break;
         case 'H362': ing.lact = true; break;
         case 'H370': ing.stotSE = '1'; break;
         case 'H371': if (ing.stotSE !== '1') ing.stotSE = '2'; break;
@@ -347,12 +416,12 @@ img[src$="GHS05.svg"] {
         case 'EUH450': ing.pmt = true; break;
         case 'EUH451': ing.vpvm = true; break;
         default:
-          if (/^H2\d\d$/.test(base) || /^H22\d$/.test(base)) notes.push(base + ': physical hazards of the MIXTURE come from test data – ignored for the ingredient calculation.');
-          else if (!/^EUH/.test(base)) notes.push(base + ' is not used in ingredient-based mixture classification (ignored).');
+          if (/^H2\d\d$/.test(base)) notes.push(code + ': physical hazards of the MIXTURE come from test data – ignored for the ingredient calculation.');
+          else if (!/^EUH/.test(base)) notes.push(code + ' is not used in ingredient-based mixture classification (ignored).');
       }
     });
     if (ing.aquaChronic === '1' && !ing.aquaAcute) { /* H410 often accompanied by H400; leave to user */ }
-    return { notes };
+    return { notes, codes: parsed.codes, invalid: parsed.invalid };
   }
 
   /* ---------------- helpers for result objects ---------------- */
@@ -767,6 +836,8 @@ img[src$="GHS05.svg"] {
       ['oral', 'dermal', 'inh'].forEach((r) => (i.acute[r] = Object.assign({}, blankIngredient().acute[r], (raw.acute || {})[r] || {})));
       i.scl = Object.assign({}, raw.scl || {});
       i.pct = num(raw.pct);
+      // Re-derive source H-code differentiations without overwriting manual category edits.
+      i.hcodeDetails = parseHCodeTokens(i.hcodes).codes;
       return i;
     }).filter((i) => {
       if (!has(i.pct) || i.pct <= 0) { if ((i.name || '').trim() || i.pct === 0) warnings.push(`Ingredient "${nm(i)}" has no concentration > 0 and is ignored.`); return false; }
@@ -812,6 +883,8 @@ img[src$="GHS05.svg"] {
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
     const notes = [];
+    if (ings.some((i) => i.hcodeDetails.some((d) => d.suffix)))
+      notes.push('Differentiated ingredient H-codes (e.g. H350i, H360F/H360D/H360Fd/H360Df or H361fd) were retained. The current mixture H350/H360/H361 wording is generic; review effect- and route-specific label wording before release.');
     if (pict.GHS07 && (pict.GHS05 || pict.GHS06 || pict.GHS08))
       notes.push('Pictogram precedence (CLP Art. 26 – not in the supplied package): where GHS05, GHS06 or GHS08 apply, GHS07 may be omitted for certain classes (e.g. skin/eye irritation, acute toxicity Cat. 4). Check the Article before dropping GHS07.');
     notes.push('Signal word: "Danger" takes precedence over "Warning" (CLP Art. 20 – not in the supplied package). Hazard-statement precedence/duplication rules (Art. 27) and precautionary-statement selection (Art. 28) are not applied.');
@@ -858,6 +931,8 @@ img[src$="GHS05.svg"] {
       if (i.edHH) c.push('ED HH ' + i.edHH); if (i.edEnv) c.push('ED ENV ' + i.edEnv);
       ['pbt', 'vpvb', 'pmt', 'vpvm', 'ozone'].forEach((f) => { if (i[f]) c.push({ pbt: 'PBT', vpvb: 'vPvB', pmt: 'PMT', vpvm: 'vPvM', ozone: 'Ozone 1' }[f]); });
       const scl = Object.entries(i.scl).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([k2, v]) => `SCL ${k2} ${v} %`);
+      const differentiated = (i.hcodeDetails || []).filter((d) => d.suffix).map((d) => d.code);
+      if (differentiated.length) c.push('source H differentiations: ' + differentiated.join(', '));
       L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl).join('; ') || 'not classified'}`);
     });
     L.push('', `RESULT – classification of the mixture:`);
@@ -885,7 +960,7 @@ img[src$="GHS05.svg"] {
     return t;
   }
 
-  return { classify, report, applyHCodes, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
+  return { classify, report, applyHCodes, parseHCodeTokens, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
 });
 
 </script>
