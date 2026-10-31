@@ -2384,8 +2384,10 @@ function chooseIngredientHazard(input,code){
 }
 
 function rememberHazardPanelStates(){
+  const currentIds=new Set(mix.ingredients.map(i=>i._id));
   $("ings").querySelectorAll("details[data-hazard-panel]").forEach(panel=>{
     const id=Number(panel.dataset.id);
+    if(!currentIds.has(id)){hazardPanelsOpen.delete(id);return;}
     if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
   });
 }
