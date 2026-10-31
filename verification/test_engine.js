@@ -307,7 +307,59 @@ t('FP not entered -> nodata', fl('', '').nodata.length === 1);
   t('legacy differentiated JSON migrated in classification', (()=>{const old={...mk(1,'H360F'),repro:'1A'};delete old.reproFert;delete old.reproDev;const i=CLP.normalise({ingredients:[old]}).ings[0];return i.reproFert==='1A'&&i.repro===''})());
 }
 
-/* ---------- 16. robustness ---------- */
+/* ---------- 16. Article 27 hazard-statement precedence ---------- */
+{
+  const testCase = (codes) => {
+    const all = codes.map((code) => ({ code, text: code + ' statement', from: 'manual test' }));
+    return CLP.selectArticle27(all.filter((x) => !x.code.startsWith('EUH')),
+      all.filter((x) => x.code.startsWith('EUH')));
+  };
+  const cases = [
+    ['H410','H400'], ['H314','H318'], ['EUH441','EUH440'], ['EUH451','EUH450']
+  ];
+  cases.forEach(([dominant, weaker]) => {
+    const x = testCase([weaker, dominant]);
+    t('Art27 omit '+weaker+' when '+dominant, !x.hazardStatements.concat(x.euhStatements).some((s)=>s.code===weaker) &&
+      x.omittedHazardStatements.concat(x.omittedEuhStatements).some((s)=>s.code===weaker && s.overriddenBy===dominant));
+    t('Art27 retain dominant '+dominant, x.hazardStatements.concat(x.euhStatements).some((s)=>s.code===dominant));
+    t('Art27 decision justification '+weaker, x.decisions.some((d)=>d.code===weaker&&d.basis.includes('Annex III')&&d.reason));
+    t('Art27 still has triggered '+weaker, x.triggeredHazardStatements.concat(x.triggeredEuhStatements).some((s)=>s.code===weaker));
+    t('Art27 do not remove without dominant '+weaker, testCase([weaker]).hazardStatements.concat(testCase([weaker]).euhStatements).some((s)=>s.code===weaker));
+  });
+  const retain = testCase(['H302','H312','H315','H317','H400','H411']);
+  t('Art27 unrelated/other codes are retained', retain.hazardStatements.length===6 && retain.omittedHazardStatements.length===0);
+  t('Art27 no unsupported H400-H411 suppression', retain.hazardStatements.some((s)=>s.code==='H400'));
+  const review = testCase(['EUH071','H335','H314','H319']);
+  t('Art27 potential EUH071/H335 overlap review only', review.review.some((r)=>r.codes.includes('EUH071')) && review.hazardStatements.some((x)=>x.code==='H335'));
+  t('Art27 H314/H319 review only', review.review.some((r)=>r.codes.includes('H319')) && review.hazardStatements.some((x)=>x.code==='H319'));
+  const combined = testCase(['H410','H400','EUH441','EUH440','EUH451','EUH450','H314','H318']);
+  t('Art27 four omissions in combined case', combined.omittedHazardStatements.length===2 && combined.omittedEuhStatements.length===2);
+  t('Art27 preserves caller inputs', (()=>{const src=[{code:'H400',text:'source'}];testCase(['H410','H400']);CLP.selectArticle27(src,[{code:'EUH441'}]);return src.length===1&&src[0].text==='source'})());
+  t('Art27 duplicate EUH208 messages retained', testCase(['EUH208','EUH208']).euhStatements.length===2);
+  const aq = CLP.blankIngredient();aq.name='Aquatic';aq.pct=100;aq.aquaAcute=true;aq.aquaChronic='1';
+  const aqMix=run([aq]);
+  t('Article 27 aquatic classification unchanged', has(aqMix,'Aquatic Acute 1') && has(aqMix,'Aquatic Chronic 1'));
+  t('Article 27 aquatic report has triggered H400 and selected H410',
+    aqMix.label.triggeredHazardStatements.some((h)=>h.code==='H400') && aqMix.label.hazardStatements.some((h)=>h.code==='H410') &&
+    !aqMix.label.hazardStatements.some((h)=>h.code==='H400'));
+  const corr=CLP.blankIngredient();corr.name='Corrosive';corr.pct=100;corr.skinCorr='1';corr.eye='1';
+  const corrMix=run([corr]);
+  t('Article 27 skin-eye classifications remain', has(corrMix,'Skin Corr. 1')&&has(corrMix,'Eye Dam. 1'));
+  t('Article 27 H314 retains and H318 omitted in label',
+    corrMix.label.hazardStatements.some((x)=>x.code==='H314') &&
+    corrMix.label.omittedHazardStatements.some((x)=>x.code==='H318'));
+  t('Article 27 report includes reason', CLP.report({ingredients:[aq]},aqMix).includes('ARTICLE 27 H/EUH STATEMENT AUDIT:') &&
+    CLP.report({ingredients:[aq]},aqMix).includes('covered by H410'));
+  const pbt=CLP.blankIngredient();pbt.name='Persistent';pbt.pct=100;pbt.pbt=true;pbt.vpvb=true;pbt.pmt=true;pbt.vpvm=true;
+  const pm=run([pbt]);
+  t('Article 27 EUH new classes retained as classifications', has(pm,'PBT')&&has(pm,'vPvB')&&has(pm,'PMT')&&has(pm,'vPvM'));
+  t('Article 27 EUH suppression only on label', pm.label.euhStatements.some((x)=>x.code==='EUH441') &&
+    pm.label.euhStatements.some((x)=>x.code==='EUH451') &&
+    pm.label.omittedEuhStatements.some((x)=>x.code==='EUH440') &&
+    pm.label.omittedEuhStatements.some((x)=>x.code==='EUH450'));
+}
+
+/* ---------- 17. robustness ---------- */
 t('empty mixture ok', (() => { const r = CLP.classify({ ingredients: [] }); return r.outcomes.length === 0 && r.warnings.length > 0; })());
 t('sum warning', run([ing(50, 'H315')]).warnings.some((w) => /add up to 50/.test(w)));
 t('comma decimals', has(run([ing('1,0', null, { skinSens: '1' }), water(99)]), 'Skin Sens. 1'));
