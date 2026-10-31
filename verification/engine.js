@@ -407,8 +407,7 @@
     if (eCat === '1') { E.status = 'classified'; E.outcomes.push(out('Eye Dam. 1', ['H318'], 'Danger', ['GHS05'])); }
     else if (eCat === '2') { E.status = 'classified'; E.outcomes.push(out('Eye Irrit. 2', ['H319'], 'Warning', ['GHS07'])); }
     if (S.status === 'classified' && S.outcomes[0].label.startsWith('Skin Corr') && E.outcomes.length) {
-      E.outcomes[0].omitOnLabel = true;
-      E.notes.push('Table 3.3.5 footnote (a): where the mixture is classified Skin Corr. 1/1A/1B/1C, labelling for serious eye damage/eye irritation can be omitted because H314 already covers it. The label summary omits it.');
+      E.notes.push('Skin corrosion and eye classification both retained. Article 27 label selection will separately assess H314/H318 redundancy; H319 requires case-specific review.');
     }
     return [S, E];
   }
@@ -695,6 +694,58 @@
     return list;
   }
 
+  /* Article 27 / Annex III Part 1: optional hazard-statement redundancy rules.
+     This is a LABEL decision only; it must not modify classification or source statements.
+     Explicit cases in Annex III Part 1 (including Regulation EU 2023/707 Annex III):
+       H410 > H400; H314 > H318; EUH441 > EUH440; EUH451 > EUH450.
+     Other potential duplications are surfaced for review, not silently deleted. */
+  const ARTICLE27_RULES = Object.freeze([
+    { keep: 'H410', omit: 'H400', basis: 'CLP Annex III Part 1(a)', reason: 'H410 covers the aquatic acute wording of H400 and adds long-lasting effects.' },
+    { keep: 'H314', omit: 'H318', basis: 'CLP Annex III Part 1(b)', reason: 'H314 includes severe eye damage in addition to skin burns.' },
+    { keep: 'EUH441', omit: 'EUH440', basis: 'CLP Annex III Part 1(c), Regulation (EU) 2023/707', reason: 'The stronger vPvB accumulation statement covers the PBT accumulation statement.' },
+    { keep: 'EUH451', omit: 'EUH450', basis: 'CLP Annex III Part 1(d), Regulation (EU) 2023/707', reason: 'The stronger vPvM water-contamination statement covers the PMT statement.' }
+  ]);
+
+  function selectArticle27(hazardStatements, euhStatements, options) {
+    const omitOptional = !options || options.omitOptional !== false;
+    const hazard = (hazardStatements || []).map((x) => Object.assign({}, x));
+    const euh = (euhStatements || []).map((x) => Object.assign({}, x));
+    const all = hazard.concat(euh);
+    const present = new Set(all.map((x) => x.code));
+    const decisions = [], omitted = [], selectedHazard = [], selectedEuh = [];
+    all.forEach((entry) => {
+      const availableRule = ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
+      const rule = omitOptional ? availableRule : null;
+      const decision = Object.assign({}, entry, {
+        decision: rule ? 'omitted' : 'retained',
+        reason: rule ? rule.reason : availableRule && !omitOptional
+          ? 'User elected to retain this statement despite the optional Annex III omission permitted when ' + availableRule.keep + ' is assigned.'
+          : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
+        basis: availableRule ? availableRule.basis : 'CLP Article 27',
+        overriddenBy: rule ? rule.keep : null,
+        optionalOmissionAvailable: !rule && !!availableRule
+      });
+      decisions.push(decision);
+      if (rule) omitted.push(decision);
+      else if (entry.code.startsWith('EUH')) selectedEuh.push(entry);
+      else selectedHazard.push(entry);
+    });
+    const review = [];
+    if (present.has('H335') && present.has('EUH071'))
+      review.push({ codes: ['H335', 'EUH071'], basis: 'CLP Article 27, case-specific redundancy', reason: 'EUH071 (corrosive to the respiratory tract) may make H335 redundant. Check the context and supporting guidance before omitting H335.' });
+    if (present.has('H314') && present.has('H319'))
+      review.push({ codes: ['H314', 'H319'], basis: 'CLP Article 27, case-specific redundancy', reason: 'H314 and H319 are both present. Check the mixture classification and whether the H319 wording is redundant; no automatic omission applied.' });
+    if (present.has('H360') && all.some((x) => /^H360(?:F|D)/.test(x.code)))
+      review.push({ codes: ['H360', 'differentiated H360'], basis: 'CLP Article 27, case-specific redundancy', reason: 'Generic and differentiated reproductive hazard statements are present. Assess effect overlap before final label release; none was automatically removed.' });
+    return {
+      hazardStatements: selectedHazard, euhStatements: selectedEuh,
+      triggeredHazardStatements: hazard, triggeredEuhStatements: euh,
+      omittedHazardStatements: omitted.filter((x) => !x.code.startsWith('EUH')),
+      omittedEuhStatements: omitted.filter((x) => x.code.startsWith('EUH')),
+      decisions, review, omitOptional
+    };
+  }
+
   /* ---------------- main ---------------- */
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
@@ -763,6 +814,11 @@
     const hs = [];
     const seen = new Set();
     outcomes.filter((o) => !o.omitOnLabel).forEach((o) => o.h.forEach((c) => { if (!seen.has(c)) { seen.add(c); hs.push({ code: c, text: HTEXT[c] || '', from: o.label }); } else { const e = hs.find((x) => x.code === c); if (e && !e.from.includes(o.label)) e.from += ', ' + o.label; } }));
+    const art27 = selectArticle27(
+      hs.filter((x) => !/^EUH/.test(x.code)),
+      [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))],
+      { omitOptional: m.article27Mode !== 'keepAll' }
+    );
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
@@ -771,7 +827,8 @@
       notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
     if (pict.GHS07 && (pict.GHS05 || pict.GHS06 || pict.GHS08))
       notes.push('Pictogram precedence (CLP Art. 26 – not in the supplied package): where GHS05, GHS06 or GHS08 apply, GHS07 may be omitted for certain classes (e.g. skin/eye irritation, acute toxicity Cat. 4). Check the Article before dropping GHS07.');
-    notes.push('Signal word: "Danger" takes precedence over "Warning" (CLP Art. 20 – not in the supplied package). Hazard-statement precedence/duplication rules (Art. 27) and precautionary-statement selection (Art. 28) are not applied.');
+    notes.push('Label H/EUH selection: the four explicitly permitted Annex III Part 1 Article 27 omissions are applied, with a complete audit of triggered, retained and omitted statements. Other redundant statements require expert review. Pictogram precedence (Art. 26) and P-statement selection (Art. 28) remain outstanding.');
+    if (art27.review.length) notes.push('Article 27 case-specific statement review required: ' + art27.review.map((x) => x.codes.join(' / ')).join('; ') + '.');
     if (outcomes.some((o) => ['ED HH 1', 'ED HH 2', 'ED ENV 1', 'ED ENV 2', 'PBT', 'vPvB', 'PMT', 'vPvM'].includes(o.label)))
       notes.push('New hazard classes: mixtures placed on the market before 1 May 2026 need not be classified/labelled for these classes until 1 May 2028 (3.11.3.4, 4.2.3.4, 4.3.3.2, 4.4.3.2).');
     return {
@@ -779,8 +836,7 @@
       label: {
         signal: hasDanger ? 'Danger' : hasWarn ? 'Warning' : null,
         pictograms: Object.keys(pict).sort().map((c) => ({ code: c, name: PICTO[c], from: pict[c] })),
-        hazardStatements: hs.filter((x) => !/^EUH/.test(x.code)),
-        euhStatements: [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((e) => ({ code: e.code, text: e.text, from: e.why }))],
+        ...art27,
         supplemental: ctx.supplemental
       },
       sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name)
@@ -827,11 +883,20 @@
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
     result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}`));
-    L.push('', 'LABEL ELEMENTS (as triggered, before Art. 20/26/27/28 precedence): ',
+    L.push('', 'LABEL ELEMENTS (Article 27 Annex III H/EUH omissions applied; pictogram/P-statement rules pending): ',
       `Signal word: ${result.label.signal || 'none'}`,
-      `Pictograms: ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
-      `Hazard statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
-      `EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
+      `Pictograms (as triggered, Article 26 pending): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
+      `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
+      `Retained EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
+    L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:',
+      'Optional Annex III omissions: ' + (result.label.omitOptional ? 'enabled' : 'disabled (keep all triggered statements)'));
+    (result.label.decisions || []).forEach((d) => {
+      L.push('- ' + d.code + ': ' + d.decision +
+        (d.overriddenBy ? ' (covered by ' + d.overriddenBy + ')' : '') +
+        ' — ' + d.reason + ' [' + d.basis + ']');
+    });
+    (result.label.review || []).forEach((r) =>
+      L.push('- REVIEW ' + r.codes.join(' / ') + ': ' + r.reason + ' [' + r.basis + ']'));
     L.push('', 'CALCULATION TRAIL:');
     result.hazards.filter((h) => h.status !== 'na' && (h.status !== 'not' || h.steps.some((s) => !/No ingredient carries|No ingredient classified|No Aspiration|No skin-corrosive|No eye-damaging/.test(s)))).forEach((h) => {
       L.push(`[${h.name}] (${h.ref})`);
@@ -840,7 +905,7 @@
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
-    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, Article 20/26/27/28 label precedence, P-statements.');
+    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, Article 26 pictogram precedence, Article 28 P-statements, and case-specific Article 27 label reviews.');
     return L.join('\n');
   }
   function anonymiseText(s, ings) {
@@ -849,5 +914,5 @@
     return t;
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle27, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
 });
