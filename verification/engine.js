@@ -1003,7 +1003,10 @@
       ({general:'6.1',prevention:'6.2',response:'6.3',storage:'6.4',disposal:'6.5'}[group])+
       '; validate exact language under Part 2'
   })));
-  const P28_RULES = Object.freeze([...P28_BASE_RULES,...P28_EXTENDED_RULES]);
+  // Deduplicate by P-code so expanded entries replace legacy simplified entries.
+  const P28_RULES = Object.freeze([...new Map([...P28_BASE_RULES,...P28_EXTENDED_RULES]
+    .map((rule)=>[rule.code,rule])).values()].map((rule)=>
+      Object.freeze(rule)));
 
   const P28_MAP = Object.freeze(Object.fromEntries(P28_RULES.map((r) => [r.code, r])));
   const P28_REVIEW_LIMIT = 6;
@@ -1028,12 +1031,13 @@
           : 'Eligible for the identified hazard classification under Annex IV. Select by use, packaging and relevance.',
         triggeredBy:why ? [why] : [], group:rule.group || 'manual',
         priority:rule.priority || 0, needs:rule.needs || '',
-        condition:rule.condition || '', manual:!!manual, legalStatus:'candidate'
+        condition:rule.condition || '', manual:!!manual, legalStatus:'candidate',
+        requiresConfirmation:!!rule.requiresConfirmation
       });
     };
     P28_RULES.forEach((rule) => {
       if (rule.consumer && audience === 'consumer' && hs.length) add(rule,'consumer products (where relevant)');
-      if (rule.h) hazards.forEach(({h,from}) => {
+      if (rule.h && (!rule.code.startsWith('P201') || audience === 'consumer')) hazards.forEach(({h,from}) => {
         if (rule.h.some((x) => matches(x,h))) add(rule,from + ' (' + h + ')');
       });
     });
@@ -1064,6 +1068,9 @@
 
     const publicSupply = audience === 'consumer';
     const P501 = active.get('P501');
+    const P502 = active.get('P502'), P503 = active.get('P503');
+    // P502/P503 are not substitutes for an adequately documented product AND
+    // packaging disposal precaution. Their applicability must be reviewed.
     const consumerDisposalApplies = publicSupply && hs.length>0 && !!P501;
     if (consumerDisposalApplies) {
       P501.legalStatus='conditional statutory disposal obligation';
@@ -1078,7 +1085,9 @@
       }
     } else if (publicSupply && hs.length>0) {
       review.push({severity:'blocker',code:'disposal',
-        reason:'Article 28(2) generally requires a disposal statement for consumer supply unless not required under Article 22. No P501 eligibility was matched in this partial ruleset; manually verify Annex IV P501/P502/P503 and any applicable exception.'});
+        reason:'Article 28(2) generally requires a product-and-packaging disposal precaution for consumer supply unless not required under Article 22. '+
+        ((P502||P503) ? 'Annex IV '+(P502?'P502':'P503')+' is eligible for this hazard, but its wording alone does not prove both disposal requirements are met. Verify disposal instructions and the packaging element.' :
+        'No mapped Annex IV disposal code was identified. Verify a suitable statement, applicable hazards and any exception.')});
     }
     if (audience==='unknown' && hs.length)
       review.push({severity:'blocker',code:'audience',
@@ -1107,11 +1116,19 @@
         reason:'P273 is conditional: if environmental release is the intended use, applicability must be reconsidered.'});
       if(c.condition && c.condition.includes('square-bracket'))
         review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
+      if(c.requiresConfirmation) review.push({severity:'review',code:c.code,
+        reason:'Conditional Annex IV selection: '+c.condition+
+          '. The statement is not automatically proposed unless explicitly added and checked for applicability.'});
     }
 
     // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
     const explicitPairs=[['P103','P202','Annex IV Table 6.1: P103 may be omitted when P202 is used'],
-                         ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used']];
+                         ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used'],
+                         ['P201','P202','Annex IV Table 6.2: P201 may be omitted when P202 is used'],
+                         ['P332+P313','P333+P313','Annex IV Table 6.3: P332+P313 may be omitted when P333+P313 is used'],
+                         ['P406','P234','Annex IV Table 6.4: P406 may be omitted when P234 is used'],
+                         ['P235','P411','Annex IV Table 6.2: P235 may be omitted when P411 is used'],
+                         ['P235','P413','Annex IV Table 6.2: P235 may be omitted when P413 is used']];
     const omittedByRedundancy=new Map();
     for(const [weaker,stronger,basis] of explicitPairs)
       if(active.has(weaker)&&active.has(stronger)&&!explicitCodes.includes(weaker)) omittedByRedundancy.set(weaker,{stronger,basis});
@@ -1128,7 +1145,8 @@
       else manualExclusions.push(code);
     }
     const validExclusions=new Set(manualExclusions);
-    const eligible=candidates.filter(c=>!omittedByRedundancy.has(c.code)&&!validExclusions.has(c.code))
+    const eligible=candidates.filter(c=>!omittedByRedundancy.has(c.code)&&!validExclusions.has(c.code)
+      && (!c.requiresConfirmation || c.manual))
       .sort((a,b)=>b.priority-a.priority || a.code.localeCompare(b.code));
     const selected=eligible.slice(0,P28_REVIEW_LIMIT);
     const picked=new Set(selected.map(x=>x.code));
@@ -1139,8 +1157,11 @@
       const reason=selectedNow ? c.reason
         : redundant ? 'Omitted as redundant with '+redundant.stronger+'; '+redundant.basis+'.'
         : manualExcluded ? 'Manually excluded with justification: '+reasonText
-        : 'Not selected in six-statement draft; review product-specific priority and whether more than six are necessary.';
-      return {...c,decision:selectedNow?'proposed':redundant?'redundant':manualExcluded?'excluded':'not selected',
+        : c.requiresConfirmation && !c.manual
+          ? 'Conditional candidate only: confirm '+c.condition+' before selecting. Not automatically proposed.'
+          : 'Not selected in six-statement draft; review product-specific priority and whether more than six are necessary.';
+      return {...c,decision:selectedNow?'proposed':redundant?'redundant':manualExcluded?'excluded':
+        c.requiresConfirmation && !c.manual?'condition pending':'not selected',
         decisionReason:reason, redundancyBasis:redundant?redundant.basis:null};
     });
     if(eligible.length>6) review.push({severity:'blocker',code:'six-statements',
@@ -1160,14 +1181,18 @@
     if (consumerDisposalApplies)requiredObligations.push({id:'consumer-disposal',status:P501&&picked.has('P501')&&supplied(m.disposalDestination)?'satisfied-draft':'unresolved',
       basis:'CLP Article 28(2), subject to Article 22',description:'Disposal precautionary statement addressing product contents and packaging for consumer supply.'});
     else if(publicSupply&&hs.length)requiredObligations.push({id:'consumer-disposal',status:'requires-review',
-      basis:'CLP Article 28(2), subject to Article 22',description:'Check an eligible Annex IV disposal statement and any legal exception.'});
+      basis:'CLP Article 28(2), subject to Article 22',
+      description:(P502||P503)
+        ? 'Review Annex IV '+(P502?'P502':'P503')+' and explicitly verify disposal of contents AND packaging or Article 22 exception.'
+        : 'Check an eligible Annex IV disposal statement and any legal exception.'});
     return {
-      audience, intendedUse:supplied(m.intendedUse), selected:decisions.filter(x=>x.decision==='proposed'),
+      audience, intendedUse:supplied(m.intendedUse), catalogueSize:P28_RULES.length,
+      annexIVVersion:'01.07.2026', selected:decisions.filter(x=>x.decision==='proposed'),
       candidates:decisions, manualOverrides:{extra:explicitCodes,excluded:[...exclusions]},
       requiredObligations, review, warnings, uncovered,
       limit:P28_REVIEW_LIMIT, excessCandidateCount:Math.max(0,eligible.length-6),
       readyForFinalLabel:false,
-      scope:'Partial verified Annex IV catalogue: decision support; must validate full Annex I/IV tables, conditions, all selected text and product uses before release.'
+      scope:'Expanded Annex IV Part 1 candidate catalogue ('+P28_RULES.length+' codes). Condition-dependent entries remain pending; exact Part 2 wording, category matching, and a regulator-approved final selection still require verification.'
     };
   }
 
