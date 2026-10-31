@@ -2376,7 +2376,11 @@ function chooseIngredientHazard(input,code){
  changeIngredientHazard(ing,code,true);
  refreshRow(id);update();
  const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
- if(replacement){replacement.value="";replacement.focus();}
+ if(replacement){
+   replacement.value="";
+   closeHazardSuggestions(replacement);
+   replacement.focus();
+ }
 }
 
 function rememberHazardPanelStates(){
@@ -2555,10 +2559,14 @@ $("ings").addEventListener("click",event=>{
    const owner=remove.closest("[data-id]"),id=+(owner?.dataset.id||0);
    const ing=mix.ingredients.find(i=>i._id===id);
    if(!ing)return;
-   const group=groupForCode(remove.dataset.removeHazard);
-   changeIngredientHazard(ing,remove.dataset.removeHazard,false);
+   const removedCode=remove.dataset.removeHazard;
+   changeIngredientHazard(ing,removedCode,false);
    refreshRow(id);update();
-   document.querySelector(`tr[data-sum="${id}"] input[data-hazard-query][data-group="${group}"]`)?.focus();
+   // The chip was removed from the DOM: restore keyboard focus to the next
+   // remaining chip, or the Add/edit button when there are no more chips.
+   const remaining=document.querySelector(`tr[data-id="${id}"]`);
+   remaining?.querySelector("button[data-remove-hazard]")?.focus() ||
+     remaining?.querySelector('button[data-act="hazards"]')?.focus();
  }
 });
 document.addEventListener("click",event=>{
