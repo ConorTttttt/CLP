@@ -1933,6 +1933,7 @@ renderViewerControls();
 
 let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
+const detailPanels = new Map(); // open subsection keys per ingredient, UI only
 let uid = 1;
 let last = null;
 
@@ -1946,7 +1947,7 @@ function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
-  mix = m; open = new Set();
+  mix = m; open = new Set(); detailPanels.clear();
 }
 
 /* ---------- mixture fields ---------- */
@@ -1967,12 +1968,41 @@ const CHK = (path, cur, lab, title) => `<label class="chk"${title ? ` title="${e
 
 function detailHTML(i) {
   const a = i.acute;
+  const persisted = detailPanels.get(i._id);
+  const scl = i.scl || {};
+  const hasValue = (v) => v !== "" && v !== undefined && v !== null && v !== false;
+  const active = {
+    acute: !!(a.unknown || ['oral','dermal','inh'].some(k => {
+      const route=a[k] || {}; return route.cat || hasValue(route.ate) || route.unknown;
+    })),
+    skin: !!(i.skinCorr || i.eye || i.nonAdditive ||
+      ['skinCorr','skinIrrit','eyeDam','eyeIrrit'].some(k => hasValue(scl[k]))),
+    cmr: !!(['skinSens','respSens','muta','carc','repro','reproFert','reproDev','carcRoute']
+      .some(k => i[k]) || i.lact),
+    stot: !!(i.stotSE || i.stotRE || i.stotSEresp || i.stotSEnarc || i.asp),
+    aquatic: !!(i.aquaAcute || i.aquaChronic || i.aquaUnknown ||
+      hasValue(i.mAcute) || hasValue(i.mChronic)),
+    newHazards: !!(i.edHH || i.edEnv || i.pbt || i.vpvb || i.pmt || i.vpvm || i.ozone),
+    otherSCL: Object.entries(scl).some(([k,v]) =>
+      !['skinCorr','skinIrrit','eyeDam','eyeIrrit'].includes(k) && hasValue(v)),
+    provenance: !!String(i.valueSource || "").trim()
+  };
+  const shown = persisted || new Set(Object.keys(active).filter(k=>active[k]));
+  if(!persisted) detailPanels.set(i._id,shown);
+  const sectionOpen=(key)=>shown.has(key)?' open':'';
   const c14 = CATS([["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]);
   const sclF = (key, lab) => `<div><label>${lab} SCL %</label>${TXT("scl." + key, i.scl[key] ?? "", "default")}</div>`;
   const cmrCats = CATS([["1A","1A — known"],["1B","1B — presumed"],["2","2 — suspected"]]);
   const quickRepro = [["", "Choose a differentiated H-code…"], ["H360F", "H360F — fertility Cat. 1"], ["H360D", "H360D — development Cat. 1"], ["H360FD", "H360FD — both Cat. 1"], ["H360Fd", "H360Fd — fertility 1, development 2"], ["H360Df", "H360Df — development 1, fertility 2"], ["H361f", "H361f — fertility Cat. 2"], ["H361d", "H361d — development Cat. 2"], ["H361fd", "H361fd — both Cat. 2"], ["H360", "H360 — effect unspecified Cat. 1"], ["H361", "H361 — effect unspecified Cat. 2"]];
   return `<div class="detail" data-id="${i._id}">
-  <fieldset><legend>Acute toxicity (give a category <i>or</i> a measured/derived ATE; ATE wins)</legend>
+  <div class="detail-toolbar">
+    <strong>Ingredient hazard details</strong>
+    <div class="row">
+      <button type="button" class="small" data-detail-action="expand">Expand all</button>
+      <button type="button" class="small" data-detail-action="collapse">Collapse all</button>
+    </div>
+  </div>
+  <details class="detail-group" data-detail-section="acute"${sectionOpen("acute")}><summary>Acute toxicity (give a category <i>or</i> a measured/derived ATE; ATE wins)</summary><div class="detail-group-body">
     <div class="hint">ATE units depend on exposure route: oral/dermal mg/kg, vapour or dust/mist mg/L, gas ppmV. An ATE that conflicts with the entered category is flagged. Category-only entries use CLP Table 3.1.2 conversion values.</div>
     <div class="g g3">
       <div><label>Oral cat.</label>${SEL("acute.oral.cat", c14, a.oral.cat)}<label>Oral ATE mg/kg</label>${TXT("acute.oral.ate", a.oral.ate)}</div>
@@ -1986,8 +2016,8 @@ function detailHTML(i) {
       <div>${CHK("acute.inh.unknown", a.inh.unknown, "Inhalation data unknown")}</div>
     </div>
     ${CHK("acute.unknown", a.unknown, "Legacy: all exposure routes unknown where no route-specific ATE/category is present")}
-  </fieldset>
-  <fieldset><legend>Skin / eye</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="skin"${sectionOpen("skin")}><summary>Skin / eye</summary><div class="detail-group-body">
     <div class="g g3">
       <div><label>Skin</label>${SEL("skinCorr", [["", "–"], ["2", "Skin Irrit. 2"], ["1", "Skin Corr. 1 (no sub-cat.)"], ["1A", "Skin Corr. 1A"], ["1B", "Skin Corr. 1B"], ["1C", "Skin Corr. 1C"]], i.skinCorr)}</div>
       <div><label>Eye</label>${SEL("eye", [["", "–"], ["2", "Eye Irrit. 2"], ["1", "Eye Dam. 1"]], i.eye)}</div>
@@ -2000,8 +2030,8 @@ function detailHTML(i) {
       ${sclF("eyeDam","Eye Dam. 1")}
       ${sclF("eyeIrrit","Eye Irrit. 2")}
     </div>
-  </fieldset>
-  <fieldset><legend>Sensitisation, CMR, lactation</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="cmr"${sectionOpen("cmr")}><summary>Sensitisation, CMR, lactation</summary><div class="detail-group-body">
     <div class="g g3">
       <div><label>Skin sens.</label>${SEL("skinSens", CATS([["1", "1"], ["1A", "1A"], ["1B", "1B"]]), i.skinSens)}</div>
       <div><label>Resp. sens.</label>${SEL("respSens", CATS([["1", "1"], ["1A", "1A"], ["1B", "1B"]]), i.respSens)}</div>
@@ -2014,17 +2044,17 @@ function detailHTML(i) {
       <div><label>Reproductive category (effect unspecified)</label>${SEL("repro", cmrCats, i.repro)}</div>
       <div style="align-self:end">${CHK("lact", i.lact, "Lact. (H362)")}</div>
     </div>
-  </fieldset>
+  </div></details>
   <div class="hint" style="margin:0 0 10px">1A = known, 1B = presumed, 2 = suspected (CMR). The H-code quick-pick sets defaults; choose 1A instead of 1B if supported by source data. Fertility and development are separate effects; use the unspecified field only when the effect is not known. Source H350i does not automatically establish H350i for the mixture.</div>
-  <fieldset><legend>Target organ / aspiration</legend>
+  <details class="detail-group" data-detail-section="stot"${sectionOpen("stot")}><summary>Target organ / aspiration</summary><div class="detail-group-body">
     <div class="g g3">
       <div><label>STOT single</label>${SEL("stotSE", CATS([["1", "1"], ["2", "2"], ["3", "3"]]), i.stotSE)}</div>
       <div style="align-self:end">${CHK("stotSEresp", i.stotSEresp, "Cat 3: respiratory irritation (H335)")}${CHK("stotSEnarc", i.stotSEnarc, "Cat 3: narcotic effects (H336)")}</div>
       <div><label>STOT repeated</label>${SEL("stotRE", CATS([["1", "1"], ["2", "2"]]), i.stotRE)}</div>
       <div>${CHK("asp", i.asp, "Asp. Tox. 1 (H304)")}</div>
     </div>
-  </fieldset>
-  <fieldset><legend>Aquatic environment</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="aquatic"${sectionOpen("aquatic")}><summary>Aquatic environment</summary><div class="detail-group-body">
     <div class="hint" style="margin-bottom:6px">For Aquatic Acute 1 and Chronic 1 enter the applicable M-factor separately, even if it equals 1. Missing or invalid values use a provisional lower-bound screen and trigger warnings; they are not accepted as an approved aquatic classification.</div>
     <div class="g g4">
       <div style="align-self:end">${CHK("aquaAcute", i.aquaAcute, "Aquatic Acute 1")}</div>
@@ -2033,23 +2063,23 @@ function detailHTML(i) {
       <div><label>M-factor (chronic)</label>${TXT("mChronic", i.mChronic, "1")}</div>
     </div>
     ${CHK("aquaUnknown", i.aquaUnknown, "aquatic hazard data unavailable for this ingredient")}
-  </fieldset>
-  <fieldset><legend>New classes (apply to mixtures from 1 May 2026; transition to 1 May 2028 for products already on the market)</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="newHazards"${sectionOpen("newHazards")}><summary>New classes (apply to mixtures from 1 May 2026; transition to 1 May 2028 for products already on the market)</summary><div class="detail-group-body">
     <div class="g g3">
       <div><label>ED human health</label>${SEL("edHH", CATS([["1", "1"], ["2", "2"]]), i.edHH)}</div>
       <div><label>ED environment</label>${SEL("edEnv", CATS([["1", "1"], ["2", "2"]]), i.edEnv)}</div>
       <div class="row">${CHK("pbt", i.pbt, "PBT")}${CHK("vpvb", i.vpvb, "vPvB")}${CHK("pmt", i.pmt, "PMT")}${CHK("vpvm", i.vpvm, "vPvM")}${CHK("ozone", i.ozone, "Ozone 1")}</div>
     </div>
-  </fieldset>
-  <fieldset><legend>Specific concentration limits for this ingredient (Annex VI / Inventory) &mdash; blank = generic limit</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="otherSCL"${sectionOpen("otherSCL")}><summary>Specific concentration limits for this ingredient (Annex VI / Inventory) &mdash; blank = generic limit</summary><div class="detail-group-body">
     <div class="g g4">${sclF("skinSens", "Skin sens.")}${sclF("respSens", "Resp. sens.")}${sclF("muta", "Muta.")}${sclF("carc", "Carc.")}${sclF("repro", "Repr. common")}${sclF("reproFert", "Repr. fertility")}${sclF("reproDev", "Repr. development")}${sclF("lact", "Lact.")}${sclF("stotSE", "STOT SE")}${sclF("stotRE", "STOT RE")}${sclF("edHH", "ED HH")}${sclF("edEnv", "ED ENV")}</div>
     <div class="hint">Skin/eye SCLs are entered above and used for potency-weighted additivity and non-additive thresholds; confirm endpoints and source evidence. Acute toxicity uses route-specific ATE values and Annex I conversions, not a skin/eye-style SCL.</div>
-  </fieldset>
-  <fieldset><legend>Source evidence for SCL / ATE / M-factor</legend>
+  </div></details>
+  <details class="detail-group" data-detail-section="provenance"${sectionOpen("provenance")}><summary>Source evidence for SCL / ATE / M-factor</summary><div class="detail-group-body">
     <div><label>Reference, revision and/or data source</label>
       ${TXT("valueSource", i.valueSource ?? "", "e.g. Annex VI entry, supplier SDS revision 4, test report 2026")}</div>
     <div class="hint">Optional but recommended. Saved with ingredient data and included in the classification report. The app flags specific values without a recorded source.</div>
-  </fieldset>
+  </div></details>
   </div>`;
 }
 
@@ -2080,7 +2110,7 @@ function summaryChips(i) {
 
 function renderIngs() {
   const tb = $("ings");
-  if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:10px 4px">No ingredients yet. Click <b>+ Add ingredient</b> or <b>Load example</b>.</td></tr>'; return; }
+  if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Start with <b>+ Add ingredient</b>, or use <b>Load example</b> to explore.</td></tr>'; return; }
   tb.innerHTML = mix.ingredients.map((i) => `
   <tr class="ing" data-id="${i._id}">
     <td><input data-p="name" value="${esc(i.name)}" placeholder="Ingredient name" aria-label="Ingredient name"></td>
@@ -2102,7 +2132,7 @@ function refreshSummaryOnly(id) { const i = mix.ingredients.find((x) => x._id ==
 $("ings").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
   const id = +b.closest("tr").dataset.id;
-  if (b.dataset.act === "del") { mix.ingredients = mix.ingredients.filter((x) => x._id !== id); open.delete(id); renderIngs(); update(); }
+  if (b.dataset.act === "del") { mix.ingredients = mix.ingredients.filter((x) => x._id !== id); open.delete(id); detailPanels.delete(id); renderIngs(); update(); }
   else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
 });
 function onIngInput(e) {
@@ -2139,11 +2169,28 @@ function onIngInput(e) {
   }
   update();
 }
+// Native detail groups preserve their expanded/collapsed state across a data refresh.
+$("ings").addEventListener("toggle",(event)=>{
+  const group=event.target;
+  if (!group.matches || !group.matches("details[data-detail-section]")) return;
+  const holder=group.closest(".detail[data-id]"); if(!holder)return;
+  const id=+holder.dataset.id;
+  if(!detailPanels.has(id))detailPanels.set(id,new Set());
+  const state=detailPanels.get(id);
+  if(group.open)state.add(group.dataset.detailSection);
+  else state.delete(group.dataset.detailSection);
+},true);
+$("ings").addEventListener("click",(event)=>{
+  const button=event.target.closest("button[data-detail-action]");if(!button)return;
+  const detail=button.closest(".detail[data-id]");if(!detail)return;
+  const expanded=button.dataset.detailAction==="expand";
+  detail.querySelectorAll("details[data-detail-section]").forEach(group=>group.open=expanded);
+});
 $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
 $("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
-$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
 function renderManual() {
@@ -2163,6 +2210,12 @@ const BOILER = /No ingredient carries|No ingredient classified|No Aspiration|No 
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
+  const regulationChecks=(L0.article28?.review || []).filter(v=>v.severity==="blocker").length;
+  $("result-overview").innerHTML = [
+    {value:r.outcomes.length,label:"Classifications found"},
+    {value:r.warnings.length,label:"Input warnings"},
+    {value:r.incomplete.length+regulationChecks,label:"Unresolved checks"}
+  ].map(x=>`<div class="result-stat"><strong>${x.value}</strong><span>${esc(x.label)}</span></div>`).join("");
   if (r.warnings.length) L.push(r.warnings.map((w) => `<div class="alert">${esc(w)}</div>`).join(""));
   if (r.incomplete.length) L.push(`<div class="alert bad"><b>Needs more data before the result is complete:</b> ${r.incomplete.map(esc).join("; ")}.</div>`);
   const cls = r.outcomes.length
@@ -2275,7 +2328,11 @@ function compute() {
   try { last = CLP.classify(mix); renderResult(last); $("rep").textContent = CLP.report(mix, last, {}); }
   catch (e) { $("res").innerHTML = `<div class="alert bad">Calculation error: ${esc(e.message)}</div>`; last = null; }
 }
-function renderAll() { syncMixInputs(); renderIngs(); renderManual(); compute(); save(); }
+function renderAll() {
+  syncMixInputs(); renderIngs(); renderManual();
+  if(mix.manual.length)$("manualsettings").open=true;
+  compute(); save();
+}
 
 /* ---------- example ---------- */
 function exampleMix() {
@@ -2289,7 +2346,7 @@ function exampleMix() {
   const W = newIng({ name: "Water", pct: "30" });
   return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
-$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- save / load / report ---------- */
 function download(name, text, type) { const b = new Blob([text], { type: type || "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
