@@ -14,7 +14,7 @@ and shows every calculation step with the Annex I table/page reference:
 - Aquatic acute / chronic summation with M-factors
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
-- Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, SDS-on-request triggers
+- Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
 
 HOW TO USE
 1. Enter mixture data (flash point, IBP, viscosity at 40 C, pH where known).
@@ -28,7 +28,7 @@ HOW TO USE
    An H360* code initially sets Category 1B; select 1A instead where substantiated by source data.
    Carcinogenicity has a separate source-route selector (H350i), but does not assign the
    inhalation-only statement to the mixture without substantiating route-specific evidence.
-4. Read the full classification, Article 26-selected pictograms and their audit (retained/omitted and contributing classifications), and the Article 27 H/EUH audit. Optional Article 26 physical-pictogram omissions can be enabled in the Mixture panel; mandatory GHS07 precedence is always enforced. Save as JSON, print, or copy the report.
+4. Read the full classification, Article 26-selected pictograms and their audit (retained/omitted and contributing classifications), the Article 27 H/EUH audit, and the Article 28 proposed P statements with legal obligation, candidate, redundancy and completeness checks. Optional Article 26 physical-pictogram omissions can be enabled in the Mixture panel; mandatory GHS07 precedence is always enforced. Save as JSON, print, or copy the report.
 Click "Load example" for a worked degreaser.
 
 OPTIONAL GEMINI (Gemini panel at the bottom left)
@@ -39,7 +39,7 @@ The classification is always computed locally; Gemini never changes it.
 NOT MODELLED (do these yourself)
 Bridging principles; tested-mixture data (use "Manual classifications"); aquatic additivity formula for
 tested ingredients; SCLs for skin/eye/acute toxicity; physical hazards other than flammable liquids;
-Article 26(2) severity for unverified manual classifications, Article 28 P-statement selection, and additional case-specific Article 27 redundancy decisions. Four explicit Annex III Article 27 omissions are implemented and tested.
+Article 26(2) severity for unverified manual classifications, complete Annex I/IV P-statement coverage / final Article 28 selection and approved wording, and additional case-specific Article 27 redundancy decisions. Four explicit Annex III Article 27 omissions are implemented and tested.
 H-codes only give default categories (H300 -> Cat 1, H314 -> Skin Corr. 1 etc.): set sub-categories yourself.
 The parser preserves differentiated ingredient codes (H350i, H360F/D/FD/Fd/Df and H361f/d/fd)
 in hcodeDetails and rejects ambiguous suffixes. Fertility and developmental endpoints are evaluated
@@ -56,8 +56,9 @@ VERIFICATION
 Run from repository root:
   node verification/test_engine.js
   node verification/test_article26.js
+  node verification/test_article28.js
   node verification/test_ui_structure.js
-The original engine suite currently has 221 checks; the additional Article 26-specific suite has 49 checks. UI structure checks verify that the HTML scripts compile,
+The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 46 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -80,7 +81,7 @@ retain every triggered H/EUH statement on the proposed label. This preference is
 The system flags some additional potential redundancies for expert review without automatically
 removing them (including EUH071/H335, H314/H319 and generic/differentiated H360).
 Article 27 is not a blanket instruction to suppress every related or weaker H-code.
-Article 26 pictograms are applied separately with an audit. Article 28 P statements, optional combined Annex III phrases, and
+Article 26 pictograms are applied separately with an audit. Article 28 partial P-statement selection now has its own audit; full Annex IV mapping, optional combined Annex III phrases, and
 other case-specific redundancy decisions require a separate regulatory review.
 Source: Regulation (EC) 1272/2008 Article 27 and Annex III Part 1, as amended by
 Commission Delegated Regulation (EU) 2023/707 Annex III.
@@ -116,3 +117,22 @@ pictogramDecisions (including per-hazard contributions), pictogramReview (manual
 omitOptionalPictograms (user preference). Article 27 label fields remain unchanged.
 Source: Regulation (EC) No 1272/2008, Article 26(1)(a)-(e) and 26(2).
 Detailed reference: docs/article_26_pictogram_precedence.md
+
+ARTICLE 28 — P-STATEMENT CANDIDATES / MANDATORY OBLIGATIONS
+The calculator now has a separate Articles 22/28 selector using a LIMITED initial catalogue
+of 21 verified Annex IV P-statement codes. It includes consumer-only general precautions,
+CMR/flammability/prevention/emergency response, and P501 disposal for mapped hazard classes.
+The proposed label shows at most six ranked candidates, but any overflow is explicitly flagged:
+do not treat the six suggestions as the legally correct final choice without review.
+Legal distinction: Article 22 requires relevant P-statements selected according to Annex I/IV;
+Article 28(2) generally requires a consumer disposal statement covering contents AND packaging,
+unless not required by Article 22. This does NOT universally make an individual P-code mandatory.
+Other P statements are flagged as eligible candidates, not inherently mandatory.
+For general public products, the tool explicitly checks P501 eligibility and disposal destination.
+If an eligible P501 code is missing, it blocks approval for review of other Annex IV disposal
+codes/Article 22 exceptions. P501 and P280 supplier-specific wording must be completed.
+Select consumer/professional/industrial supply, use, disposal route and PPE on the new
+Article 28 form. Add/exclude P codes manually with a documented justification.
+Unmapped hazards, unresolved supplier wording and case-specific selection are flagged.
+The output is NEVER described as final/approved. Full Annex IV is still to be incorporated.
+Regulatory reference: docs/article_28_precautionary_statement_selection.md
