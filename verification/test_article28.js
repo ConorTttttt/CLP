@@ -247,4 +247,33 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
  t('Comprehensive Annex IV candidate code index includes components',r.catalogueSize>=125);
 }
 
+{
+ const r=choose(['H304'],{audience:'professional'});
+ t('Standalone P310 omitted when P301+P310 covers the same aspiration hazard',
+   cand(r,'P310')?.decision==='redundant' && cand(r,'P310').decisionReason.includes('P301+P310'));
+ t('Complete aspiration response P301+P310 remains',picked(r,'P301+P310'));
+}
+{
+ const r=choose(['H302'],{audience:'professional'});
+ t('Standalone P312 omitted when P301+P312 covers the same oral acute hazard',
+   cand(r,'P312')?.decision==='redundant');
+}
+{
+ const r=choose(['H229'],{audience:'professional'});
+ t('P410+P412 suppresses redundant standalone P412',cand(r,'P412')?.decision==='redundant'&&picked(r,'P410+P412'));
+}
+{
+ const r=choose(['H260'],{audience:'professional'});
+ t('P402+P404 suppresses redundant standalone P402',cand(r,'P402')?.decision==='redundant');
+ t('P402+P404 suppresses redundant standalone P404',cand(r,'P404')?.decision==='redundant');
+ t('Combined storage P402+P404 is selected',picked(r,'P402+P404'));
+}
+{
+ const r=choose(['H300','H314'],{audience:'professional'});
+ t('P310 retained if a distinct hazard still needs it',cand(r,'P310')?.decision!=='redundant');
+}
+{
+ const r=choose(['H240'],{audience:'professional'});
+ t('Condition-pending P411 cannot remove P235 by redundancy',cand(r,'P235')?.decision!=='redundant');
+}
 console.log('\n'+pass+' Article 28 tests passed, '+fail+' failed');process.exit(fail?1:0);
