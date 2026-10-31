@@ -226,7 +226,88 @@ t('FP not entered -> nodata', fl('', '').nodata.length === 1);
   t('parser: re-apply clears previous', !m.pbt && !m.ozone && m.skinCorr === '2');
 }
 
-/* ---------- 14. robustness ---------- */
+/* ---------- 14. differentiated H codes, validity and category precedence ---------- */
+{
+  const all = [
+    ['H350i', 'H350i', 'inhalation', null, null],
+    ['H360F', 'H360F', null, 1, null],
+    ['H360D', 'H360D', null, null, 1],
+    ['H360FD', 'H360FD', null, 1, 1],
+    ['H360Fd', 'H360Fd', null, 1, 2],
+    ['H360Df', 'H360Df', null, 2, 1],
+    ['H361f', 'H361f', null, 2, null],
+    ['H361d', 'H361d', null, null, 2],
+    ['H361fd', 'H361fd', null, 2, 2]
+  ];
+  all.forEach(([raw, code, route, fertility, development]) => {
+    const i = CLP.blankIngredient();
+    const r = CLP.applyHCodes(i, raw);
+    t('differentiation '+code, r.codes.length === 1 && r.codes[0].code === code &&
+      r.codes[0].route === route && r.codes[0].fertility === fertility &&
+      r.codes[0].development === development && r.invalid.length === 0);
+    t('input category '+code, code.startsWith('H350') ? i.carc === '1B' : ((code.includes('F') || code.includes('f')) ? i.reproFert === (code.startsWith('H361') || code === 'H360Df' ? '2' : '1B') : true) && ((code.includes('D') || code.includes('d')) ? i.reproDev === (code.startsWith('H361') || code === 'H360Fd' ? '2' : '1B') : true));
+  });
+  const rev = CLP.blankIngredient();
+  CLP.applyHCodes(rev, 'H341 H340 H351 H350i H361d H360Fd');
+  t('strongest CMR wins later', rev.muta === '1B' && rev.carc === '1B' && rev.reproFert === '1B' && rev.reproDev === '2');
+  const reversed = CLP.blankIngredient();
+  CLP.applyHCodes(reversed, 'H340 H341 H350i H351 H360Fd H361d');
+  t('strongest CMR wins earlier', reversed.muta === '1B' && reversed.carc === '1B' && reversed.reproFert === '1B' && reversed.reproDev === '2');
+  const mixed = CLP.blankIngredient();
+  CLP.applyHCodes(mixed, 'H360F, H361d+H350I');
+  t('multiple separate reproductive effects retained', mixed.hcodeDetails.some(x => x.code === 'H360F' && x.fertility === 1) &&
+    mixed.hcodeDetails.some(x => x.code === 'H361d' && x.development === 2));
+  t('unambiguous casing H350I canonicalised', mixed.hcodeDetails.some(x => x.code === 'H350i'));
+  const ambiguous = CLP.blankIngredient();
+  const ar = CLP.applyHCodes(ambiguous, 'H360fd H351i H360FD');
+  t('ambiguous or invalid suffix rejected', ar.invalid.length === 2 && ar.codes.length === 1 &&
+    ar.codes[0].code === 'H360FD' && ambiguous.reproFert === '1B' && ambiguous.reproDev === '1B' && ambiguous.carc === '');
+  t('ambiguous suffix produces review warning', ar.notes.some(s => /H360fd.*ambiguous/.test(s)));
+  for (const [route, severe, mild] of [
+    ['oral', 'H300', 'H302'],
+    ['dermal', 'H310', 'H312'],
+    ['inh', 'H330', 'H332']
+  ]) {
+    for (const str of [severe + ' ' + mild, mild + ' ' + severe]) {
+      const i = CLP.blankIngredient(), r = CLP.applyHCodes(i, str);
+      t('acute most severe '+route+' '+str, i.acute[route].cat === '1');
+      t('acute conflict flagged '+route+' '+str, r.notes.some(s => s.includes('Conflicting acute toxicity categories')));
+    }
+  }
+  const legacy = CLP.blankIngredient();
+  legacy.name = 'Test'; legacy.pct = 1; legacy.hcodes = 'H360Df';
+  legacy.repro = '1A'; // manually set: do not overwrite during normalise
+  const normal = CLP.normalise({ingredients:[legacy]});
+  t('normalise restores metadata without changing manual category', normal.ings[0].repro === '1A' &&
+    normal.ings[0].hcodeDetails[0].code === 'H360Df');
+  const report = CLP.report({ingredients:[legacy]}, CLP.classify({ingredients:[legacy]}));
+  t('report retains differentiated source code', report.includes('H360Df') && report.includes('source H differentiations'));
+}
+
+/* ---------- differentiated reproductive mixture calculation ---------- */
+{
+  const mk = (p, code) => { const i = CLP.blankIngredient(); i.name=code; i.pct=p; CLP.applyHCodes(i,code); return i; };
+  const rp = (code,p) => run([mk(p,code),water(100-p)]);
+  const h = (r) => (r.outcomes.find(x=>x.label.startsWith('Repr.')) || {h:[]}).h;
+  for (const [code,p,expected] of [
+    ['H360F',0.3,'H360F'], ['H360D',0.3,'H360D'],
+    ['H360FD',0.3,'H360FD'], ['H360Fd',0.3,'H360F'],
+    ['H360Df',0.3,'H360D'], ['H361f',3,'H361f'],
+    ['H361d',3,'H361d'], ['H361fd',3,'H361fd']
+  ]) t('repro threshold '+code, h(rp(code,p)).includes(expected));
+  t('mixed two thresholds H360Fd', h(run([mk(1,'H360F'),mk(4,'H361d'),water(95)])).includes('H360Fd'));
+  t('mixed two thresholds H360Df', h(run([mk(1,'H360D'),mk(4,'H361f'),water(95)])).includes('H360Df'));
+  t('below Cat 2 threshold no weaker effect', h(rp('H360Fd',0.3)).join() === 'H360F');
+  t('Cat 2 threshold yields mixed Fd', h(rp('H360Fd',3)).includes('H360Fd'));
+  t('explicit 1A preserved', (()=>{const i=mk(0.3,'H360F');i.reproFert='1A';const o=run([i,water(99.7)]).outcomes.find(x=>x.label.startsWith('Repr.'));return o.label==='Repr. 1A'&&o.h[0]==='H360F';})());
+  t('separate effect-specific SCL used', (()=>{const i=mk(.05,'H361f');i.scl.reproFert=.05;return h(run([i,water(99.95)])).includes('H361f')})());
+  t('generic H360 stays generic', h(rp('H360',0.3)).join() === 'H360');
+  t('generic H361 stays generic', h(rp('H361',3)).join() === 'H361');
+  t('H350i has separate source route', (()=>{const i=mk(.1,'H350i');const result=run([i,water(99.9)]);return i.carcRoute==='inhalation'&&result.label.hazardStatements.some(x=>x.code==='H350')&&result.notes.some(x=>x.includes('H350i'));})());
+  t('legacy differentiated JSON migrated in classification', (()=>{const old={...mk(1,'H360F'),repro:'1A'};delete old.reproFert;delete old.reproDev;const i=CLP.normalise({ingredients:[old]}).ings[0];return i.reproFert==='1A'&&i.repro===''})());
+}
+
+/* ---------- 16. robustness ---------- */
 t('empty mixture ok', (() => { const r = CLP.classify({ ingredients: [] }); return r.outcomes.length === 0 && r.warnings.length > 0; })());
 t('sum warning', run([ing(50, 'H315')]).warnings.some((w) => /add up to 50/.test(w)));
 t('comma decimals', has(run([ing('1,0', null, { skinSens: '1' }), water(99)]), 'Skin Sens. 1'));
