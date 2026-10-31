@@ -162,5 +162,30 @@ check('Lower bound positive aquatic still flagged provisional',label(x,'Aquatic 
 const x=single(101,{aquaChronic:'1',mChronic:100});
 check('Mixture percentage over 100 validated',warn(x,'Total mixture concentration exceeds 100%'));
 }
+{
+const mix={ingredients:[{name:'source A',pct:10,eye:'2',scl:{eyeIrrit:3},valueSource:'Supplier SDS revision 5'}, {name:'balance',pct:90}]};
+const x=C.classify(mix);
+const report=C.report(mix,x);
+check('SCL/ATE/M-factor source evidence included in report',report.includes('Specific value source: Supplier SDS revision 5'));
+check('Source references redacted from anonymised report',!C.report(mix,x,{anonymise:true}).includes('Supplier SDS revision 5'));
+check('Evidence review warning absent when source recorded',!warn(x,'no source reference is recorded'));
+}
+{
+const x=single(4,{skinCorr:'1B',scl:{skinCorr:10,skinIrrit:5}});
+check('Skin corrosion SCL without specific eye assessment flagged',warn(x,'Skin corrosion SCLs were entered'));
+}
+{
+const x=single(5,{eye:'2',scl:{eyeIrrit:3}});
+check('SCL without evidence reference flagged for regulatory review',warn(x,'no source reference is recorded'));
+}
+{
+const x=single(20,{acute:{oral:{cat:'3',ate:100,unknown:true},dermal:{cat:'4',ate:1000},inh:{form:'vapour',cat:'4',ate:10},unknown:true}});
+check('All routes with valid data do not create unknown acute toxicity statement',
+ !(x.label.supplemental||[]).some(s=>s.includes('unknown acute toxicity')));
+}
+{
+const x=single(20,{acute:{oral:{ate:'bad'},dermal:{},inh:{form:'vapour'}}});
+check('Invalid ATE without category is recorded as incomplete',H(x,'acute').status==='incomplete');
+}
 console.log('\n'+pass+' specific-value checks passed, '+fail+' failed');
 process.exit(fail?1:0);
