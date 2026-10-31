@@ -318,8 +318,15 @@
         const tested = num(r.ate); const cat0 = parseInt(r.cat, 10) || 0;
         if (!(tested > 0) && !cat0) return;
         let cat, ate, src;
-        if (tested > 0) { ate = tested; cat = catFromATE(key, ate); src = 'tested/derived ATE'; }
-        else { cat = cat0; ate = T.conv[cat - 1]; src = 'Table 3.1.2 conversion of Category ' + cat; }
+        if (tested > 0) {
+          ate = tested; cat = catFromATE(key, ate); src = 'tested/derived ATE';
+          if (cat0 && cat !== cat0) {
+            const detail=nm(i)+' '+T.label+': Category '+cat0+
+              ' conflicts with entered ATE '+fmt(ate)+' '+T.unit+
+              ' ('+(cat ? 'Category '+cat : 'outside Category 4 range')+'). ATE was used, but verify source evidence.';
+            H.notes.push(detail); ctx.warnings.push('DATA REVIEW: '+detail);
+          }
+        } else { cat = cat0; ate = T.conv[cat - 1]; src = 'Table 3.1.2 conversion of Category ' + cat; }
         if (!cat) { skipped.push(`${nm(i)}: ATE ${fmt(ate)} is above the Category 4 range → not acutely toxic, ignored (3.1.3.6.1(b),(c)).`); return; }
         const cut = cat <= 3 ? 0.1 : 1;
         if (i.pct < cut - EPS) { skipped.push(`${nm(i)} (Cat. ${cat}) at ${fmt(i.pct)} % is below the Table 1.1 cut-off of ${cut} % → not taken into account.`); return; }
@@ -328,6 +335,13 @@
       if (!rows.length) { if (skipped.length) { H.steps.push(`— ${T.label}: ` + skipped.join(' ')); } return; }
       const terms = rows.map((r) => r.i.pct / r.ate);
       const denom = sum(terms), numer = unkSum > 10 + EPS ? 100 - unkSum : 100;
+      if (!(numer > 0) || !(denom > 0)) {
+        H.status='incomplete';
+        const detail='Acute toxicity formula for '+T.label+
+          ' has an invalid numerator or denominator; the unknown fraction must be reviewed.';
+        H.notes.push(detail); ctx.warnings.push('DATA VALIDATION: '+detail);
+        return;
+      }
       const ateMix = numer / denom, cat = catFromATE(key, ateMix);
       H.steps.push(`— ${T.label} (${T.unit}): ` + rows.map((r, k) => `${nm(r.i)} ${fmt(r.i.pct)} % ÷ ${fmt(r.ate)} [${r.src}] = ${fmt(terms[k], 6)}`).join(' ; '));
       H.steps.push(`   ATEmix = ${fmt(numer)} / ${fmt(denom, 6)} = ${fmt(ateMix)} ${T.unit}  → ` + (cat ? `Category ${cat} (limit ≤ ${fmt(T.limits[cat - 1])})` : `above Category 4 limit (${fmt(T.limits[3])}) → not classified for this route`));
@@ -615,8 +629,21 @@
 
   function aquatic(mix, ings, ctx) {
     const H = hz('aquatic', 'Hazardous to the aquatic environment', 'Annex I 4.1.3.5 (cons. pp.218–220); Tables 4.1.1–4.1.3 (pp.219–221); relevance 4.1.3.1 (pp.214–215); label Table 4.1.4 (pp.221–222)');
-    const mA = (i) => { const m = num(i.mAcute); return has(m) && m >= 1 ? m : 1; };
-    const mC = (i) => { const m = num(i.mChronic); return has(m) && m >= 1 ? m : 1; };
+    const validM = (raw) => {
+      const value=num(raw);
+      return Number.isInteger(value) && value >= 1 ? value : NaN;
+    };
+    const mA = (i) => has(validM(i.mAcute)) ? validM(i.mAcute) : 1;
+    const mC = (i) => has(validM(i.mChronic)) ? validM(i.mChronic) : 1;
+    const missingM=ings.filter(i=>
+      (i.aquaAcute && !has(validM(i.mAcute))) ||
+      (i.aquaChronic==='1' && !has(validM(i.mChronic))));
+    if(missingM.length) {
+      const names=missingM.map(nm).join(', ');
+      H.notes.push('Aquatic M-factor incomplete for '+names+
+        '. An interim M=1 lower-bound is used for missing/invalid factors, but the final aquatic classification cannot be confirmed.');
+      H.steps.push('PROVISIONAL: M-factor not established for '+names+'. M=1 is a lower-bound screen only.');
+    }
     const unk = ings.filter((i) => i.aquaUnknown && ge(i.pct, 1));
     if (unk.length) {
       const u = sum(unk.map((i) => i.pct));
@@ -632,6 +659,7 @@
     if (!a1.length && !c1.length && !c2.length && !c3.length && !c4.length) {
       if (!H.steps.length) H.steps.push('No ingredient classified for the aquatic environment.');
       else H.steps.push('No relevant aquatic ingredient above its cut-off → not classified.');
+      if (missingM.length) H.status='incomplete';
       return H;
     }
     // Acute 1
@@ -669,7 +697,8 @@
       H.steps.push('→ Aquatic Chronic ' + chronic);
     }
     if (!H.outcomes.length) H.steps.push('→ no summation limit reached: not classified for the aquatic environment.');
-    H.notes.push('M-factors must come from Annex VI / the C&L Inventory (or be derived with Table 4.1.3). Blank M-factors are treated as 1. If toxicity data exist for ingredients, the additivity formula (4.1.3.5.2) may be used instead – not implemented here; the more conservative result applies (4.1.3.5.4).');
+    if (missingM.length && H.status !== 'classified') H.status = 'incomplete';
+    H.notes.push('M-factors for Acute/Chronic 1 must be substantiated; missing or invalid M-factors only receive a provisional M=1 lower-bound screen. The aquatic additivity formula for tested ingredients is not implemented.');
     return H;
   }
 
@@ -1148,6 +1177,7 @@
     const total = sum(ings.map((i) => i.pct));
     if (!ings.length) warnings.push('No ingredients with a concentration were entered.');
     else if (Math.abs(total - 100) > 0.5) warnings.push(`Concentrations add up to ${fmt(total)} %, not 100 %. Classification uses the percentages as entered.`);
+    if(total>100+EPS) warnings.push('DATA VALIDATION: Total mixture concentration exceeds 100%; SCL, ATE and aquatic summation results may be misleading. Correct the formulation.');
     const hazards = [];
     hazards.push(flammability(m));
     hazards.push(acute(m, ings, ctx));
