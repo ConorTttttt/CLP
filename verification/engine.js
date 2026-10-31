@@ -873,7 +873,7 @@
      Article 28(2) does impose a qualified CONSUMER DISPOSAL statement requirement.
      Annex IV Part 1 tables 6.1-6.5 are the selection source; Part 2 is wording.
   */
-  const P28_RULES = Object.freeze([
+  const P28_BASE_RULES = Object.freeze([
     {code:'P101', text:'If medical advice is needed, have product container or label at hand.', consumer:true, priority:30, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P102', text:'Keep out of reach of children.', consumer:true, priority:80, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P103', text:'Read carefully and follow all instructions.', consumer:true, priority:25, group:'general', basis:'Annex IV Table 6.1, consumer products; omit if P202 is used'},
@@ -896,6 +896,115 @@
     {code:'P308+P313', text:'IF exposed or concerned: Get medical advice/attention.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:81, group:'response', basis:'Annex IV Table 6.3, CMR / lactation'},
     {code:'P501', text:'Dispose of contents/container to …', h:['H224','H225','H226','H300','H301','H302','H310','H311','H312','H314','H317','H330','H331','H334','H340','H341','H350','H350i','H351','H360*','H361*','H370','H371','H372','H373','H304','H335','H336','H400','H410','H411','H412','H413'], priority:65, group:'disposal', needs:'disposal', basis:'Annex IV Table 6.5; Article 28(2) for the general public, subject to Article 22'}
   ]);
+
+  /*
+   * Expanded Annex IV Part 1 criteria catalogue, grouped by H-code.
+   *
+   * Current legal cross-reference:
+   * Regulation (EC) 1272/2008, 01.07.2026 consolidated edition,
+   * Annex IV Part 1 tables 6.1 to 6.5; Annex IV Part 2 for exact wording.
+   * Text here is an English DRAFT transcription, NOT final multilingual label
+   * text. Most physical-hazard entries can originate from manual mixture classes.
+   *
+   * Conditional statements are shown in the candidate audit but do not enter
+   * the proposed-six automatically until a user explicitly requests them.
+   * Partial component codes (P301, P302, P305 etc) are not proposed separately
+   * when the complete authorised combinations are available.
+   *
+   * Each row: code | category | H-code patterns | text | ranking | condition
+   * Prefix "*" in the final column = condition must be verified before use.
+   */
+  const P28_CATALOGUE_ROWS = [
+    ['P201','prevention','H340 H341 H350 H350i H351 H360* H361* H362','Obtain special instructions before use.',52,'consumer supply, P202 is an alternative'],
+    ['P211','prevention','H222 H223','Do not spray on an open flame or other ignition source.',91,''],
+    ['P212','prevention','H206 H207 H208','Avoid heating under confinement or reduction of the desensitising agent.',75,''],
+    ['P220','prevention','H270 H271 H272','Keep away from clothing and other combustible materials.',91,''],
+    ['P222','prevention','H250','Do not allow contact with air.',66,'*only where emphasis of pyrophoric hazard is necessary'],
+    ['P223','prevention','H260 H261','Do not allow contact with water.',73,'*where emphasis of water-reactivity is necessary'],
+    ['P230','prevention','H201 H202 H203 H205 H206 H207 H208','Keep wetted with …',50,'*only desensitised/wetted/phlegmatised substances; specify appropriate material'],
+    ['P231','prevention','H250 H260 H261','Handle and store contents under inert gas/…',64,'*applicable material or inert gas must be specified; moisture-reactivity may be conditional'],
+    ['P232','prevention','H260 H261','Protect from moisture.',74,''],
+    ['P233','prevention','H224 H225 H226 H330 H331 H335 H336','Keep container tightly closed.',61,'*flammable liquid or inhalation hazard must be volatile and able to generate dangerous atmosphere where applicable'],
+    ['P234','prevention','H290 H240 H241 H242 H201 H202 H203 H204 H205','Keep only in original packaging.',72,''],
+    ['P235','prevention','H224 H225 H226 H240 H241 H242 H251 H252','Keep cool.',56,'*flammable liquid category 1 or volatile / relevant self-heating or temperature-sensitive hazard'],
+    ['P240','prevention','H224 H225 H226 H201 H202 H203 H204 H205 H241','Ground and bond container and receiving equipment.',57,'*electrostatic sensitivity or explosive-atmosphere conditions apply'],
+    ['P241','prevention','H224 H225 H226 H228','Use explosion-proof [electrical/ventilating/lighting/…] equipment.',51,'*liquid can generate explosive vapour atmosphere or dust clouds for solids'],
+    ['P242','prevention','H224 H225 H226','Use non-sparking tools.',40,'*minimum ignition energy below 0.1 mJ plus applicable vapour/explosive atmosphere'],
+    ['P243','prevention','H224 H225 H226','Take action to prevent static discharges.',46,'*flammable liquid is volatile and can generate explosive atmosphere'],
+    ['P244','prevention','H270','Keep valves and fittings free from oil and grease.',80,''],
+    ['P250','prevention','H200 H201 H202 H203 H204 H205','Do not subject to grinding/shock/friction …',45,'*only if explosive is mechanically sensitive; specify rough handling'],
+    ['P251','prevention','H229','Do not pierce or burn, even after use.',90,''],
+    ['P262','prevention','H310','Do not get in eyes, on skin, or on clothing.',76,''],
+    ['P263','prevention','H362','Avoid contact during pregnancy and while nursing.',85,''],
+    ['P264','prevention','H300 H301 H302 H310 H311 H314 H315 H319 H362 H370 H371 H372','Wash … thoroughly after handling.',71,'*supplier must specify affected body parts'],
+    ['P270','prevention','H300 H301 H302 H310 H311 H362 H370 H371 H372','Do not eat, drink or smoke when using this product.',68,''],
+    ['P271','prevention','H330 H331 H332 H335 H336','Use only outdoors or in a well-ventilated area.',75,''],
+    ['P272','prevention','H317','Contaminated work clothing should not be allowed out of the workplace.',55,''],
+    ['P282','prevention','H281','Wear cold insulating gloves and either face shield or eye protection.',93,''],
+    ['P283','prevention','H271','Wear fire resistant or flame retardant clothing.',67,'*only oxidising liquid/solid Category 1'],
+    ['P284','prevention','H330 H334','[In case of inadequate ventilation] wear respiratory protection.',83,'*specify respiratory equipment and whether optional bracket text applies'],
+    ['P231+P232','prevention','H250 H260 H261','Handle and store contents under inert gas/… Protect from moisture.',68,'*where moisture reaction or pyrophoric handling requires both instructions'],
+    ['P310','response','H300 H301 H310 H311 H330 H314 H318 H304','Immediately call a POISON CENTER/doctor/…',77,'*specify appropriate source of medical advice'],
+    ['P311','response','H331 H334 H370 H371','Call a POISON CENTER/doctor/…',73,'*specify appropriate source of medical advice'],
+    ['P312','response','H302 H312 H332 H335 H336','Call a POISON CENTRE/doctor/… if you feel unwell.',59,'*specify appropriate source of medical advice'],
+    ['P313','response','H315 H319 H317 H340 H341 H350 H351 H360* H361* H362','Get medical advice/attention.',48,''],
+    ['P314','response','H372 H373','Get medical advice/attention if you feel unwell.',78,''],
+    ['P315','response','H281','Get immediate medical advice/attention.',71,''],
+    ['P320','response','H330','Specific treatment is urgent (see … on this label).',57,'*only where immediate antidote administration is required; specify treatment'],
+    ['P321','response','H300 H301 H310 H311 H312 H314 H315 H317 H331 H370','Specific treatment (see … on this label).',52,'*only where specific immediate treatment or cleansing measure is applicable; specify it'],
+    ['P330','response','H300 H301 H302 H314','Rinse mouth.',56,''],
+    ['P332+P313','response','H315','If skin irritation occurs: Get medical advice/attention.',63,''],
+    ['P342+P311','response','H334','If experiencing respiratory symptoms: Call a POISON CENTER/doctor/…',89,'*specify appropriate source of emergency medical advice'],
+    ['P361+P364','response','H310 H311','Take off immediately all contaminated clothing and wash it before reuse.',67,''],
+    ['P362+P364','response','H312 H315 H317','Take off contaminated clothing and wash it before reuse.',58,''],
+    ['P308+P311','response','H370 H371','IF exposed or concerned: Call a POISON CENTER/doctor/…',74,'*specify appropriate emergency medical advice source'],
+    ['P390','response','H290','Absorb spillage to prevent material damage.',88,''],
+    ['P391','response','H400 H410 H411','Collect spillage.',86,''],
+    ['P370+P378','response','H224 H225 H226 H228 H241 H242 H260 H261 H271 H272','In case of fire: Use … to extinguish.',75,'*only where water increases the risk; specify appropriate extinguishing medium'],
+    ['P380','response','H200 H201 H202 H203 H204 H205 H206 H207 H208 H240 H241 H271','Evacuate area.',90,'*check physical-hazard category, type, transport and large quantity conditions'],
+    ['P377','response','H220 H221','Leaking gas fire: Do not extinguish, unless leak can be stopped safely.',88,''],
+    ['P381','response','H220 H221','In case of leakage, eliminate all ignition sources.',78,''],
+    ['P376','response','H270','Stop leak if safe to do so.',79,''],
+    ['P370+P376','response','H270','In case of fire: Stop leak if safe to do so.',87,''],
+    ['P301+P330+P331','response','H314','IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.',90,''],
+    ['P302+P334','response','H250','IF ON SKIN: Immerse in cool water or wrap in wet bandages.',73,'*pyrophoric liquids only; verify classification'],
+    ['P302+P335+P334','response','H250 H260','IF ON SKIN: Brush off loose particles from skin. Immerse in cool water [or wrap in wet bandages].',79,'*pyrophoric solids or water reactive solids; select correct phrase'],
+    ['P306+P360','response','H271','IF ON CLOTHING: Rinse immediately contaminated clothing and skin with plenty of water before removing clothes.',81,'*only oxidising solids/liquids Category 1'],
+    ['P336+P315','response','H281','Thaw frosted parts with lukewarm water. Do not rub affected area. Get immediate medical advice/attention.',89,''],
+    ['P370+P380+P375','response','H204 H206 H207 H208','In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion.',81,'*explosive Division 1.4 compatibility group S in transport packaging or desensitised explosives 1-3'],
+    ['P371+P380+P375','response','H271 H208','In case of major fire and large quantities: Evacuate area. Fight fire remotely due to the risk of explosion.',82,'*oxidisers Category 1 or desensitised explosives Category 4'],
+    ['P370+P372+P380+P373','response','H200 H201 H202 H203 H204 H205 H240','In case of fire: Explosion risk. Evacuate area. DO NOT fight fire when fire reaches explosives.',93,'*only applicable explosives types and self-reactive/organic peroxide Type A'],
+    ['P370+P380+P375+P378','response','H241','In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion. [Use … to extinguish].',83,'*self-reactive or organic peroxide Type B; extinguish option depends on risk'],
+    ['P401','storage','H200 H201 H202 H203 H204 H205 H206 H207 H208','Store in accordance with …',51,'*specify local/regional/national/international storage rules'],
+    ['P402','storage','H260 H261','Store in a dry place.',67,''],
+    ['P403','storage','H220 H221 H270 H280 H281 H224 H225 H226 H330 H331 H335 H336','Store in a well-ventilated place.',64,'*gas classes or volatile liquid/inhalation products as applicable'],
+    ['P404','storage','H260 H261','Store in a closed container.',59,''],
+    ['P405','storage','H300 H301 H310 H311 H330 H331 H314 H340 H341 H350 H350i H351 H360* H361* H370 H371 H335 H336 H304','Store locked up.',73,''],
+    ['P406','storage','H290','Store in a corrosion-resistant/… container with a resistant inner liner.',60,'*compatible container material must be specified; may omit where P234 selected'],
+    ['P407','storage','H251 H252','Maintain air gap between stacks or pallets.',54,''],
+    ['P410','storage','H229 H280 H251 H252 H240 H241 H242','Protect from sunlight.',61,'*see compressed-gas transport-cylinder derogations and hazard-specific conditions'],
+    ['P411','storage','H240 H241 H242','Store at temperatures not exceeding … °C/… °F.',59,'*only temperature-controlled self-reactives or organic peroxides; specify temperature'],
+    ['P412','storage','H229','Do not expose to temperatures exceeding 50 °C/122 °F.',72,''],
+    ['P413','storage','H251 H252','Store bulk masses greater than … kg/… lbs at temperatures not exceeding … °C/… °F.',51,'*only relevant bulk mass/temperature; specify both'],
+    ['P420','storage','H240 H241 H242 H251 H252 H271','Store separately.',62,'*verify applicable oxidising, reactive and self-heating categories'],
+    ['P402+P404','storage','H260 H261','Store in a dry place. Store in a closed container.',74,''],
+    ['P403+P233','storage','H330 H331 H335 H336','Store in a well-ventilated place. Keep container tightly closed.',65,'*only volatile substances able to generate a hazardous atmosphere'],
+    ['P403+P235','storage','H224 H225 H226','Store in a well-ventilated place. Keep cool.',77,'*flammable liquid Category 1 or volatile liquid able to generate explosive atmosphere'],
+    ['P410+P403','storage','H280','Protect from sunlight. Store in a well-ventilated place.',74,'*compressed, liquefied or dissolved gas; special transportable-cylinder exemption'],
+    ['P410+P412','storage','H229','Protect from sunlight. Do not expose to temperatures exceeding 50 °C/122 °F.',84,''],
+    ['P502','disposal','H420','Refer to manufacturer or supplier for information on recovery or recycling.',95,''],
+    ['P503','disposal','H200 H201 H202 H203 H204 H205','Refer to manufacturer/supplier/… for information on disposal/recovery/recycling.',94,'*supplier must specify appropriate information source and route']
+  ];
+  const P28_EXTENDED_RULES = Object.freeze(P28_CATALOGUE_ROWS.map(([code,group,h,text,priority,rawCondition])=>({
+    code,group,h:h.split(' '),text,priority,
+    condition:rawCondition.replace(/^\*/,''),
+    requiresConfirmation:rawCondition.startsWith('*'),
+    basis:'Annex IV Part 1, Table '+
+      ({general:'6.1',prevention:'6.2',response:'6.3',storage:'6.4',disposal:'6.5'}[group])+
+      '; validate exact language under Part 2'
+  })));
+  const P28_RULES = Object.freeze([...P28_BASE_RULES,...P28_EXTENDED_RULES]);
+
   const P28_MAP = Object.freeze(Object.fromEntries(P28_RULES.map((r) => [r.code, r])));
   const P28_REVIEW_LIMIT = 6;
 
