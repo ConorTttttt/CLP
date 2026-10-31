@@ -27,6 +27,17 @@
   };
   const has = (x) => typeof x === 'number' && isFinite(x);
 
+
+  // A recorded numerical input is not silently replaced by a default when
+  // malformed. Source-specific thresholds take precedence over generic values.
+  const entered = (value) => value !== '' && value !== null && value !== undefined;
+  const validPositive = (value) => has(num(value)) && num(value) > 0;
+  const sclValue = (ingredient, key) => {
+    const value = (ingredient.scl || {})[key];
+    return validPositive(value) && num(value) <= 100 ? num(value) : NaN;
+  };
+  const concentrationLimit = (i, key, generic) => has(sclValue(i,key)) ? sclValue(i,key) : generic;
+
   /* ---------------- reference data ---------------- */
   const PICTO = {
     GHS01: 'exploding bomb', GHS02: 'flame', GHS03: 'flame over circle', GHS04: 'gas cylinder',
@@ -1068,6 +1079,40 @@
     const warnings = [];
     const ings = (m.ingredients || []).map((raw) => {
       const i = Object.assign(blankIngredient(), raw);
+      const id = (raw.name || raw.cas || 'Unnamed ingredient').trim();
+      const invalid = (field, value, units) => warnings.push('DATA VALIDATION: '+id+
+        ' — invalid '+field+' '+JSON.stringify(value)+'. '+units+
+        ' Result may be unreliable until corrected.');
+      ['oral','dermal','inh'].forEach((route) => {
+        const a = (raw.acute || {})[route] || {};
+        if (entered(a.ate) && !validPositive(a.ate))
+          invalid(route+' ATE',a.ate,'ATE must be a positive finite number in the selected route units.');
+        if (entered(a.cat) && !['1','2','3','4'].includes(String(a.cat)))
+          invalid(route+' acute category',a.cat,'Use Category 1, 2, 3 or 4.');
+      });
+      if (raw.aquaAcute && !entered(raw.mAcute))
+        warnings.push('DATA GAP: '+id+' — Aquatic Acute 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
+      if (raw.aquaChronic === '1' && !entered(raw.mChronic))
+        warnings.push('DATA GAP: '+id+' — Aquatic Chronic 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
+      for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
+        if (!entered(raw[field])) continue;
+        const mFactor = num(raw[field]);
+        if (!has(mFactor) || mFactor < 1 || !Number.isInteger(mFactor))
+          invalid(field,raw[field],'M-factor must be an integer of at least 1; do not use a silent default.');
+        if (!applicable)
+          warnings.push('INPUT REVIEW: '+id+' — '+field+' supplied but the corresponding aquatic Category 1 classification is not selected.');
+      }
+      for (const [field,value] of Object.entries(raw.scl || {})) {
+        if (!entered(value)) continue;
+        const n=num(value);
+        if (!has(n) || n <= 0 || n > 100) invalid('SCL '+field,value,'SCL must be a percentage greater than 0 and at most 100.');
+      }
+      if (raw.acute && raw.acute.unknown &&
+          ['oral','dermal','inh'].some((route)=>{
+            const a=raw.acute[route] || {};
+            return entered(a.cat) || entered(a.ate);
+          })) warnings.push('DATA REVIEW: '+id+
+          ' is marked unknown acute toxicity but also has route-specific ATE/category data. Confirm which routes are unknown; the current unknown flag is ingredient-wide.');
       i.acute = Object.assign({}, blankIngredient().acute, raw.acute || {});
       ['oral', 'dermal', 'inh'].forEach((r) => (i.acute[r] = Object.assign({}, blankIngredient().acute[r], (raw.acute || {})[r] || {})));
       i.scl = Object.assign({}, raw.scl || {});
