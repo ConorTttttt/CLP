@@ -100,7 +100,7 @@
   function blankIngredient() {
     return {
       name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [],
-      acute: { oral: { cat: '', ate: '' }, dermal: { cat: '', ate: '' }, inh: { form: 'vapour', cat: '', ate: '' }, unknown: false },
+      acute: { oral: { cat: '', ate: '', unknown: false }, dermal: { cat: '', ate: '', unknown: false }, inh: { form: 'vapour', cat: '', ate: '', unknown: false }, unknown: false },
       skinCorr: '', eye: '', nonAdditive: false,
       skinSens: '', respSens: '', muta: '', carc: '', carcRoute: '', repro: '', reproFert: '', reproDev: '', lact: false,
       stotSE: '', stotSEresp: false, stotSEnarc: false, stotRE: '', asp: false,
@@ -293,7 +293,8 @@
 
   function acute(mix, ings, ctx) {
     const H = hz('acute', 'Acute toxicity', 'Annex I 3.1.3.6 (cons. pp.138–139); Table 3.1.1 (p.134); conversions Table 3.1.2 (pp.139–140); cut-offs Table 1.1 (p.68)');
-    const unknown = ings.filter((i) => i.acute.unknown && ge(i.pct, 1));
+    const unknown = ings.filter((i) => ge(i.pct, 1) &&
+      (i.acute.unknown || i.acute.oral.unknown || i.acute.dermal.unknown || i.acute.inh.unknown));
     const unkSum = sum(unknown.map((i) => i.pct));
     const routes = [
       ['oral', (i) => i.acute.oral], ['dermal', (i) => i.acute.dermal],
@@ -313,6 +314,19 @@
     if (inhForms.size > 1) H.notes.push('Inhalation data are given in different forms (' + [...inhForms].join(', ') + '). Each form is calculated separately – check that this is appropriate for your mixture.');
     routes.forEach(([key, getter]) => {
       const T = AT[key], rows = [], skipped = [];
+      const routeUnknown = ings.filter((i) => {
+        if (!ge(i.pct,1)) return false;
+        const r=getter(i);
+        if (!r || (key!=='oral'&&key!=='dermal'&&i.acute.inh.form!==key)) return false;
+        const known=(validPositive(r.ate) || ['1','2','3','4'].includes(String(r.cat)));
+        return (i.acute.unknown || !!r.unknown) && !known;
+      });
+      const routeUnknownSum=sum(routeUnknown.map(i=>i.pct));
+      if(routeUnknownSum>0) {
+        H.steps.push('— '+T.label+' unknown data: '+routeUnknown.map(nm).join(', ')+
+          ' = '+fmt(routeUnknownSum)+' %. '+
+          (routeUnknownSum>10+EPS?'Corrected formula numerator 100 − unknown fraction.':'Standard formula numerator 100.'));
+      }
       ings.forEach((i) => {
         const r = getter(i); if (!r) return;
         const tested = num(r.ate); const cat0 = parseInt(r.cat, 10) || 0;
@@ -332,9 +346,16 @@
         if (i.pct < cut - EPS) { skipped.push(`${nm(i)} (Cat. ${cat}) at ${fmt(i.pct)} % is below the Table 1.1 cut-off of ${cut} % → not taken into account.`); return; }
         rows.push({ i, ate, cat, src });
       });
-      if (!rows.length) { if (skipped.length) { H.steps.push(`— ${T.label}: ` + skipped.join(' ')); } return; }
+      if (!rows.length) {
+        if (skipped.length) H.steps.push(`— ${T.label}: ` + skipped.join(' '));
+        if(routeUnknownSum>0) {
+          if(H.status!=='classified')H.status='incomplete';
+          H.notes.push(T.label+': the unknown-data flag is present, but no known ATE contributions are available for this route.');
+        }
+        return;
+      }
       const terms = rows.map((r) => r.i.pct / r.ate);
-      const denom = sum(terms), numer = unkSum > 10 + EPS ? 100 - unkSum : 100;
+      const denom = sum(terms), numer = routeUnknownSum > 10 + EPS ? 100 - routeUnknownSum : 100;
       if (!(numer > 0) || !(denom > 0)) {
         H.status='incomplete';
         const detail='Acute toxicity formula for '+T.label+
@@ -1172,6 +1193,8 @@
           invalid(route+' ATE',a.ate,'ATE must be a positive finite number in the selected route units.');
         if (entered(a.cat) && !['1','2','3','4'].includes(String(a.cat)))
           invalid(route+' acute category',a.cat,'Use Category 1, 2, 3 or 4.');
+        if(a.unknown && (entered(a.cat) || entered(a.ate)))
+          warnings.push('DATA REVIEW: '+id+' — '+route+' route marked unknown but an ATE/category is also entered. Known route information takes precedence; verify the flag.');
       });
       if (raw.aquaAcute && !entered(raw.mAcute))
         warnings.push('DATA GAP: '+id+' — Aquatic Acute 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
