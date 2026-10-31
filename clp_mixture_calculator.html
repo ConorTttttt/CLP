@@ -2258,7 +2258,7 @@ function summaryChips(i) {
   if (i.edHH) c.push("ED HH " + i.edHH);
   if (i.edEnv) c.push("ED ENV " + i.edEnv);
   ["pbt", "vpvb", "pmt", "vpvm", "ozone"].forEach((f) => { if (i[f]) c.push({ pbt: "PBT", vpvb: "vPvB", pmt: "PMT", vpvm: "vPvM", ozone: "Ozone" }[f]); });
-  return c.map((x) => `<span class="chip on">${esc(x)}</span>`).join("") || '<span class="hint">no classification</span>';
+  return c.length ? `<b>Resolved category details (edit under Details):</b> ${c.map(esc).join(" · ")}` : "";
 }
 
 
