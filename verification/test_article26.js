@@ -173,5 +173,57 @@ const contribution = (x, code, label) =>
   t('Mixture option retains optional physical pictograms',selected(all.label,'GHS02') && selected(all.label,'GHS01'));
 }
 
+/* The audit must distinguish mixture-level H319 from ingredient-only H319. */
+{
+  const src=[one('Skin Corr. 1','H314','GHS05','skin'),one('Eye Irrit. 2','H319','GHS07','eye')];
+  const pict=check(src);
+  const d=contribution(pict,'GHS07','Eye Irrit. 2');
+  t('H314/H319 specifically named in contribution explanation',
+    d.decision==='omitted' && d.reason.includes('H314') && d.reason.includes('H319') &&
+    d.reason.includes('GHS05') && d.reason.includes('GHS07') && d.basis.includes('26(1)(c)'));
+}
+{
+  const src=[one('Eye Dam. 1','H318','GHS05','eye'),one('Eye Irrit. 2','H319','GHS07','manualEye')];
+  const d=contribution(check(src),'GHS07','Eye Irrit. 2');
+  t('GHS05 from H318 correctly identified as reason',
+    d.decision==='omitted' && d.reason.includes('H318') && d.reason.includes('H319') &&
+    !d.reason.includes('H314'));
+}
+{
+  const a=CLP.blankIngredient();a.name='Corrosive';a.pct=20;CLP.applyHCodes(a,'H314');
+  const b=CLP.blankIngredient();b.name='Eye irritant';b.pct=20;CLP.applyHCodes(b,'H319');
+  const c=CLP.blankIngredient();c.name='Remainder';c.pct=60;
+  const mix={ingredients:[a,b,c]},result=CLP.classify(mix);
+  t('Source-only H319 does not invent a GHS07 omission',
+    result.label.pictograms.some(x=>x.code==='GHS05') &&
+    !result.label.triggeredPictograms.some(x=>x.code==='GHS07') &&
+    result.label.omittedPictograms.length===0 &&
+    result.label.pictogramExplanations.some(x=>x.kind==='ingredientOnly' && x.reason.includes('not an Article 26 omission')));
+  t('Source-only H319 explanation available in report',
+    CLP.report(mix,result).includes('H319 / GHS07 CLARIFICATION (ingredientOnly)'));
+}
+{
+  const manual=[
+    {label:'Skin Corr. 1',h:'H314',picto:'GHS05'},
+    {label:'Eye Irrit. 2',h:'H319',picto:'GHS07'}
+  ];
+  const mix={manual,ingredients:[]},result=CLP.classify(mix);
+  t('Mixture H314/H319 is explicitly recorded as Article 26 omitted',
+    result.label.pictogramExplanations.some(x=>x.kind==='omittedByArticle26' &&
+      x.reason.includes('H319-derived GHS07') && x.reason.includes('H314') && x.reason.includes('Article 26(1)(c)')) &&
+    result.label.omittedPictograms.some(x=>x.code==='GHS07'));
+  t('Mixture H319 hazard statement and classification are preserved',
+    result.outcomes.some(x=>x.h.includes('H319')) &&
+    result.label.hazardStatements.some(x=>x.code==='H319'));
+  t('Mixture H314/H319 report includes reason',
+    CLP.report(mix,result).includes('H319 / GHS07 CLARIFICATION (omittedByArticle26)'));
+  const retained=CLP.classify({manual:manual.concat([{label:'Acute Tox. 4',h:'H302',picto:'GHS07'}]),ingredients:[]});
+  t('H319-specific GHS07 omitted while another GHS07 contributor survives',
+    retained.label.pictograms.some(x=>x.code==='GHS07') &&
+    retained.label.pictogramDecisions.find(x=>x.code==='GHS07').contributions
+      .some(x=>x.hazardStatements.includes('H319') && x.decision==='omitted') &&
+    retained.label.pictogramExplanations.some(x=>x.kind==='omittedByArticle26' && x.reason.includes('nevertheless retained')));
+}
+
 console.log('\n'+pass+' Article 26 tests passed, '+fail+' failed');
 process.exit(fail ? 1 : 0);
