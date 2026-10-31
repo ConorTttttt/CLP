@@ -541,8 +541,14 @@ img[src$="GHS05.svg"] {
 
   function acute(mix, ings, ctx) {
     const H = hz('acute', 'Acute toxicity', 'Annex I 3.1.3.6 (cons. pp.138–139); Table 3.1.1 (p.134); conversions Table 3.1.2 (pp.139–140); cut-offs Table 1.1 (p.68)');
-    const unknown = ings.filter((i) => ge(i.pct, 1) &&
-      (i.acute.unknown || i.acute.oral.unknown || i.acute.dermal.unknown || i.acute.inh.unknown));
+    const unknown = ings.filter((i) => {
+      if (!ge(i.pct,1)) return false;
+      return ['oral','dermal','inh'].some(key => {
+        const route=i.acute[key];
+        return (i.acute.unknown || !!route.unknown) &&
+          !validPositive(route.ate) && !['1','2','3','4'].includes(String(route.cat));
+      });
+    });
     const unkSum = sum(unknown.map((i) => i.pct));
     const routes = [
       ['oral', (i) => i.acute.oral], ['dermal', (i) => i.acute.dermal],
@@ -551,7 +557,13 @@ img[src$="GHS05.svg"] {
       ['gas', (i) => (i.acute.inh.form === 'gas' ? i.acute.inh : null)]
     ];
     const anyAcute = ings.filter((i) => ['oral', 'dermal'].some((r) => has(num(i.acute[r].ate)) || i.acute[r].cat) || has(num(i.acute.inh.ate)) || i.acute.inh.cat);
-    if (!anyAcute.length && !unknown.length) { H.steps.push('No ingredient carries acute-toxicity data → not classified.'); return H; }
+    if (!anyAcute.length && !unknown.length) {
+      if(ctx.warnings.some(x=>x.startsWith('DATA VALIDATION:') && x.includes('ATE'))) {
+        H.status='incomplete';
+        H.steps.push('Invalid ATE input was provided without a valid category fallback. Correct it before claiming an acute-toxicity determination.');
+      } else H.steps.push('No ingredient carries acute-toxicity data → not classified.');
+      return H;
+    }
     if (unkSum > 0) {
       const corrected = unkSum > 10 + EPS;
       H.steps.push(`Ingredients with no usable acute-toxicity data (≥ 1 %): ${unknown.map(nm).join(', ')} = ${fmt(unkSum)} %. ` +
