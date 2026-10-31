@@ -335,6 +335,8 @@ t('FP not entered -> nodata', fl('', '').nodata.length === 1);
   const allRetained = CLP.selectArticle27([{code:'H410'},{code:'H400'}], [], {omitOptional:false});
   t('Art27 user option retains H400', allRetained.hazardStatements.length === 2 && allRetained.omittedHazardStatements.length === 0);
   t('Art27 user option gives audit reason', allRetained.decisions.find((x)=>x.code==='H400').reason.includes('User elected'));
+  t('Art27 opt-out retains legal citation', allRetained.decisions.find((x)=>x.code==='H400').basis.includes('Annex III'));
+  t('Art27 opt-out retains no-rule distinction', CLP.selectArticle27([{code:'H302'}],[],{omitOptional:false}).decisions[0].reason.includes('No explicit Annex III omission rule'));
   const keepAllMix = CLP.classify({ingredients:[water(100)],article27Mode:'keepAll',manual:[
     {label:'Aquatic Acute 1',h:'H400'}, {label:'Aquatic Chronic 1',h:'H410'}]});
   t('Art27 keep-all mode leaves both labels', keepAllMix.label.hazardStatements.some(x=>x.code==='H400') &&
