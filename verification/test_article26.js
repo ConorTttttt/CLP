@@ -133,5 +133,45 @@ const contribution = (x, code, label) =>
     {label:'Skin Irrit. 2',h:'H315',picto:'GHS07'}
   ]},x).includes('ARTICLE 26 PICTOGRAM AUDIT'));
 }
+{
+  const A=CLP.blankIngredient();A.name='Respiratory sensitiser';A.pct=50;
+  CLP.applyHCodes(A,'H334 H317');
+  const B=CLP.blankIngredient();B.name='Unclassified';B.pct=50;
+  const r=CLP.classify({ingredients:[A,B]});
+  t('Classified H334+H317 keeps both H codes but only GHS08',
+    r.outcomes.some((o)=>o.label.startsWith('Resp. Sens.')) &&
+    r.outcomes.some((o)=>o.label.startsWith('Skin Sens.')) &&
+    selected(r.label,'GHS08') && omitted(r.label,'GHS07') &&
+    r.label.hazardStatements.some(x=>x.code==='H334') &&
+    r.label.hazardStatements.some(x=>x.code==='H317'));
+}
+{
+  const A=CLP.blankIngredient();A.name='Carcinogenic skin sensitiser';A.pct=50;
+  CLP.applyHCodes(A,'H350 H317');
+  const B=CLP.blankIngredient();B.name='Unclassified';B.pct=50;
+  const r=CLP.classify({ingredients:[A,B]});
+  t('Carcinogenicity with skin sensitisation retains GHS07',
+    selected(r.label,'GHS08') && selected(r.label,'GHS07'));
+}
+{
+  const A=CLP.blankIngredient();A.name='Corrosive and narcotic';A.pct=50;
+  CLP.applyHCodes(A,'H314 H336');
+  const B=CLP.blankIngredient();B.name='Unclassified';B.pct=50;
+  const r=CLP.classify({ingredients:[A,B]});
+  t('Skin corrosion and STOT SE narcotic effects retain GHS07',
+    selected(r.label,'GHS05') && selected(r.label,'GHS07'));
+}
+{
+  const input={ingredients:[],manual:[
+    {label:'Explosive 1.1',h:'H201',signal:'Danger',picto:'GHS01'},
+    {label:'Flam. Liq. 2',h:'H225',signal:'Danger',picto:'GHS02'}
+  ],article26Mode:'omitOptional'};
+  const r=CLP.classify(input);
+  t('Mixture option activates Article 26 optional omissions',omitted(r.label,'GHS02') && selected(r.label,'GHS01'));
+  input.article26Mode='retainOptional';
+  const all=CLP.classify(input);
+  t('Mixture option retains optional physical pictograms',selected(all.label,'GHS02') && selected(all.label,'GHS01'));
+}
+
 console.log('\n'+pass+' Article 26 tests passed, '+fail+' failed');
 process.exit(fail ? 1 : 0);
