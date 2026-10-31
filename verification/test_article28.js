@@ -64,6 +64,10 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
  t('Conditional intended release of P273 flagged',flagged(r,'if environmental release is the intended use'));
 }
 {
+{
+ const r=choose(['H225'],{audience:'professional'});
+ t('Conditional P303 bracketed wording flagged',r.review.some(x=>x.code==='P303+P361+P353'&&x.reason.includes('Bracketed')));
+}
  const r=choose(['H304'],{audience:'professional'});
  t('Aspiration P331 offered',!!cand(r,'P331'));
  t('Aspiration response P301+P310 offered',!!cand(r,'P301+P310'));
@@ -83,10 +87,12 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'P272'});
  t('Manual code outside partial catalogue explicitly unverified',cand(r,'P272')?.manual&&r.warnings.some(x=>x.includes('no verified wording')));
+ t('Unverified manual P code blocks final approval',r.review.some(x=>x.code==='P272'&&x.severity==='blocker'));
 }
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'P305 + P351 + P338'});
  t('Manual combined code parsed correctly',cand(r,'P305+P351+P338')?.manual===true);
+ t('Manual code not matched to hazards is flagged',r.review.some(x=>x.code==='P305+P351+P338'&&x.severity==='review'));
 }
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'BAD,P308'});
@@ -104,6 +110,8 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
 {
  const r=choose([],{audience:'unknown'});
  t('No hazards do not invent obligatory P',r.selected.length===0&&r.requiredObligations.length===0);
+ const c=choose([],{audience:'consumer'});
+ t('No hazardous classification does not auto-propose consumer general P statements',c.selected.length===0);
 }
 {
  const mixture={ingredients:[],manual:[{label:'Skin Corr. 1',h:'H314',signal:'Danger',picto:'GHS05'}],audience:'consumer'};
