@@ -56,7 +56,7 @@ VERIFICATION
 Run from repository root:
   node verification/test_engine.js
   node verification/test_ui_structure.js
-The engine suite currently has 216 checks. UI structure checks verify that the HTML scripts compile,
+The engine suite currently has 219 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -74,6 +74,8 @@ For the provisional label, the following optional Annex III Part 1 omissions are
 The decisions (retained/omitted, overriding code, reason, legal basis) appear under Article 27
 in the browser and text report. Omitted statements remain discoverable under
 result.label.omittedHazardStatements, omittedEuhStatements and decisions.
+The Mixture panel has a checkbox for these optional omissions (checked by default). Untick it to
+retain every triggered H/EUH statement on the proposed label. This preference is saved to JSON.
 The system flags some additional potential redundancies for expert review without automatically
 removing them (including EUH071/H335, H314/H319 and generic/differentiated H360).
 Article 27 is not a blanket instruction to suppress every related or weaker H-code.
@@ -81,3 +83,5 @@ Article 26 pictograms, Article 28 P statements, optional combined Annex III phra
 other case-specific redundancy decisions require a separate regulatory review.
 Source: Regulation (EC) 1272/2008 Article 27 and Annex III Part 1, as amended by
 Commission Delegated Regulation (EU) 2023/707 Annex III.
+
+Regulatory rule details and references: docs/article_27_hazard_statement_precedence.md
