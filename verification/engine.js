@@ -1172,8 +1172,36 @@
                          ['P235','P411','Annex IV Table 6.2: P235 may be omitted when P411 is used'],
                          ['P235','P413','Annex IV Table 6.2: P235 may be omitted when P413 is used']];
     const omittedByRedundancy=new Map();
+    const canCover = (code) => {
+      const stronger=active.get(code);
+      return stronger && (!stronger.requiresConfirmation || stronger.manual) &&
+        !(exclusions.has(code) && reasonText);
+    };
     for(const [weaker,stronger,basis] of explicitPairs)
-      if(active.has(weaker)&&active.has(stronger)&&!explicitCodes.includes(weaker)) omittedByRedundancy.set(weaker,{stronger,basis});
+      if(active.has(weaker)&&canCover(stronger)&&!explicitCodes.includes(weaker))
+        omittedByRedundancy.set(weaker,{stronger,basis});
+
+    // Preserve every source-specific precaution. A combined response/storage
+    // code replaces a standalone component only when it covers ALL triggering
+    // classified-hazard sources of that standalone code.
+    for(const weak of active.values()) {
+      if(!/^P\d{3}$/.test(weak.code) || explicitCodes.includes(weak.code) ||
+         omittedByRedundancy.has(weak.code)) continue;
+      const combined = [...active.values()].filter(strong =>
+        strong.code.includes('+') &&
+        strong.code.split('+').includes(weak.code) &&
+        canCover(strong.code) &&
+        weak.triggeredBy.length &&
+        weak.triggeredBy.every(from => strong.triggeredBy.includes(from)));
+      if(combined.length) {
+        const stronger=combined.sort((a,b)=>b.priority-a.priority)[0];
+        omittedByRedundancy.set(weak.code,{
+          stronger:stronger.code,
+          basis:'Annex IV authorised combination '+stronger.code+
+            ' covers every source classification that triggered '+weak.code
+        });
+      }
+    }
     // The consumer-only optional P201 statement is not generated; P202 is used
     // as a candidate when relevant, and P103 is excluded if redundant.
     const manualExclusions=[];
