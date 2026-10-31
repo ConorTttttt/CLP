@@ -389,7 +389,9 @@
     /* ---- skin ---- */
     const skinCut = (i) => {
       const specific = i.skinCorr === '2' ? sclValue(i, 'skinIrrit') : sclValue(i, 'skinCorr');
-      return has(specific) ? Math.min(1,specific) : 1;
+      // Preserve additive contributions even when each ingredient is below
+      // its own low SCL: e.g. 0.3/0.5 + 0.3/0.5 >= 1.
+      return has(specific) && specific < 1 ? EPS : 1;
     };
     const sRel = ings.filter((i) => i.skinCorr && ge(i.pct, skinCut(i)));
     ings.filter((i) => i.skinCorr && !ge(i.pct, skinCut(i))).forEach((i) =>
@@ -397,6 +399,8 @@
         ') at '+fmt(i.pct)+' % is below relevance threshold '+fmt(skinCut(i))+
         ' %. Lower test-supported effect levels can still matter (3.2.3.3.6).'));
     const sAdd = sRel.filter((i) => !i.nonAdditive), sNon = sRel.filter((i) => i.nonAdditive);
+    if(sAdd.some(i=>i.pct < 1 && skinCut(i) < 1))
+      S.notes.push('Ingredients below 1 % with a lower SCL are included in the additive potency-ratio check. Verify their relevant concentration and substance evidence before approval.');
     const by = (list, c) => sum(list.filter((i) => i.skinCorr === c).map((i) => i.pct));
     const s1A = by(sAdd, '1A'), s1B = by(sAdd, '1B'), s1C = by(sAdd, '1C'), s1U = by(sAdd, '1'), s2 = by(sAdd, '2');
     const corr = s1A + s1B + s1C + s1U;
@@ -459,7 +463,7 @@
     const eRel = ings.filter((i) => (i.skinCorr && i.skinCorr !== '2') || i.eye);
     const eyeCut=(i) => {
       const specific=sclValue(i,((i.skinCorr&&i.skinCorr!=='2') || i.eye==='1')?'eyeDam':'eyeIrrit');
-      return has(specific)?Math.min(1,specific):1;
+      return has(specific) && specific < 1 ? EPS : 1;
     };
     const eRelC = eRel.filter((i) => ge(i.pct, eyeCut(i)));
     const eCorr = (i) => (i.skinCorr && i.skinCorr !== '2') || i.eye === '1';
@@ -467,6 +471,8 @@
       E.notes.push(nm(i)+' at '+fmt(i.pct)+' % is below relevance threshold '+fmt(eyeCut(i))+
         ' %. Lower evidence-based limits still require evaluation (3.3.3.3.6).'));
     const eAdd = eRelC.filter((i) => !i.nonAdditive), eNon = eRelC.filter((i) => i.nonAdditive);
+    if(eAdd.some(i=>i.pct < 1 && eyeCut(i) < 1))
+      E.notes.push('Eye damage/irritation contributors below 1 % with a lower SCL are included in additive potency ratios; verify relevance and source evidence.');
     const e1 = sum(eAdd.filter(eCorr).map((i) => i.pct)), e2 = sum(eAdd.filter((i) => !eCorr(i) && i.eye === '2').map((i) => i.pct));
     let eCat = null;
     if (eAdd.length) {
