@@ -14,7 +14,7 @@ and shows every calculation step with the Annex I table/page reference:
 - Aquatic acute / chronic summation with M-factors
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
-- Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
+- Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, expanded Article 28 P-statement candidate index with a required/conditional audit, SDS-on-request triggers
 
 VIEWER SETTINGS
 Open the collapsible "Viewer Settings — show / hide results" panel in the right-hand
@@ -77,7 +77,7 @@ Run from repository root:
   node verification/test_article28.js
   node verification/test_ui_structure.js
   node verification/test_viewer_settings.js
-The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
+The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the expanded Article 28 suite has 103 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -138,9 +138,13 @@ Source: Regulation (EC) No 1272/2008, Article 26(1)(a)-(e) and 26(2).
 Detailed reference: docs/article_26_pictogram_precedence.md
 
 ARTICLE 28 — P-STATEMENT CANDIDATES / MANDATORY OBLIGATIONS
-The calculator now has a separate Articles 22/28 selector using a LIMITED initial catalogue
-of 21 verified Annex IV P-statement codes. It includes consumer-only general precautions,
-CMR/flammability/prevention/emergency response, and P501 disposal for mapped hazard classes.
+The calculator now has a separate Articles 22/28 selector with an expanded, version-labelled
+index of 129 Annex IV codes, including full combinations, standalone components and
+conditional rules. It covers consumer precautions, physical hazards, health hazards,
+aquatic hazards, emergency response, storage and P501/P502/P503 disposal.
+Thirty code-only response components are indexed but must not be proposed as incomplete
+standalone statements. Conditional rules remain outside the automatic proposed-six
+unless explicitly included and verified by the supplier.
 The proposed label shows at most six ranked candidates, but any overflow is explicitly flagged:
 do not treat the six suggestions as the legally correct final choice without review.
 Legal distinction: Article 22 requires relevant P-statements selected according to Annex I/IV;
@@ -148,10 +152,15 @@ Article 28(2) generally requires a consumer disposal statement covering contents
 unless not required by Article 22. This does NOT universally make an individual P-code mandatory.
 Other P statements are flagged as eligible candidates, not inherently mandatory.
 For general public products, the tool explicitly checks P501 eligibility and disposal destination.
-If an eligible P501 code is missing, it blocks approval for review of other Annex IV disposal
-codes/Article 22 exceptions. P501 and P280 supplier-specific wording must be completed.
+If P501 is not eligible, the engine can recognise P502 (ozone) and P503 (explosives),
+but blocks approval until the supplier verifies how disposal of contents and packaging is
+covered. P501/P280 wording and other supplier-specific choices must be completed.
 Select consumer/professional/industrial supply, use, disposal route and PPE on the new
 Article 28 form. Add/exclude P codes manually with a documented justification.
-Unmapped hazards, unresolved supplier wording and case-specific selection are flagged.
-The output is NEVER described as final/approved. Full Annex IV is still to be incorporated.
+Unmapped hazards, conditional criteria, unresolved supplier wording and case-specific
+category selection are flagged. The output is NEVER described as final/approved.
+The expanded index is NOT a fully verified rules engine: legal category criteria, full
+Annex I linkages, Annex IV Part 2 wordings and translated wording require independent
+regulatory cross-check before release. The tracked consolidated EU target is 01.07.2026
+and the mapped Annex IV selection tables must be reconciled against that text.
 Regulatory reference: docs/article_28_precautionary_statement_selection.md

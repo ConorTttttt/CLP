@@ -48,7 +48,8 @@ check('Article 28 new JSON default is safe unknown audience',html.includes('audi
 check('Article 28 results panel exists',html.includes('Article 28 — precautionary-statement decisions'));
 check('Article 28 has legal-obligation rendering',html.includes('Legal obligation — '));
 check('Article 28 selected statements visible on label',html.includes('Draft P-statements — Article 28 (not final)'));
-check('Article 28 Annex IV input clarification exists',html.includes('not a claim that every candidate P-code is mandatory'));
+check('Article 28 Annex IV input clarification exists',html.includes('Consumer disposal: Article 28(2)') &&
+ html.includes('P502/P503 alone may not satisfy the packaging requirement'));
 check('Article 28 renders complete candidate audit',html.includes('All eligible and non-selected candidates'));
 
 // Regression: three Article 28 surfaces must NOT use the 62px general H-code grid.
@@ -79,4 +80,9 @@ check('Preferences reset and article explanation preset available',
   html.includes('id="viewer-defaults"'));
 check('Mandatory warnings remain outside hideable cards',
   !html.includes('data-view="warnings"')&&!html.includes('data-view="incomplete"'));
+check('Expanded Article 28 catalogue reported in viewer',html.includes('P28.catalogueSize'));
+check('Article 28 conditional candidate audit visible',html.includes('Conditional statements requiring applicability review'));
+check('Article 28 makes condition explanation visible',html.includes('p.condition'));
+check('Article 28 component-only codes are clearly marked',html.includes('Incomplete component-only codes'));
+check('Article 28 disposal documentation includes P502/P503',html.includes('P502 and P503'));
 console.log(pass + ' UI source checks passed');

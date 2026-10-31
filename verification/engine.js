@@ -873,29 +873,180 @@
      Article 28(2) does impose a qualified CONSUMER DISPOSAL statement requirement.
      Annex IV Part 1 tables 6.1-6.5 are the selection source; Part 2 is wording.
   */
-  const P28_RULES = Object.freeze([
+  const P28_BASE_RULES = Object.freeze([
     {code:'P101', text:'If medical advice is needed, have product container or label at hand.', consumer:true, priority:30, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P102', text:'Keep out of reach of children.', consumer:true, priority:80, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P103', text:'Read carefully and follow all instructions.', consumer:true, priority:25, group:'general', basis:'Annex IV Table 6.1, consumer products; omit if P202 is used'},
-    {code:'P210', text:'Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.', h:['H224','H225','H226'], priority:95, group:'prevention', basis:'Annex IV Table 6.2, flammable liquids 1-3'},
+    {code:'P210', text:'Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.', h:['H201','H202','H203','H204','H205','H206','H207','H208','H220','H221','H222','H223','H224','H225','H226','H228','H240','H241','H242','H250','H271','H272'], priority:95, group:'prevention', basis:'Annex IV Table 6.2, flammable liquids 1-3'},
     {code:'P202', text:'Do not handle until all safety precautions have been read and understood.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:86, group:'prevention', basis:'Annex IV Table 6.2, CMR / lactation'},
-    {code:'P280', text:'Wear protective gloves/protective clothing/eye protection/face protection/…', h:['H224','H225','H226','H314','H315','H317','H318','H319','H340','H341','H350','H350i','H351','H360*','H361*'], priority:65, group:'prevention', needs:'ppe', basis:'Annex IV Table 6.2; specify suitable protective equipment'},
+    {code:'P280', text:'Wear protective gloves/protective clothing/eye protection/face protection/hearing protection/…', h:['H200','H201','H202','H203','H204','H205','H220','H221','H224','H225','H226','H228','H240','H241','H242','H250','H251','H252','H260','H261','H271','H272','H310','H311','H312','H314','H315','H317','H318','H319','H340','H341','H350','H350i','H351','H360*','H361*'], priority:65, group:'prevention', needs:'ppe', basis:'Annex IV Table 6.2; specify suitable protective equipment'},
     {code:'P273', text:'Avoid release to the environment.', h:['H400','H410','H411','H412','H413'], priority:64, group:'prevention', condition:'only where release is not the intended use', basis:'Annex IV Table 6.2, aquatic hazard; intended use'},
-    {code:'P261', text:'Avoid breathing dust/fume/gas/mist/vapours/spray.', h:['H317','H334','H335','H336','H332'], priority:57, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; specify exposure medium'},
+    {code:'P261', text:'Avoid breathing dust/fume/gas/mist/vapours/spray.', h:['H317','H334','H335','H336','H331','H332'], priority:57, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; specify exposure medium'},
     {code:'P260', text:'Do not breathe dust/fume/gas/mist/vapours/spray.', h:['H330','H370','H371','H372','H373','H362'], priority:79, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; check exact category/exposure medium'},
     {code:'P301+P330+P331', text:'IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.', h:['H314'], priority:90, group:'response', basis:'Annex IV Table 6.3, skin corrosion'},
     {code:'P305+P351+P338', text:'IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.', h:['H314','H318','H319'], priority:95, group:'response', basis:'Annex IV Table 6.3, skin corrosion / eye damage or irritation'},
     {code:'P303+P361+P353', text:'IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water [or shower].', h:['H314','H224','H225','H226'], priority:71, group:'response', basis:'Annex IV Table 6.3, skin corrosion / flammable liquids', condition:'square-bracket alternatives require review'},
-    {code:'P302+P352', text:'IF ON SKIN: Wash with plenty of water/…', h:['H315','H317'], priority:62, group:'response', needs:'wash', basis:'Annex IV Table 6.3, irritation/sensitisation'},
+    {code:'P302+P352', text:'IF ON SKIN: Wash with plenty of water/…', h:['H310','H311','H312','H315','H317'], priority:62, group:'response', needs:'wash', basis:'Annex IV Table 6.3, irritation/sensitisation'},
     {code:'P333+P313', text:'If skin irritation or rash occurs: Get medical advice/attention.', h:['H317'], priority:62, group:'response', basis:'Annex IV Table 6.3, skin sensitisation'},
     {code:'P337+P313', text:'If eye irritation persists: Get medical advice/attention.', h:['H319'], priority:50, group:'response', basis:'Annex IV Table 6.3, eye irritation 2'},
     {code:'P301+P310', text:'IF SWALLOWED: Immediately call a POISON CENTER/doctor/…', h:['H300','H301','H304'], priority:94, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 1-3 / aspiration 1'},
     {code:'P301+P312', text:'IF SWALLOWED: Call a POISON CENTER/doctor/… if you feel unwell.', h:['H302'], priority:78, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 4'},
     {code:'P331', text:'Do NOT induce vomiting.', h:['H304'], priority:86, group:'response', basis:'Annex IV Table 6.3, aspiration hazard 1'},
-    {code:'P304+P340', text:'IF INHALED: Remove person to fresh air and keep comfortable for breathing.', h:['H330','H331','H332','H334','H335','H336'], priority:78, group:'response', basis:'Annex IV Table 6.3, acute inhalation / respiratory sensitisation / STOT SE3'},
+    {code:'P304+P340', text:'IF INHALED: Remove person to fresh air and keep comfortable for breathing.', h:['H314','H330','H331','H332','H334','H335','H336'], priority:78, group:'response', basis:'Annex IV Table 6.3, acute inhalation / respiratory sensitisation / STOT SE3'},
     {code:'P308+P313', text:'IF exposed or concerned: Get medical advice/attention.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:81, group:'response', basis:'Annex IV Table 6.3, CMR / lactation'},
     {code:'P501', text:'Dispose of contents/container to …', h:['H224','H225','H226','H300','H301','H302','H310','H311','H312','H314','H317','H330','H331','H334','H340','H341','H350','H350i','H351','H360*','H361*','H370','H371','H372','H373','H304','H335','H336','H400','H410','H411','H412','H413'], priority:65, group:'disposal', needs:'disposal', basis:'Annex IV Table 6.5; Article 28(2) for the general public, subject to Article 22'}
   ]);
+
+  /*
+   * Expanded Annex IV Part 1 criteria catalogue, grouped by H-code.
+   *
+   * Current legal cross-reference:
+   * Regulation (EC) 1272/2008, 01.07.2026 consolidated edition,
+   * Annex IV Part 1 tables 6.1 to 6.5; Annex IV Part 2 for exact wording.
+   * Text here is an English DRAFT transcription, NOT final multilingual label
+   * text. Most physical-hazard entries can originate from manual mixture classes.
+   *
+   * Conditional statements are shown in the candidate audit but do not enter
+   * the proposed-six automatically until a user explicitly requests them.
+   * Partial component codes (P301, P302, P305 etc) are not proposed separately
+   * when the complete authorised combinations are available.
+   *
+   * Each row: code | category | H-code patterns | text | ranking | condition
+   * Prefix "*" in the final column = condition must be verified before use.
+   */
+  const P28_CATALOGUE_ROWS = [
+    ['P201','prevention','H200 H340 H341 H350 H350i H351 H360* H361* H362','Obtain special instructions before use.',52,'consumer supply, P202 is an alternative'],
+    ['P211','prevention','H222 H223','Do not spray on an open flame or other ignition source.',91,''],
+    ['P212','prevention','H206 H207 H208','Avoid heating under confinement or reduction of the desensitising agent.',75,''],
+    ['P220','prevention','H270 H271 H272','Keep away from clothing and other combustible materials.',91,''],
+    ['P222','prevention','H250','Do not allow contact with air.',66,'*only where emphasis of pyrophoric hazard is necessary'],
+    ['P223','prevention','H260 H261','Do not allow contact with water.',73,'*where emphasis of water-reactivity is necessary'],
+    ['P230','prevention','H201 H202 H203 H205 H206 H207 H208','Keep wetted with …',50,'*only desensitised/wetted/phlegmatised substances; specify appropriate material'],
+    ['P231','prevention','H250 H260 H261','Handle and store contents under inert gas/…',64,'*applicable material or inert gas must be specified; moisture-reactivity may be conditional'],
+    ['P232','prevention','H260 H261','Protect from moisture.',74,''],
+    ['P233','prevention','H224 H225 H226 H330 H331 H335 H336','Keep container tightly closed.',61,'*flammable liquid or inhalation hazard must be volatile and able to generate dangerous atmosphere where applicable'],
+    ['P234','prevention','H290 H240 H241 H242 H201 H202 H203 H204 H205','Keep only in original packaging.',72,''],
+    ['P235','prevention','H224 H225 H226 H240 H241 H242 H251 H252','Keep cool.',56,'*flammable liquid category 1 or volatile / relevant self-heating or temperature-sensitive hazard'],
+    ['P240','prevention','H224 H225 H226 H201 H202 H203 H204 H205 H241','Ground and bond container and receiving equipment.',57,'*electrostatic sensitivity or explosive-atmosphere conditions apply'],
+    ['P241','prevention','H224 H225 H226 H228','Use explosion-proof [electrical/ventilating/lighting/…] equipment.',51,'*liquid can generate explosive vapour atmosphere or dust clouds for solids'],
+    ['P242','prevention','H224 H225 H226','Use non-sparking tools.',40,'*minimum ignition energy below 0.1 mJ plus applicable vapour/explosive atmosphere'],
+    ['P243','prevention','H224 H225 H226','Take action to prevent static discharges.',46,'*flammable liquid is volatile and can generate explosive atmosphere'],
+    ['P244','prevention','H270','Keep valves and fittings free from oil and grease.',80,''],
+    ['P250','prevention','H200 H201 H202 H203 H204 H205','Do not subject to grinding/shock/friction …',45,'*only if explosive is mechanically sensitive; specify rough handling'],
+    ['P251','prevention','H229','Do not pierce or burn, even after use.',90,''],
+    ['P262','prevention','H310','Do not get in eyes, on skin, or on clothing.',76,''],
+    ['P263','prevention','H362','Avoid contact during pregnancy and while nursing.',85,''],
+    ['P264','prevention','H300 H301 H302 H310 H311 H314 H315 H319 H362 H370 H371 H372','Wash … thoroughly after handling.',71,'*supplier must specify affected body parts'],
+    ['P270','prevention','H300 H301 H302 H310 H311 H362 H370 H371 H372','Do not eat, drink or smoke when using this product.',68,''],
+    ['P271','prevention','H330 H331 H332 H335 H336','Use only outdoors or in a well-ventilated area.',75,''],
+    ['P272','prevention','H317','Contaminated work clothing should not be allowed out of the workplace.',55,''],
+    ['P282','prevention','H281','Wear cold insulating gloves and either face shield or eye protection.',93,''],
+    ['P283','prevention','H271','Wear fire resistant or flame retardant clothing.',67,'*only oxidising liquid/solid Category 1'],
+    ['P284','prevention','H330 H334','[In case of inadequate ventilation] wear respiratory protection.',83,'*specify respiratory equipment and whether optional bracket text applies'],
+    ['P231+P232','prevention','H250 H260 H261','Handle and store contents under inert gas/… Protect from moisture.',68,'*where moisture reaction or pyrophoric handling requires both instructions'],
+    ['P310','response','H300 H301 H310 H311 H330 H314 H318 H304','Immediately call a POISON CENTER/doctor/…',77,'*specify appropriate source of medical advice'],
+    ['P311','response','H331 H334 H370 H371','Call a POISON CENTER/doctor/…',73,'*specify appropriate source of medical advice'],
+    ['P312','response','H302 H312 H332 H335 H336','Call a POISON CENTRE/doctor/… if you feel unwell.',59,'*specify appropriate source of medical advice'],
+    ['P313','response','H315 H319 H317 H340 H341 H350 H351 H360* H361* H362','Get medical advice/attention.',48,''],
+    ['P314','response','H372 H373','Get medical advice/attention if you feel unwell.',78,''],
+    ['P315','response','H281','Get immediate medical advice/attention.',71,''],
+    ['P320','response','H330','Specific treatment is urgent (see … on this label).',57,'*only where immediate antidote administration is required; specify treatment'],
+    ['P321','response','H300 H301 H310 H311 H312 H314 H315 H317 H331 H370','Specific treatment (see … on this label).',52,'*only where specific immediate treatment or cleansing measure is applicable; specify it'],
+    ['P330','response','H300 H301 H302 H314','Rinse mouth.',56,''],
+    ['P332+P313','response','H315','If skin irritation occurs: Get medical advice/attention.',63,''],
+    ['P342+P311','response','H334','If experiencing respiratory symptoms: Call a POISON CENTER/doctor/…',89,'*specify appropriate source of emergency medical advice'],
+    ['P361+P364','response','H310 H311','Take off immediately all contaminated clothing and wash it before reuse.',67,''],
+    ['P362+P364','response','H312 H315 H317','Take off contaminated clothing and wash it before reuse.',58,''],
+    ['P308+P311','response','H370 H371','IF exposed or concerned: Call a POISON CENTER/doctor/…',74,'*specify appropriate emergency medical advice source'],
+    ['P390','response','H290','Absorb spillage to prevent material damage.',88,''],
+    ['P391','response','H400 H410 H411','Collect spillage.',86,''],
+    ['P370+P378','response','H224 H225 H226 H228 H241 H242 H260 H261 H271 H272','In case of fire: Use … to extinguish.',75,'*only where water increases the risk; specify appropriate extinguishing medium'],
+    ['P380','response','H200 H201 H202 H203 H204 H205 H206 H207 H208 H240 H241 H271','Evacuate area.',90,'*check physical-hazard category, type, transport and large quantity conditions'],
+    ['P377','response','H220 H221','Leaking gas fire: Do not extinguish, unless leak can be stopped safely.',88,''],
+    ['P381','response','H220 H221','In case of leakage, eliminate all ignition sources.',78,''],
+    ['P376','response','H270','Stop leak if safe to do so.',79,''],
+    ['P370+P376','response','H270','In case of fire: Stop leak if safe to do so.',87,''],
+    ['P301+P330+P331','response','H314','IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.',90,''],
+    ['P302+P334','response','H250','IF ON SKIN: Immerse in cool water or wrap in wet bandages.',73,'*pyrophoric liquids only; verify classification'],
+    ['P302+P335+P334','response','H250 H260','IF ON SKIN: Brush off loose particles from skin. Immerse in cool water [or wrap in wet bandages].',79,'*pyrophoric solids or water reactive solids; select correct phrase'],
+    ['P306+P360','response','H271','IF ON CLOTHING: Rinse immediately contaminated clothing and skin with plenty of water before removing clothes.',81,'*only oxidising solids/liquids Category 1'],
+    ['P336+P315','response','H281','Thaw frosted parts with lukewarm water. Do not rub affected area. Get immediate medical advice/attention.',89,''],
+    ['P370+P380+P375','response','H204 H206 H207 H208','In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion.',81,'*explosive Division 1.4 compatibility group S in transport packaging or desensitised explosives 1-3'],
+    ['P371+P380+P375','response','H271 H208','In case of major fire and large quantities: Evacuate area. Fight fire remotely due to the risk of explosion.',82,'*oxidisers Category 1 or desensitised explosives Category 4'],
+    ['P370+P372+P380+P373','response','H200 H201 H202 H203 H204 H205 H240','In case of fire: Explosion risk. Evacuate area. DO NOT fight fire when fire reaches explosives.',93,'*only applicable explosives types and self-reactive/organic peroxide Type A'],
+    ['P370+P380+P375+P378','response','H241','In case of fire: Evacuate area. Fight fire remotely due to the risk of explosion. [Use … to extinguish].',83,'*self-reactive or organic peroxide Type B; extinguish option depends on risk'],
+    ['P401','storage','H200 H201 H202 H203 H204 H205 H206 H207 H208','Store in accordance with …',51,'*specify local/regional/national/international storage rules'],
+    ['P402','storage','H260 H261','Store in a dry place.',67,''],
+    ['P403','storage','H220 H221 H270 H280 H281 H224 H225 H226 H330 H331 H335 H336','Store in a well-ventilated place.',64,'*gas classes or volatile liquid/inhalation products as applicable'],
+    ['P404','storage','H260 H261','Store in a closed container.',59,''],
+    ['P405','storage','H300 H301 H310 H311 H330 H331 H314 H340 H341 H350 H350i H351 H360* H361* H370 H371 H335 H336 H304','Store locked up.',73,''],
+    ['P406','storage','H290','Store in a corrosion-resistant/… container with a resistant inner liner.',60,'*compatible container material must be specified; may omit where P234 selected'],
+    ['P407','storage','H251 H252','Maintain air gap between stacks or pallets.',54,''],
+    ['P410','storage','H229 H280 H251 H252 H240 H241 H242','Protect from sunlight.',61,'*see compressed-gas transport-cylinder derogations and hazard-specific conditions'],
+    ['P411','storage','H240 H241 H242','Store at temperatures not exceeding … °C/… °F.',59,'*only temperature-controlled self-reactives or organic peroxides; specify temperature'],
+    ['P412','storage','H229','Do not expose to temperatures exceeding 50 °C/122 °F.',72,''],
+    ['P413','storage','H251 H252','Store bulk masses greater than … kg/… lbs at temperatures not exceeding … °C/… °F.',51,'*only relevant bulk mass/temperature; specify both'],
+    ['P420','storage','H240 H241 H242 H251 H252 H271','Store separately.',62,'*verify applicable oxidising, reactive and self-heating categories'],
+    ['P402+P404','storage','H260 H261','Store in a dry place. Store in a closed container.',74,''],
+    ['P403+P233','storage','H330 H331 H335 H336','Store in a well-ventilated place. Keep container tightly closed.',65,'*only volatile substances able to generate a hazardous atmosphere'],
+    ['P403+P235','storage','H224 H225 H226','Store in a well-ventilated place. Keep cool.',77,'*flammable liquid Category 1 or volatile liquid able to generate explosive atmosphere'],
+    ['P410+P403','storage','H280','Protect from sunlight. Store in a well-ventilated place.',74,'*compressed, liquefied or dissolved gas; special transportable-cylinder exemption'],
+    ['P410+P412','storage','H229','Protect from sunlight. Do not expose to temperatures exceeding 50 °C/122 °F.',84,''],
+    ['P502','disposal','H420','Refer to manufacturer or supplier for information on recovery or recycling.',95,''],
+    ['P503','disposal','H200 H201 H202 H203 H204 H205','Refer to manufacturer/supplier/… for information on disposal/recovery/recycling.',94,'*supplier must specify appropriate information source and route']
+  ];
+  const P28_EXTENDED_RULES = Object.freeze(P28_CATALOGUE_ROWS.map(([code,group,h,text,priority,rawCondition])=>({
+    code,group,h:h.split(' '),text,priority,
+    condition:rawCondition.replace(/^\*/,''),
+    requiresConfirmation:rawCondition.startsWith('*'),
+    basis:'Annex IV Part 1, Table '+
+      ({general:'6.1',prevention:'6.2',response:'6.3',storage:'6.4',disposal:'6.5'}[group])+
+      '; validate exact language under Part 2'
+  })));
+  // Deduplicate by P-code so expanded entries replace legacy simplified entries.
+
+  /* Table 6.3 also lists component codes which form complete combination
+     statements. Expose them for manual recognition without accidentally
+     proposing incomplete bare clauses such as "IF SWALLOWED:". */
+  const P28_COMPONENT_ROWS = [
+    ['P301','IF SWALLOWED:','H300 H301 H302 H314 H304'],
+    ['P302','IF ON SKIN:','H310 H311 H312 H315 H317 H250 H260 H261'],
+    ['P303','IF ON SKIN (or hair):','H224 H225 H226 H314'],
+    ['P304','IF INHALED:','H330 H331 H332 H314 H334 H335 H336'],
+    ['P305','IF IN EYES:','H314 H318 H319'],
+    ['P306','IF ON CLOTHING:','H271'],
+    ['P308','IF exposed or concerned:','H340 H341 H350 H350i H351 H360* H361* H362 H370 H371'],
+    ['P332','If skin irritation occurs:','H315'],
+    ['P333','If skin irritation or rash occurs:','H317'],
+    ['P334','Immerse in cool water [or wrap in wet bandages].','H250 H260'],
+    ['P335','Brush off loose particles from skin.','H250 H260'],
+    ['P336','Thaw frosted parts with lukewarm water. Do not rub affected area.','H281'],
+    ['P337','If eye irritation persists:','H319'],
+    ['P338','Remove contact lenses, if present and easy to do. Continue rinsing.','H314 H318 H319'],
+    ['P340','Remove person to fresh air and keep comfortable for breathing.','H330 H331 H332 H334 H335 H336'],
+    ['P342','If experiencing respiratory symptoms:','H334'],
+    ['P351','Rinse cautiously with water for several minutes.','H314 H318 H319'],
+    ['P352','Wash with plenty of water/…','H310 H311 H312 H315 H317'],
+    ['P353','Rinse skin with water [or shower].','H224 H225 H226 H314'],
+    ['P360','Rinse immediately contaminated clothing and skin with plenty of water before removing clothes.','H271'],
+    ['P361','Take off immediately all contaminated clothing.','H310 H311 H314 H224 H225 H226'],
+    ['P362','Take off contaminated clothing.','H312 H315 H317'],
+    ['P363','Wash contaminated clothing before reuse.','H314'],
+    ['P364','And wash it before reuse.','H310 H311 H312 H315 H317'],
+    ['P370','In case of fire:','H200 H201 H202 H203 H204 H205 H206 H207 H208 H224 H225 H226 H271'],
+    ['P371','In case of major fire and large quantities:','H271 H208'],
+    ['P372','Explosion risk.','H200 H201 H202 H203 H204 H205 H240'],
+    ['P373','DO NOT fight fire when fire reaches explosives.','H200 H201 H202 H203 H204 H205 H240'],
+    ['P375','Fight fire remotely due to the risk of explosion.','H200 H201 H202 H203 H204 H205 H241 H271'],
+    ['P378','Use … to extinguish.','H224 H225 H226 H228 H241 H242 H260 H261 H271 H272']
+  ];
+  const P28_COMPONENT_RULES=P28_COMPONENT_ROWS.map(([code,text,h])=>
+    Object.freeze({code,text,h:h.split(' '),group:'response',priority:0,
+      componentOnly:true,basis:'Annex IV Part 1 Table 6.3; component of a complete response combination'}));
+  const P28_RULES = Object.freeze([...new Map([...P28_COMPONENT_RULES,...P28_BASE_RULES,...P28_EXTENDED_RULES]
+    .map((rule)=>[rule.code,rule])).values()].map((rule)=>
+      Object.freeze(rule)));
+
   const P28_MAP = Object.freeze(Object.fromEntries(P28_RULES.map((r) => [r.code, r])));
   const P28_REVIEW_LIMIT = 6;
 
@@ -919,12 +1070,14 @@
           : 'Eligible for the identified hazard classification under Annex IV. Select by use, packaging and relevance.',
         triggeredBy:why ? [why] : [], group:rule.group || 'manual',
         priority:rule.priority || 0, needs:rule.needs || '',
-        condition:rule.condition || '', manual:!!manual, legalStatus:'candidate'
+        condition:rule.condition || '', manual:!!manual, legalStatus:'candidate',
+        requiresConfirmation:!!rule.requiresConfirmation, componentOnly:!!rule.componentOnly
       });
     };
     P28_RULES.forEach((rule) => {
       if (rule.consumer && audience === 'consumer' && hs.length) add(rule,'consumer products (where relevant)');
-      if (rule.h) hazards.forEach(({h,from}) => {
+      if (rule.h && !rule.componentOnly) hazards.forEach(({h,from}) => {
+        if (rule.code === 'P201' && audience !== 'consumer' && h !== 'H200') return;
         if (rule.h.some((x) => matches(x,h))) add(rule,from + ' (' + h + ')');
       });
     });
@@ -946,6 +1099,8 @@
         review.push({severity:'blocker',code,reason:'Manual P-code '+code+' has no independently verified Annex IV wording/eligibility in this catalogue. Do not print as a final statement until checked.'});
       } else {
         add(rule,'manual selection',true);
+        if (rule.componentOnly)
+          review.push({severity:'blocker',code,reason:'Annex IV '+code+' is a component of a combined statement and may be incomplete or misleading alone. Use the applicable complete combined code, or document a legally reviewed adaptation.'});
         if (rule.h && !hs.some(h => rule.h.some(pattern => matches(pattern,h))))
           review.push({severity:'review',code,reason:'Manually added '+code+' does not match any mapped classification for this mixture. Confirm applicability against Annex I and IV.'});
       }
@@ -955,6 +1110,9 @@
 
     const publicSupply = audience === 'consumer';
     const P501 = active.get('P501');
+    const P502 = active.get('P502'), P503 = active.get('P503');
+    // P502/P503 are not substitutes for an adequately documented product AND
+    // packaging disposal precaution. Their applicability must be reviewed.
     const consumerDisposalApplies = publicSupply && hs.length>0 && !!P501;
     if (consumerDisposalApplies) {
       P501.legalStatus='conditional statutory disposal obligation';
@@ -969,7 +1127,9 @@
       }
     } else if (publicSupply && hs.length>0) {
       review.push({severity:'blocker',code:'disposal',
-        reason:'Article 28(2) generally requires a disposal statement for consumer supply unless not required under Article 22. No P501 eligibility was matched in this partial ruleset; manually verify Annex IV P501/P502/P503 and any applicable exception.'});
+        reason:'Article 28(2) generally requires a product-and-packaging disposal precaution for consumer supply unless not required under Article 22. '+
+        ((P502||P503) ? 'Annex IV '+(P502?'P502':'P503')+' is eligible for this hazard, but its wording alone does not prove both disposal requirements are met. Verify disposal instructions and the packaging element.' :
+        'No mapped Annex IV disposal code was identified. Verify a suitable statement, applicable hazards and any exception.')});
     }
     if (audience==='unknown' && hs.length)
       review.push({severity:'blocker',code:'audience',
@@ -998,14 +1158,50 @@
         reason:'P273 is conditional: if environmental release is the intended use, applicability must be reconsidered.'});
       if(c.condition && c.condition.includes('square-bracket'))
         review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
+      if(c.requiresConfirmation) review.push({severity:'review',code:c.code,
+        reason:'Conditional Annex IV selection: '+c.condition+
+          '. The statement is not automatically proposed unless explicitly added and checked for applicability.'});
     }
 
     // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
     const explicitPairs=[['P103','P202','Annex IV Table 6.1: P103 may be omitted when P202 is used'],
-                         ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used']];
+                         ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used'],
+                         ['P201','P202','Annex IV Table 6.2: P201 may be omitted when P202 is used'],
+                         ['P332+P313','P333+P313','Annex IV Table 6.3: P332+P313 may be omitted when P333+P313 is used'],
+                         ['P406','P234','Annex IV Table 6.4: P406 may be omitted when P234 is used'],
+                         ['P235','P411','Annex IV Table 6.2: P235 may be omitted when P411 is used'],
+                         ['P235','P413','Annex IV Table 6.2: P235 may be omitted when P413 is used']];
     const omittedByRedundancy=new Map();
+    const canCover = (code) => {
+      const stronger=active.get(code);
+      return stronger && (!stronger.requiresConfirmation || stronger.manual) &&
+        !(exclusions.has(code) && reasonText);
+    };
     for(const [weaker,stronger,basis] of explicitPairs)
-      if(active.has(weaker)&&active.has(stronger)&&!explicitCodes.includes(weaker)) omittedByRedundancy.set(weaker,{stronger,basis});
+      if(active.has(weaker)&&canCover(stronger)&&!explicitCodes.includes(weaker))
+        omittedByRedundancy.set(weaker,{stronger,basis});
+
+    // Preserve every source-specific precaution. A combined response/storage
+    // code replaces a standalone component only when it covers ALL triggering
+    // classified-hazard sources of that standalone code.
+    for(const weak of active.values()) {
+      if(!/^P\d{3}$/.test(weak.code) || explicitCodes.includes(weak.code) ||
+         omittedByRedundancy.has(weak.code)) continue;
+      const combined = [...active.values()].filter(strong =>
+        strong.code.includes('+') &&
+        strong.code.split('+').includes(weak.code) &&
+        canCover(strong.code) &&
+        weak.triggeredBy.length &&
+        weak.triggeredBy.every(from => strong.triggeredBy.includes(from)));
+      if(combined.length) {
+        const stronger=combined.sort((a,b)=>b.priority-a.priority)[0];
+        omittedByRedundancy.set(weak.code,{
+          stronger:stronger.code,
+          basis:'Annex IV authorised combination '+stronger.code+
+            ' covers every source classification that triggered '+weak.code
+        });
+      }
+    }
     // The consumer-only optional P201 statement is not generated; P202 is used
     // as a candidate when relevant, and P103 is excluded if redundant.
     const manualExclusions=[];
@@ -1019,7 +1215,8 @@
       else manualExclusions.push(code);
     }
     const validExclusions=new Set(manualExclusions);
-    const eligible=candidates.filter(c=>!omittedByRedundancy.has(c.code)&&!validExclusions.has(c.code))
+    const eligible=candidates.filter(c=>!omittedByRedundancy.has(c.code)&&!validExclusions.has(c.code)
+      && !c.componentOnly && (!c.requiresConfirmation || c.manual))
       .sort((a,b)=>b.priority-a.priority || a.code.localeCompare(b.code));
     const selected=eligible.slice(0,P28_REVIEW_LIMIT);
     const picked=new Set(selected.map(x=>x.code));
@@ -1030,8 +1227,13 @@
       const reason=selectedNow ? c.reason
         : redundant ? 'Omitted as redundant with '+redundant.stronger+'; '+redundant.basis+'.'
         : manualExcluded ? 'Manually excluded with justification: '+reasonText
-        : 'Not selected in six-statement draft; review product-specific priority and whether more than six are necessary.';
-      return {...c,decision:selectedNow?'proposed':redundant?'redundant':manualExcluded?'excluded':'not selected',
+        : c.componentOnly
+          ? 'Standalone component: use a complete combined phrase or obtain expert approval for an independently meaningful statement.'
+          : c.requiresConfirmation && !c.manual
+          ? 'Conditional candidate only: confirm '+c.condition+' before selecting. Not automatically proposed.'
+          : 'Not selected in six-statement draft; review product-specific priority and whether more than six are necessary.';
+      return {...c,decision:selectedNow?'proposed':redundant?'redundant':manualExcluded?'excluded':
+        c.componentOnly?'component only':c.requiresConfirmation && !c.manual?'condition pending':'not selected',
         decisionReason:reason, redundancyBasis:redundant?redundant.basis:null};
     });
     if(eligible.length>6) review.push({severity:'blocker',code:'six-statements',
@@ -1051,14 +1253,18 @@
     if (consumerDisposalApplies)requiredObligations.push({id:'consumer-disposal',status:P501&&picked.has('P501')&&supplied(m.disposalDestination)?'satisfied-draft':'unresolved',
       basis:'CLP Article 28(2), subject to Article 22',description:'Disposal precautionary statement addressing product contents and packaging for consumer supply.'});
     else if(publicSupply&&hs.length)requiredObligations.push({id:'consumer-disposal',status:'requires-review',
-      basis:'CLP Article 28(2), subject to Article 22',description:'Check an eligible Annex IV disposal statement and any legal exception.'});
+      basis:'CLP Article 28(2), subject to Article 22',
+      description:(P502||P503)
+        ? 'Review Annex IV '+(P502?'P502':'P503')+' and explicitly verify disposal of contents AND packaging or Article 22 exception.'
+        : 'Check an eligible Annex IV disposal statement and any legal exception.'});
     return {
-      audience, intendedUse:supplied(m.intendedUse), selected:decisions.filter(x=>x.decision==='proposed'),
+      audience, intendedUse:supplied(m.intendedUse), catalogueSize:P28_RULES.length,
+      annexIVVersion:'01.07.2026 (target; version reconciliation required)', selected:decisions.filter(x=>x.decision==='proposed'),
       candidates:decisions, manualOverrides:{extra:explicitCodes,excluded:[...exclusions]},
       requiredObligations, review, warnings, uncovered,
       limit:P28_REVIEW_LIMIT, excessCandidateCount:Math.max(0,eligible.length-6),
       readyForFinalLabel:false,
-      scope:'Partial verified Annex IV catalogue: decision support; must validate full Annex I/IV tables, conditions, all selected text and product uses before release.'
+      scope:'Expanded Annex IV Part 1 index ('+P28_RULES.length+' codes, including standalone components and combinations). Many entries require additional category/conditions assessment. Exact Part 2 wording and a regulator-approved final selection still require verification.'
     };
   }
 
@@ -1171,7 +1377,7 @@
       notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
     notes.push('Article 26 pictogram precedence applied with per-hazard contributions and explanations; physical pictogram omissions are optional and off by default. Article 26(2) severity for manual entries requires review.');
     if (art26.pictogramReview.length) notes.push('Article 26 human review required for: ' + art26.pictogramReview.map((r) => r.codes.join(' / ')).join('; ') + '.');
-    notes.push('Articles 26 and 27 label precedence are applied with audits. Article 28 P-statement selection is now implemented as a PARTIAL candidate catalogue: Annex I/IV selection coverage, supplier-specific wording, and final label approval remain outstanding.');
+    notes.push('Articles 26 and 27 label precedence are applied with audits. Article 28 now has an expanded Annex IV candidate index, but hazard-category conditions, supplier-specific wording, and final P-statement approval remain outstanding.');
     if (art27.review.length) notes.push('Article 27 case-specific statement review required: ' + art27.review.map((x) => x.codes.join(' / ')).join('; ') + '.');
     if (art28.review.some((x) => x.severity === 'blocker'))
       notes.push('Article 28 P-statement selection is provisional and has blocking gaps (audience, disposal, wording, coverage, or six-statement prioritisation). Review the Article 28 audit.');
@@ -1260,6 +1466,7 @@
     (result.label.review || []).forEach((r) =>
       L.push('- REVIEW ' + r.codes.join(' / ') + ': ' + r.reason + ' [' + r.basis + ']'));
     L.push('', 'ARTICLE 28 PRECAUTIONARY-STATEMENT AUDIT (PROVISIONAL):',
+      'Annex IV catalogue entries: ' + result.label.article28.catalogueSize,
       'Audience: ' + result.label.article28.audience,
       'Proposed P statements: ' + (result.label.precautionaryStatements.map((x)=>x.code).join(', ') || 'none'));
     result.label.article28.requiredObligations.forEach((o) =>

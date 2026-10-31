@@ -1,6 +1,6 @@
 # Article 22 and Article 28 — precautionary statements (P-statements)
 
-**Implementation status:** Partial, auditable candidate selector and legal-obligation checks. **NOT a complete Annex IV eligibility database and NOT a final approved label.**
+**Implementation status:** Expanded, auditable Article 28 candidate selector with **129 indexed Annex IV codes**, including 30 standalone response components that the engine never proposes by themselves. **NOT yet an independently verified Annex I/IV category-complete legal ruleset and NOT a final approved label.**
 
 ## Regulatory distinction: what is mandatory?
 
@@ -33,21 +33,64 @@ The draft proposed label includes up to six prioritised statements, and the **Ar
 
 `result.label.article28` contains: `selected`, `candidates`, `requiredObligations`, `review`, `uncovered`, `warnings`, `audience`, `excessCandidateCount`, `readyForFinalLabel:false` and `scope`. `result.label.precautionaryStatements` exposes the current draft selection. All underlying mixture classifications and Articles 26/27 decisions remain unchanged.
 
-### Scope of the first-pass candidate catalogue
+### Expanded Annex IV selection catalogue
 
-`P28_RULES` contains a **curated sample of 21 P-codes**, including:
-- General consumer precautions P101, P102, P103
-- Prevention P210, P202, P260, P261, P273, P280
-- Response P301+P330+P331, P305+P351+P338, P303+P361+P353, P302+P352, P333+P313, P337+P313, P301+P310, P301+P312, P331, P304+P340, P308+P313
-- Disposal P501
+The rule index now contains **129 distinct P-codes and authorised combinations**, compared
+with 21 initial entries. The current code groups are:
 
-**The catalogue is NOT an exhaustive list of all relevant or eligible statements**. There are many more codes, hazard categories and conditions in the full Annex IV tables 6.1-6.5 and Annex I. No P statement from the limited catalogue should be interpreted as legally sufficient without reviewing the complete tables. The primary next task is to expand the P-statement mapping from an authoritative regulation-derived data table (ideally a versioned complete Annex I/IV mapping), then implement conflict/priority logic and confirm selected official wordings.
+- **General**: P101/P102/P103 for applicable consumer supply.
+- **Prevention**: ignition, explosive atmosphere, water/air reactivity, PPE, ventilation,
+  hygiene, aquatic release and CMR precautions.
+- **Response**: acute oral/dermal/inhalation first aid, skin/eye corrosion and irritation,
+  sensitisation, explosive and gas emergencies, special oxidising hazards and spill response.
+- **Storage**: ventilation, corrosion-resistant packaging, cooling, temperature controls,
+  self-heating and transport-cylinder exceptions.
+- **Disposal**: P501 for listed classes, P502 for ozone depletion and P503 for relevant
+  explosive classifications.
+- **Combination components**: 30 Annex IV Table 6.3 component codes such as P301,
+  P302 and P305 are recognised, but **not proposed as incomplete standalone instructions**.
+  Manual additions of a component-only code create a blocker and require a proper
+  complete combination or documented expert approval.
+
+The map uses explicit H-codes, differentiated H360/H361 wildcard matching, and
+class conditions where known. **A matched H-code does not prove every Annex IV category
+condition is satisfied.** A condition-dependent entry is labelled `condition pending`
+and not automatically selected. The supplier can explicitly add a conditional code
+through the **Extra P codes** input after verifying the actual product, use and
+container conditions; this retains a review warning in the audit.
+
+The index carries the **01 July 2026 EU consolidated CLP version as a reconciliation
+target**, rather than a claim that each copied Annex IV Table 6.x category and exact
+English Part 2 wording has been independently checked against that version.
+The source selection reference used for this pass is the Annex IV Part 1 tables
+on ReachLex (version 1 September 2025) plus the EUR-Lex consolidated EU text.
+A rigorous row-by-row version reconciliation is still needed.
+
+**Regulatory limitations:** complete Annex I hazard category linking, conditional
+physical-hazard exceptions, some user-identified uses, exact final Part 2 wording,
+language translations and label approval still require expert review. A ranked
+six-statement draft is not an assurance of compliance. Do not use the proposed
+P-statements without verifying their final selection and text.
 
 ### Redundancy and six-statement policy
 
-Two explicitly documented Annex IV redundancies are supported:
-- **P103** may be omitted where **P202** is used.
-- **P261** may be omitted where **P260** is used.
+Supported Annex IV redundancy relationships include:
+- **P103 → P202**; **P201 → P202** (where the stronger instruction applies).
+- **P261 → P260** (where stronger inhalation precautions apply).
+- **P332+P313 → P333+P313** for relevant skin irritation/sensitisation overlaps.
+- **P406 → P234** for compatible original packaging when applicable.
+- **P235 → P411/P413** subject to the relevant temperature-control condition.
+
+The engine also applies **source-aware combination precedence**: when an
+authorised combined statement (for example P301+P310 or P410+P412) covers every
+classified hazard source that triggers a standalone code (P310 or P412), the
+standalone statement may be marked redundant. A standalone code is retained
+if another hazard source still requires it. A conditional combined code
+cannot suppress a standalone statement before its use condition is confirmed.
+
+These are optional omissions where Annex IV permits them; the underlying hazard
+classification remains unchanged. Conditional candidates may need independent review
+before any supposed redundancy can be relied upon.
 
 The proposed list is capped at six for initial display. When more candidates qualify, the engine **does not claim** that the six priority-ranked suggestions are the right final choice; instead it issues an **Article 28(3) blocker** and preserves all alternatives. Additional statements may be needed for severity, and the label needs human review.
 
@@ -74,12 +117,13 @@ node verification/test_article28.js
 node verification/test_ui_structure.js
 ```
 
-The Article 28 suite currently has 50 tests. It checks consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
+The Article 28 suite currently has 103 tests. It checks consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
 
 ## Primary legal references
 
 - [CLP Regulation (EC) No 1272/2008 — Articles 22 and 28](https://eur-lex.europa.eu/eli/reg/2008/1272/oj/eng).
-- [CLP Annex IV, Part 1 Tables 6.1–6.5 and Part 2 wording (consolidated reference)](https://reachlex.eu/en/clp/annex-iv-list-of-precautionary-statements/).
+- [Annex IV Part 1 Tables 6.1–6.5 and Part 2 wording (ReachLex, version 1 September 2025)](https://reachlex.eu/en/clp/annex-iv-list-of-precautionary-statements/).
+- [EUR-Lex CLP consolidated 1 July 2026 (current legal reference for reconciliation)](https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01).
 - [ECHA — Decide on classification and labelling](https://echa.europa.eu/en/support/mixture-classification/decide-on-classification-and-labelling).
 - [ECHA — CLP Guidance on Labelling and Packaging, Chapter 7](https://echa.europa.eu/guidance-documents/guidance-on-clp).
 
