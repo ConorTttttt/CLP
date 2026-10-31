@@ -262,6 +262,23 @@ pre.rep{padding:14px}
 .hazard-advanced>summary{font-size:12px;font-weight:600;color:var(--mute);cursor:pointer}
 .hazard-advanced input{width:100%;margin-top:6px}
 .hazard-table-count{font-size:12px;font-weight:650;color:var(--ink)}
+/* Compact, directly removable hazard chips in the ingredient table. */
+.ingredient-hazards-cell{min-width:230px;max-width:400px}
+.hazard-row-chips{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.hazard-row-chips .hazard-chip{max-width:100%}
+.hazard-edit-toggle{font-size:12px;white-space:normal;text-align:left}
+.hazard-edit-toggle[aria-expanded=true]{background:var(--soft)}
+.hazard-editor>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.hazard-editor>summary::-webkit-details-marker{display:none}
+.hazard-editor>summary::before{content:"+";display:grid;place-items:center;flex:none;width:19px;height:19px;
+  border-radius:5px;color:var(--accent);background:var(--soft);font-size:15px;font-weight:750}
+.hazard-editor[open]>summary::before{content:"−"}
+.hazard-editor[open]>summary{border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:11px}
+.hazard-editor-body{min-width:0}
+.hazard-editor:not([open]){padding:9px 12px;margin:3px 0 7px}
+.hazard-editor:not([open])>summary{margin:0}
+.hazard-picker .hazard-search-wrap{margin-top:9px}
+@media(max-width:780px){.ingredient-hazards-cell{min-width:200px}}
 @media(max-width:1320px){.hazard-groups{grid-template-columns:1fr}}
 @media(max-width:1100px){.hazard-groups{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:780px){.hazard-groups{grid-template-columns:1fr}}
@@ -1974,6 +1991,7 @@ renderViewerControls();
 
 let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
+const hazardPanelsOpen = new Set(); // per-ingredient hazards disclosure, UI-only
 const detailPanels = new Map(); // open subsection keys per ingredient, UI only
 let uid = 1;
 let last = null;
@@ -1988,7 +2006,7 @@ function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
-  mix = m; open = new Set(); detailPanels.clear();
+  mix = m; open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear();
 }
 
 /* ---------- mixture fields ---------- */
@@ -2208,13 +2226,25 @@ function hazardChip(code){
      aria-label="Remove ${esc(code)}: ${esc(label)}">×</button>
  </span>`;
 }
+function hazardRowChipsHTML(i){
+ const codes=ingredientHCodes(i);
+ return codes.map(hazardChip).join("") || '<span class="hint">No hazards selected</span>';
+}
+function hazardRowControlsHTML(i){
+ const expanded=hazardPanelsOpen.has(i._id);
+ return `<div class="hazard-row-chips" data-hazard-row-chips>${hazardRowChipsHTML(i)}</div>
+   <button type="button" class="small hazard-edit-toggle" data-act="hazards"
+     aria-controls="hazard-editor-${i._id}" aria-expanded="${expanded}"
+     aria-label="${expanded?'Hide':'Show'} hazard search for ${esc(i.name||'ingredient')}">
+     ${expanded?'− Hide hazard search':'+ Add / edit hazards'}
+   </button>`;
+}
 function hazardEditorHTML(i){
  const selected=ingredientHCodes(i);
  const groups=HAZARD_GROUPS.map(g=>{
-   const codes=selected.filter(code=>groupForCode(code)===g.id),listId="hazard-options-"+i._id+"-"+g.id;
+   const listId="hazard-options-"+i._id+"-"+g.id;
    return `<div class="hazard-picker" data-hazard-picker data-group="${g.id}">
      <strong>${esc(g.title)}</strong><small class="hint">${esc(g.hint)}</small>
-     <div class="hazard-chip-list">${codes.map(hazardChip).join("")||'<span class="hint">No hazards selected</span>'}</div>
      <div class="hazard-search-wrap">
        <input type="text" data-hazard-query data-group="${g.id}" role="combobox" autocomplete="off"
          aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}"
@@ -2224,19 +2254,23 @@ function hazardEditorHTML(i){
      </div>
    </div>`;
  }).join("");
- return `<div class="hazard-editor" data-id="${i._id}">
-   <div class="hazard-editor-head"><b>Hazards</b><small class="hint">${selected.length} selected · search to add · × removes</small></div>
-   <div class="hint hazard-source-note">Ingredient classifications from source evidence. Physical hazards for the finished mixture, other than flammable liquids, require independent assessment and a manual mixture classification.</div>
-   <div class="hazard-groups">${groups}</div>
-   <div class="hazard-resolution" data-resolved>${summaryChips(i)}</div>
-   <details class="hazard-advanced"><summary>Advanced: paste or edit H/EUH codes</summary>
-     <div class="hint">Changes apply on leaving the field. Verify categories under Details.</div>
-     <input data-p="hcodes" value="${esc(i.hcodes)}" aria-label="Advanced H and EUH codes"
-       placeholder="H302 H315 H410">
-   </details>
- </div>`;
+ return `<details class="hazard-editor" data-hazard-panel data-id="${i._id}"
+   id="hazard-editor-${i._id}"${hazardPanelsOpen.has(i._id)?' open':''}>
+   <summary class="hazard-editor-head"><b>Hazards</b>
+     <small class="hint"><span data-hazard-selected-count>${selected.length}</span> selected · search to add</small>
+   </summary>
+   <div class="hazard-editor-body">
+     <div class="hint hazard-source-note">Ingredient classifications from source evidence. Physical hazards for the finished mixture, other than flammable liquids, require independent assessment and a manual mixture classification.</div>
+     <div class="hazard-groups">${groups}</div>
+     <div class="hazard-resolution" data-resolved>${summaryChips(i)}</div>
+     <details class="hazard-advanced"><summary>Advanced: paste or edit H/EUH codes</summary>
+       <div class="hint">Changes apply on leaving the field. Verify categories under Details.</div>
+       <input data-p="hcodes" value="${esc(i.hcodes)}" aria-label="Advanced H and EUH codes"
+         placeholder="H302 H315 H410">
+     </details>
+   </div>
+ </details>`;
 }
-
 function summaryChips(i) {
   const c = [];
   const a = i.acute;
@@ -2345,15 +2379,22 @@ function chooseIngredientHazard(input,code){
  if(replacement){replacement.value="";replacement.focus();}
 }
 
+function rememberHazardPanelStates(){
+  $("ings").querySelectorAll("details[data-hazard-panel]").forEach(panel=>{
+    const id=Number(panel.dataset.id);
+    if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+  });
+}
 function renderIngs() {
   const tb = $("ings");
+  rememberHazardPanelStates();
   if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Start with <b>+ Add ingredient</b>, or use <b>Load example</b> to explore.</td></tr>'; return; }
   tb.innerHTML = mix.ingredients.map((i) => `
   <tr class="ing" data-id="${i._id}">
     <td><input data-p="name" value="${esc(i.name)}" placeholder="Ingredient name" aria-label="Ingredient name"></td>
     <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
     <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
-    <td><span class="hazard-table-count" data-hazard-count>${ingredientHCodes(i).length} selected</span><small class="hint" style="display:block">Edit below</small></td>
+    <td class="ingredient-hazards-cell">${hazardRowControlsHTML(i)}</td>
     <td style="white-space:nowrap"><button class="small" data-act="det">${open.has(i._id) ? "Hide" : "Details"}</button> <button class="x small" data-act="del" title="Remove" aria-label="Remove ingredient">✕</button></td>
   </tr>
   <tr data-sum="${i._id}"><td colspan="5" style="padding-top:0">${hazardEditorHTML(i)}</td></tr>
@@ -2361,9 +2402,25 @@ function renderIngs() {
 }
 function refreshRow(id) {
   const i = mix.ingredients.find((x) => x._id === id); if (!i) return;
-  const s = document.querySelector(`tr[data-sum="${id}"] td`); if (s) s.innerHTML = hazardEditorHTML(i);
-  const n=document.querySelector(`tr[data-id="${id}"] [data-hazard-count]`);
-  if(n)n.textContent=ingredientHCodes(i).length+" selected";
+  const row=document.querySelector(`tr[data-id="${id}"]`);
+  const chips=row?.querySelector("[data-hazard-row-chips]");
+  if(chips)chips.innerHTML=hazardRowChipsHTML(i);
+  const toggle=row?.querySelector('button[data-act="hazards"]');
+  if(toggle){
+    const openPanel=hazardPanelsOpen.has(id);
+    toggle.setAttribute("aria-expanded",String(openPanel));
+    toggle.textContent=openPanel?"− Hide hazard search":"+ Add / edit hazards";
+    toggle.setAttribute("aria-label",(openPanel?"Hide":"Show")+" hazard search for "+(i.name||"ingredient"));
+  }
+  const panel=document.getElementById(`hazard-editor-${id}`);
+  if(panel){
+    const number=panel.querySelector("[data-hazard-selected-count]");
+    if(number)number.textContent=String(ingredientHCodes(i).length);
+    const resolution=panel.querySelector("[data-resolved]");
+    if(resolution)resolution.innerHTML=summaryChips(i);
+    const advanced=panel.querySelector('input[data-p="hcodes"]');
+    if(advanced&&document.activeElement!==advanced)advanced.value=i.hcodes;
+  }
   const d = document.querySelector(`tr[data-detrow="${id}"] td`); if (d) d.innerHTML = detailHTML(i);
 }
 function refreshSummaryOnly(id) {
@@ -2375,8 +2432,23 @@ function refreshSummaryOnly(id) {
 $("ings").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
   const id = +b.closest("tr").dataset.id;
-  if (b.dataset.act === "del") { mix.ingredients = mix.ingredients.filter((x) => x._id !== id); open.delete(id); detailPanels.delete(id); renderIngs(); update(); }
-  else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
+  if(b.dataset.act==="hazards"){
+    const panel=document.getElementById(`hazard-editor-${id}`);
+    if(!panel)return;
+    panel.open=!panel.open;
+    if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+    b.setAttribute("aria-expanded",String(panel.open));
+    b.textContent=panel.open?"− Hide hazard search":"+ Add / edit hazards";
+    b.setAttribute("aria-label",(panel.open?"Hide":"Show")+" hazard search for "+
+      (mix.ingredients.find(i=>i._id===id)?.name||"ingredient"));
+    if(panel.open)panel.querySelector("input[data-hazard-query]")?.focus();
+    else b.focus();
+  }
+  else if (b.dataset.act === "del") {
+    mix.ingredients = mix.ingredients.filter((x) => x._id !== id);
+    open.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
+    renderIngs(); update();
+  } else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
 });
 function onIngInput(e) {
   const t = e.target; const p = t.dataset.p; if (!p) return;
@@ -2415,6 +2487,18 @@ function onIngInput(e) {
 // Native detail groups preserve their expanded/collapsed state across a data refresh.
 $("ings").addEventListener("toggle",(event)=>{
   const group=event.target;
+  if(group.matches?.("details[data-hazard-panel]")){
+    const id=Number(group.dataset.id),expanded=group.open;
+    if(expanded)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+    const button=document.querySelector(`tr[data-id="${id}"] button[data-act="hazards"]`);
+    if(button){
+      button.setAttribute("aria-expanded",String(expanded));
+      button.textContent=expanded?"− Hide hazard search":"+ Add / edit hazards";
+      button.setAttribute("aria-label",(expanded?"Hide":"Show")+" hazard search for "+
+        (mix.ingredients.find(i=>i._id===id)?.name||"ingredient"));
+    }
+    return;
+  }
   if (!group.matches || !group.matches("details[data-detail-section]")) return;
   const holder=group.closest(".detail[data-id]"); if(!holder)return;
   const id=+holder.dataset.id;
@@ -2494,7 +2578,7 @@ $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
 $("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
-$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
 function renderManual() {
@@ -2650,7 +2734,7 @@ function exampleMix() {
   const W = newIng({ name: "Water", pct: "30" });
   return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
-$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- save / load / report ---------- */
 function download(name, text, type) { const b = new Blob([text], { type: type || "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
