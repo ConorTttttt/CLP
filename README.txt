@@ -34,6 +34,7 @@ Bridging principles; tested-mixture data (use "Manual classifications"); aquatic
 tested ingredients; SCLs for skin/eye/acute toxicity; physical hazards other than flammable liquids;
 label precedence (Art. 20/26/27/28) and P-statements (not in the supplied package).
 H-codes only give default categories (H300 -> Cat 1, H314 -> Skin Corr. 1 etc.): set sub-categories yourself.
+The parser preserves differentiated ingredient codes (H350i, H360F/D/FD/Fd/Df and H361f/d/fd) in hcodeDetails, rejects ambiguous/invalid suffixes, and keeps the most severe CMR category regardless of code order. The final mixture H350/H360/H361 wording is still generic and requires expert review of the applicable effects/routes.
 
 VERIFICATION
 verification/test_engine.js (node test_engine.js): 126 checks of limits, boundaries, and the worked example.
