@@ -79,4 +79,12 @@ check('Preferences reset and article explanation preset available',
   html.includes('id="viewer-defaults"'));
 check('Mandatory warnings remain outside hideable cards',
   !html.includes('data-view="warnings"')&&!html.includes('data-view="incomplete"'));
+check('Skin and eye have four separate SCL input controls',
+  ['skinCorr','skinIrrit','eyeDam','eyeIrrit'].every(k=>html.includes('sclF("'+k+'"')));
+check('SCL zero value is not hidden in the UI',html.includes('i.scl[key] ?? ""'));
+check('Per-route acute unknown checkboxes available',
+  ['oral','dermal','inh'].every(k=>html.includes('CHK("acute.'+k+'.unknown"')));
+check('SCL ATE M-factor source reference input is available',html.includes('TXT("valueSource"'));
+check('ATE route units explained in the ingredient editor',html.includes('ATE units depend on exposure route'));
+check('Aquatic missing M-factor is explained as provisional',html.includes('provisional lower-bound screen'));
 console.log(pass + ' UI source checks passed');
