@@ -232,6 +232,58 @@ pre.rep{padding:14px}
   .wrap{padding:0}
 }
 
+
+/* Searchable, removable physical / health / environmental ingredient hazards */
+.hazard-editor{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:5px 0 12px;min-width:0}
+.hazard-editor-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.hazard-editor-head>b{font-size:13px}
+.hazard-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hazard-picker{background:var(--bg);border:1px solid var(--line);border-radius:9px;min-width:0;padding:10px;position:relative}
+.hazard-picker>strong{display:block;font-size:12.5px}
+.hazard-picker>.hint{display:block;font-size:11px}
+.hazard-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;min-height:24px;align-items:center}
+.hazard-chip{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--soft);color:var(--ink);border-radius:8px;padding:2px 3px 2px 7px;font-size:11.5px}
+.hazard-chip strong{font-size:11.5px;flex:none;color:var(--accent)}
+.hazard-chip span{min-width:0;overflow-wrap:anywhere}
+.hazard-chip button{flex:none;border:0;background:transparent;min-width:22px;min-height:23px;padding:1px 4px;border-radius:5px;color:var(--bad);font-size:17px;line-height:1;font-weight:700}
+.hazard-chip button:hover{background:var(--panel)}
+.hazard-search-wrap{position:relative}
+.hazard-search-wrap>input{width:100%;min-width:0;font-size:12px}
+.hazard-suggestions{position:fixed;z-index:9999;top:auto;left:auto;right:auto;min-width:240px;max-height:290px;overflow-y:auto;background:var(--panel);border:1px solid var(--accent);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.13);padding:4px}
+.hazard-suggestion{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;text-align:left;align-items:start;min-height:43px;width:100%;border:0;border-radius:6px;padding:7px;background:var(--panel);font-weight:400}
+.hazard-suggestion:hover,.hazard-suggestion[aria-selected=true]{background:var(--soft)}
+.hazard-suggestion code{font-weight:700;color:var(--accent)}
+.hazard-suggestion b{display:block;font-size:12px}
+.hazard-suggestion small{display:block;color:var(--mute);font-size:11px;overflow-wrap:anywhere}
+.hazard-no-matches{padding:10px}
+.hazard-resolution{font-size:12px;color:var(--mute);margin:9px 0;overflow-wrap:anywhere}
+.hazard-resolution b{font-weight:650}
+.hazard-advanced{padding-top:8px;border-top:1px solid var(--line)}
+.hazard-advanced>summary{font-size:12px;font-weight:600;color:var(--mute);cursor:pointer}
+.hazard-advanced input{width:100%;margin-top:6px}
+.hazard-table-count{font-size:12px;font-weight:650;color:var(--ink)}
+/* Compact, directly removable hazard chips in the ingredient table. */
+.ingredient-hazards-cell{min-width:230px;max-width:400px}
+.hazard-row-chips{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.hazard-row-chips .hazard-chip{max-width:100%}
+.hazard-edit-toggle{font-size:12px;white-space:normal;text-align:left}
+.hazard-edit-toggle[aria-expanded=true]{background:var(--soft)}
+.hazard-editor>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.hazard-editor>summary::-webkit-details-marker{display:none}
+.hazard-editor>summary::before{content:"+";display:grid;place-items:center;flex:none;width:19px;height:19px;
+  border-radius:5px;color:var(--accent);background:var(--soft);font-size:15px;font-weight:750}
+.hazard-editor[open]>summary::before{content:"−"}
+.hazard-editor[open]>summary{border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:11px}
+.hazard-editor-body{min-width:0}
+.hazard-editor:not([open]){padding:9px 12px;margin:3px 0 7px}
+.hazard-editor:not([open])>summary{margin:0}
+.hazard-picker .hazard-search-wrap{margin-top:9px}
+@media(max-width:780px){.ingredient-hazards-cell{min-width:200px}}
+@media(max-width:1320px){.hazard-groups{grid-template-columns:1fr}}
+@media(max-width:1100px){.hazard-groups{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:780px){.hazard-groups{grid-template-columns:1fr}}
+@media print{.hazard-search-wrap,.hazard-advanced,.hazard-chip button{display:none!important}}
+
 </style>
 </head>
 <body>
@@ -279,11 +331,11 @@ pre.rep{padding:14px}
         <button class="small" id="clr">Clear</button>
       </div>
     </div>
-    <div class="hint" style="margin-bottom:6px">Type the ingredient's H-codes (e.g. <code>H302 H315 H318 H410</code>) and the classes are filled in. Use <b>Details</b> to set categories, ATE values, M-factors, specific concentration limits (SCLs) and exceptions the codes cannot express (e.g. Skin Corr. 1B, Acute Tox. 1 vs 2).</div>
+    <div class="hint" style="margin-bottom:6px">Use the <b>Physical</b>, <b>Health</b> and <b>Environmental</b> hazard search boxes below each ingredient. Type an H-code, classification (e.g. <code>Skin Corr.</code>) or hazard phrase, select a suggestion, and use <b>×</b> on a chip to remove it. <b>Details</b> lets you refine subcategories, ATEs, M-factors, SCLs and exceptions. For SDS pasting or unmapped codes, open <b>Advanced: paste or edit H/EUH codes</b>.</div>
     <div class="hint ingredient-tip">On smaller screens, scroll the ingredient table horizontally to access all columns.</div>
     <div class="ingredient-scroll" role="region" tabindex="0" aria-label="Ingredient table; scroll horizontally to access all fields">
     <table>
-      <thead><tr><th style="width:28%">Name</th><th style="width:15%">CAS</th><th style="width:11%">% w/w</th><th>H / EUH codes</th><th style="width:118px"></th></tr></thead>
+      <thead><tr><th style="width:28%">Name</th><th style="width:15%">CAS</th><th style="width:11%">% w/w</th><th>Hazard overview</th><th style="width:118px"></th></tr></thead>
       <tbody id="ings"></tbody>
     </table>
     </div>
@@ -1939,6 +1991,7 @@ renderViewerControls();
 
 let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
+const hazardPanelsOpen = new Set(); // per-ingredient hazards disclosure, UI-only
 const detailPanels = new Map(); // open subsection keys per ingredient, UI only
 let uid = 1;
 let last = null;
@@ -1953,7 +2006,7 @@ function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
-  mix = m; open = new Set(); detailPanels.clear();
+  mix = m; open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear();
 }
 
 /* ---------- mixture fields ---------- */
@@ -2089,6 +2142,135 @@ function detailHTML(i) {
   </div>`;
 }
 
+
+// Ingredient hazard search: code + class + exact or source-mapped H phrase.
+const HAZARD_PHYSICAL=[
+ ["H200","Unstable Expl.","Unstable explosives."],["H201","Expl. 1.1","Explosive; mass explosion hazard."],
+ ["H202","Expl. 1.2","Explosive; severe projection hazard."],["H203","Expl. 1.3","Explosive; fire, blast or projection hazard."],
+ ["H204","Expl. 1.4","Fire or projection hazard."],["H205","Expl. 1.5","May mass explode in fire."],
+ ["H206","Desensitised Expl. 1","Fire, blast or projection hazard; increased risk of explosion if desensitising agent is reduced."],
+ ["H207","Desensitised Expl. 2/3","Fire or projection hazard; increased risk of explosion if desensitising agent is reduced."],
+ ["H208","Desensitised Expl. 4","Fire hazard; increased risk of explosion if desensitising agent is reduced."],
+ ["H220","Flam. Gas 1A","Extremely flammable gas."],["H221","Flam. Gas 1B/2","Flammable gas."],
+ ["H222","Aerosol 1","Extremely flammable aerosol."],["H223","Aerosol 2","Flammable aerosol."],
+ ["H224","Flam. Liq. 1","Extremely flammable liquid and vapour."],["H225","Flam. Liq. 2","Highly flammable liquid and vapour."],
+ ["H226","Flam. Liq. 3","Flammable liquid and vapour."],["H228","Flam. Sol. 1/2","Flammable solid."],
+ ["H229","Aerosol (pressurised)","Pressurised container: May burst if heated."],
+ ["H230","Chem. Unst. Gas A","May react explosively even in the absence of air."],
+ ["H231","Chem. Unst. Gas B","May react explosively even in the absence of air at elevated pressure and/or temperature."],
+ ["H232","Pyrophoric gas","May ignite spontaneously if exposed to air."],
+ ["H240","Self-reactive / Org. Perox. A","Heating may cause an explosion."],
+ ["H241","Self-reactive / Org. Perox. B","Heating may cause a fire or explosion."],
+ ["H242","Self-reactive / Org. Perox. C–F","Heating may cause a fire."],
+ ["H250","Pyrophoric Liq./Sol. 1","Catches fire spontaneously if exposed to air."],
+ ["H251","Self-heat. 1","Self-heating: may catch fire."],["H252","Self-heat. 2","Self-heating in large quantities; may catch fire."],
+ ["H260","Water-react. 1","In contact with water releases flammable gases which may ignite spontaneously."],
+ ["H261","Water-react. 2/3","In contact with water releases flammable gases."],
+ ["H270","Oxid. Gas 1","May cause or intensify fire; oxidiser."],
+ ["H271","Oxid. Liq./Sol. 1","May cause fire or explosion; strong oxidiser."],
+ ["H272","Oxid. Liq./Sol. 2/3","May intensify fire; oxidiser."],
+ ["H280","Pressurised gas","Contains gas under pressure; may explode if heated."],
+ ["H281","Refrigerated gas","Contains refrigerated gas; may cause cryogenic burns or injury."],
+ ["H290","Met. Corr. 1","May be corrosive to metals."]
+];
+const HAZARD_HEALTH={
+ H300:"Acute Tox. 1/2 oral",H301:"Acute Tox. 3 oral",H302:"Acute Tox. 4 oral",
+ H310:"Acute Tox. 1/2 dermal",H311:"Acute Tox. 3 dermal",H312:"Acute Tox. 4 dermal",
+ H330:"Acute Tox. 1/2 inhalation",H331:"Acute Tox. 3 inhalation",H332:"Acute Tox. 4 inhalation",
+ H304:"Asp. Tox. 1",H314:"Skin Corr. 1 / 1A–C",H315:"Skin Irrit. 2",H317:"Skin Sens. 1 / 1A–B",
+ H318:"Eye Dam. 1",H319:"Eye Irrit. 2",H334:"Resp. Sens. 1 / 1A–B",
+ H335:"STOT SE 3 respiratory",H336:"STOT SE 3 narcotic",
+ H340:"Muta. 1A/1B",H341:"Muta. 2",H350:"Carc. 1A/1B",H350i:"Carc. 1A/1B inhalation",H351:"Carc. 2",
+ H360:"Repr. 1A/1B",H360F:"Repr. fertility 1",H360D:"Repr. development 1",H360FD:"Repr. both 1",
+ H360Fd:"Repr. fertility 1 / development 2",H360Df:"Repr. development 1 / fertility 2",
+ H361:"Repr. 2",H361f:"Repr. fertility 2",H361d:"Repr. development 2",H361fd:"Repr. both 2",
+ H362:"Lactation",H370:"STOT SE 1",H371:"STOT SE 2",H372:"STOT RE 1",H373:"STOT RE 2",
+ EUH208:"Supplemental sensitiser",EUH380:"ED HH 1",EUH381:"ED HH 2"
+};
+const HAZARD_ENVIRONMENTAL={
+ H400:"Aquatic Acute 1",H410:"Aquatic Chronic 1",H411:"Aquatic Chronic 2",H412:"Aquatic Chronic 3",
+ H413:"Aquatic Chronic 4",H420:"Ozone 1",EUH430:"ED ENV 1",EUH431:"ED ENV 2",
+ EUH440:"PBT",EUH441:"vPvB",EUH450:"PMT",EUH451:"vPvM"
+};
+const HAZARD_GROUPS=[
+ {id:"physical",title:"Physical hazards",hint:"Fire, reactivity, pressure"},
+ {id:"health",title:"Health hazards",hint:"Toxicity, skin, eye, CMR"},
+ {id:"environmental",title:"Environmental hazards",hint:"Aquatic and persistent"}
+];
+const HAZARD_CHOICES=[
+ ...HAZARD_PHYSICAL.map(([code,classification,text])=>({code,classification,text,group:"physical"})),
+ ...Object.entries(HAZARD_HEALTH).map(([code,classification])=>({code,classification,text:CLP.HTEXT[code]||"Verify wording",group:"health"})),
+ ...Object.entries(HAZARD_ENVIRONMENTAL).map(([code,classification])=>({code,classification,text:CLP.HTEXT[code]||"Verify wording",group:"environmental"}))
+];
+const HAZARD_MAP=new Map(HAZARD_CHOICES.map(item=>[item.code,item]));
+const ingredientHCodes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(item=>item.code);
+function groupForCode(code){
+ return HAZARD_MAP.get(code)?.group||(/^H2/.test(code)?"physical":/^H4|^EUH4/.test(code)?"environmental":"health");
+}
+function searchHazards(group,query,existing=[]){
+ const q=String(query||"").trim().toLowerCase();
+ if(!q)return [];
+ const selected=new Set(existing);
+ return HAZARD_CHOICES.filter(x=>x.group===group&&!selected.has(x.code))
+   .filter(x=>(x.code+" "+x.classification+" "+x.text).toLowerCase().includes(q))
+   .sort((a,b)=>{
+     const score=x=>x.code.toLowerCase().startsWith(q)?0:x.classification.toLowerCase().startsWith(q)?1:2;
+     return score(a)-score(b)||a.code.localeCompare(b.code);
+   }).slice(0,8);
+}
+function hazardChip(code){
+ const entry=HAZARD_MAP.get(code),label=entry?.classification||"Unmapped code";
+ return `<span class="hazard-chip" title="${esc(entry?.text||'Check source evidence')}">
+   <strong>${esc(code)}</strong><span>${esc(label)}</span>
+   <button type="button" data-remove-hazard="${esc(code)}" title="Remove ${esc(code)}"
+     aria-label="Remove ${esc(code)}: ${esc(label)}">×</button>
+ </span>`;
+}
+function hazardRowChipsHTML(i){
+ const codes=ingredientHCodes(i);
+ return codes.map(hazardChip).join("") || '<span class="hint">No hazards selected</span>';
+}
+function hazardRowControlsHTML(i){
+ const expanded=hazardPanelsOpen.has(i._id);
+ return `<div class="hazard-row-chips" data-hazard-row-chips>${hazardRowChipsHTML(i)}</div>
+   <button type="button" class="small hazard-edit-toggle" data-act="hazards"
+     aria-controls="hazard-editor-${i._id}" aria-expanded="${expanded}"
+     aria-label="${expanded?'Hide':'Show'} hazard search for ${esc(i.name||'ingredient')}">
+     ${expanded?'− Hide hazard search':'+ Add / edit hazards'}
+   </button>`;
+}
+function hazardEditorHTML(i){
+ const selected=ingredientHCodes(i);
+ const groups=HAZARD_GROUPS.map(g=>{
+   const listId="hazard-options-"+i._id+"-"+g.id;
+   return `<div class="hazard-picker" data-hazard-picker data-group="${g.id}">
+     <strong>${esc(g.title)}</strong><small class="hint">${esc(g.hint)}</small>
+     <div class="hazard-search-wrap">
+       <input type="text" data-hazard-query data-group="${g.id}" role="combobox" autocomplete="off"
+         aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}"
+         aria-label="Add ${esc(g.title)} by H code, classification or phrase"
+         placeholder="+ Search code, class or phrase">
+       <div id="${listId}" class="hazard-suggestions" role="listbox" hidden></div>
+     </div>
+   </div>`;
+ }).join("");
+ return `<details class="hazard-editor" data-hazard-panel data-id="${i._id}"
+   id="hazard-editor-${i._id}"${hazardPanelsOpen.has(i._id)?' open':''}>
+   <summary class="hazard-editor-head"><b>Hazards</b>
+     <small class="hint"><span data-hazard-selected-count>${selected.length}</span> selected · search to add</small>
+   </summary>
+   <div class="hazard-editor-body">
+     <div class="hint hazard-source-note">Ingredient classifications from source evidence. Physical hazards for the finished mixture, other than flammable liquids, require independent assessment and a manual mixture classification.</div>
+     <div class="hazard-groups">${groups}</div>
+     <div class="hazard-resolution" data-resolved>${summaryChips(i)}</div>
+     <details class="hazard-advanced"><summary>Advanced: paste or edit H/EUH codes</summary>
+       <div class="hint">Changes apply on leaving the field. Verify categories under Details.</div>
+       <input data-p="hcodes" value="${esc(i.hcodes)}" aria-label="Advanced H and EUH codes"
+         placeholder="H302 H315 H410">
+     </details>
+   </div>
+ </details>`;
+}
 function summaryChips(i) {
   const c = [];
   const a = i.acute;
@@ -2111,35 +2293,168 @@ function summaryChips(i) {
   if (i.edHH) c.push("ED HH " + i.edHH);
   if (i.edEnv) c.push("ED ENV " + i.edEnv);
   ["pbt", "vpvb", "pmt", "vpvm", "ozone"].forEach((f) => { if (i[f]) c.push({ pbt: "PBT", vpvb: "vPvB", pmt: "PMT", vpvm: "vPvM", ozone: "Ozone" }[f]); });
-  return c.map((x) => `<span class="chip on">${esc(x)}</span>`).join("") || '<span class="hint">no classification</span>';
+  return c.length ? `<b>Resolved category details (edit under Details):</b> ${c.map(esc).join(" · ")}` : "";
 }
 
+
+const HAZARD_DERIVED_FIELDS=[
+ "skinCorr","eye","skinSens","respSens","muta","carc","carcRoute","repro","reproFert",
+ "reproDev","lact","stotSE","stotSEresp","stotSEnarc","stotRE","asp","aquaAcute",
+ "aquaChronic","edHH","edEnv","pbt","vpvb","pmt","vpvm","ozone",
+ "acute.oral.cat","acute.dermal.cat","acute.inh.cat"
+];
+const hazardPath=(obj,key)=>key.split(".").reduce((v,k)=>v?.[k],obj);
+function setHazardPath(obj,path,value){
+ const keys=path.split(".");let target=obj;
+ keys.slice(0,-1).forEach(k=>target=target[k]);
+ target[keys.at(-1)]=value;
+}
+/* Compare the engine-derived classification BEFORE and AFTER editing codes.
+   When the derived category stays identical, keep any manually refined
+   category (e.g. Skin Corr. 1B when H314 remains and H315 is removed).
+   When the underlying source code actually changes that field, re-evaluate. */
+function applyIngredientHazards(ing,nextText){
+ const before=new Map(HAZARD_DERIVED_FIELDS.map(key=>[key,hazardPath(ing,key)]));
+ const baseline=CLP.blankIngredient();
+ CLP.applyHCodes(baseline,ing.hcodes);
+ const result=CLP.applyHCodes(ing,nextText);
+ HAZARD_DERIVED_FIELDS.forEach(key=>{
+   if(hazardPath(baseline,key)===hazardPath(ing,key))
+     setHazardPath(ing,key,before.get(key));
+ });
+ $("parsenotes").innerHTML=result.notes.length
+   ? '<div class="alert" style="margin-top:8px"><b>'+esc(ing.name||"Ingredient")+':</b> '+
+      result.notes.map(esc).join(" ")+'</div>':"";
+ return result;
+}
+function changeIngredientHazard(ing,code,adding){
+ const tokens=String(ing.hcodes||"").split(/[\s,;]+/).filter(Boolean);
+ const normalized=token=>CLP.parseHCodeTokens(token).codes[0]?.code||null;
+ const next=adding?(tokens.some(token=>normalized(token)===code)?tokens:[...tokens,code])
+   :tokens.filter(token=>normalized(token)!==code);
+ return applyIngredientHazards(ing,next.join(" "));
+}
+function renderHazardSuggestions(input){
+ const area=input.closest("[data-hazard-picker]"),list=area?.querySelector("[role=listbox]");
+ if(!list)return [];
+ const root=input.closest("[data-id]"),ing=mix.ingredients.find(i=>i._id===+(root?.dataset.id||0));
+ const choices=ing?searchHazards(input.dataset.group,input.value,ingredientHCodes(ing)):[];
+ list.innerHTML=choices.map((item,n)=>`<button type="button" class="hazard-suggestion"
+   role="option" aria-selected="false" id="${list.id}-opt-${n}"
+   data-hazard-option="${esc(item.code)}"><code>${esc(item.code)}</code>
+   <span><b>${esc(item.classification)}</b><small>${esc(item.text)}</small></span>
+ </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification in this group. Use Advanced for another H/EUH code.</div>':"");
+ list.hidden=!input.value.trim();
+ if(!list.hidden){
+   // Viewport positioning avoids clipping inside the horizontally scrolling ingredient table.
+   const rect=input.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight;
+   const width=Math.min(Math.max(rect.width,320),Math.max(240,vw-16));
+   const left=Math.max(8,Math.min(rect.left,vw-width-8));
+   const below=Math.max(0,vh-rect.bottom-10),above=Math.max(0,rect.top-10);
+   const aboveInput=below<190&&above>below;
+   const room=aboveInput?above:below;
+   const height=Math.min(290,Math.max(80,room-4));
+   list.style.width=width+"px";list.style.left=left+"px";list.style.maxHeight=height+"px";
+   list.style.top=(aboveInput?Math.max(8,rect.top-Math.min(list.scrollHeight,height)-5):rect.bottom+4)+"px";
+ }
+ input.setAttribute("aria-expanded",String(!list.hidden));
+ input.removeAttribute("aria-activedescendant");
+ input.dataset.activeIndex="-1";
+ return choices;
+}
+function closeHazardSuggestions(input){
+ const list=input.closest("[data-hazard-picker]")?.querySelector("[role=listbox]");
+ if(list)list.hidden=true;
+ input.setAttribute("aria-expanded","false");
+ input.removeAttribute("aria-activedescendant");
+ input.dataset.activeIndex="-1";
+}
+function chooseIngredientHazard(input,code){
+ const holder=input.closest("[data-id]"),id=+(holder?.dataset.id||0);
+ const ing=mix.ingredients.find(item=>item._id===id);
+ if(!ing||HAZARD_MAP.get(code)?.group!==input.dataset.group)return;
+ changeIngredientHazard(ing,code,true);
+ refreshRow(id);update();
+ const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
+ if(replacement){
+   replacement.value="";
+   closeHazardSuggestions(replacement);
+   replacement.focus();
+ }
+}
+
+function rememberHazardPanelStates(){
+  const currentIds=new Set(mix.ingredients.map(i=>i._id));
+  $("ings").querySelectorAll("details[data-hazard-panel]").forEach(panel=>{
+    const id=Number(panel.dataset.id);
+    if(!currentIds.has(id)){hazardPanelsOpen.delete(id);return;}
+    if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+  });
+}
 function renderIngs() {
   const tb = $("ings");
+  rememberHazardPanelStates();
   if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Start with <b>+ Add ingredient</b>, or use <b>Load example</b> to explore.</td></tr>'; return; }
   tb.innerHTML = mix.ingredients.map((i) => `
   <tr class="ing" data-id="${i._id}">
     <td><input data-p="name" value="${esc(i.name)}" placeholder="Ingredient name" aria-label="Ingredient name"></td>
     <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
     <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
-    <td><input data-p="hcodes" value="${esc(i.hcodes)}" placeholder="H302 H315 H410 …" aria-label="H codes"></td>
+    <td class="ingredient-hazards-cell">${hazardRowControlsHTML(i)}</td>
     <td style="white-space:nowrap"><button class="small" data-act="det">${open.has(i._id) ? "Hide" : "Details"}</button> <button class="x small" data-act="del" title="Remove" aria-label="Remove ingredient">✕</button></td>
   </tr>
-  <tr data-sum="${i._id}"><td colspan="5" style="padding-top:0">${summaryChips(i)}</td></tr>
+  <tr data-sum="${i._id}"><td colspan="5" style="padding-top:0">${hazardEditorHTML(i)}</td></tr>
   ${open.has(i._id) ? `<tr data-detrow="${i._id}"><td colspan="5">${detailHTML(i)}</td></tr>` : ""}`).join("");
 }
 function refreshRow(id) {
   const i = mix.ingredients.find((x) => x._id === id); if (!i) return;
-  const s = document.querySelector(`tr[data-sum="${id}"] td`); if (s) s.innerHTML = summaryChips(i);
+  const row=document.querySelector(`tr[data-id="${id}"]`);
+  const chips=row?.querySelector("[data-hazard-row-chips]");
+  if(chips)chips.innerHTML=hazardRowChipsHTML(i);
+  const toggle=row?.querySelector('button[data-act="hazards"]');
+  if(toggle){
+    const openPanel=hazardPanelsOpen.has(id);
+    toggle.setAttribute("aria-expanded",String(openPanel));
+    toggle.textContent=openPanel?"− Hide hazard search":"+ Add / edit hazards";
+    toggle.setAttribute("aria-label",(openPanel?"Hide":"Show")+" hazard search for "+(i.name||"ingredient"));
+  }
+  const panel=document.getElementById(`hazard-editor-${id}`);
+  if(panel){
+    const number=panel.querySelector("[data-hazard-selected-count]");
+    if(number)number.textContent=String(ingredientHCodes(i).length);
+    const resolution=panel.querySelector("[data-resolved]");
+    if(resolution)resolution.innerHTML=summaryChips(i);
+    const advanced=panel.querySelector('input[data-p="hcodes"]');
+    if(advanced&&document.activeElement!==advanced)advanced.value=i.hcodes;
+  }
   const d = document.querySelector(`tr[data-detrow="${id}"] td`); if (d) d.innerHTML = detailHTML(i);
 }
-function refreshSummaryOnly(id) { const i = mix.ingredients.find((x) => x._id === id); const s = document.querySelector(`tr[data-sum="${id}"] td`); if (i && s) s.innerHTML = summaryChips(i); }
+function refreshSummaryOnly(id) {
+ const ing=mix.ingredients.find(x=>x._id===id);
+ const section=document.querySelector(`tr[data-sum="${id}"] [data-resolved]`);
+ if(section&&ing)section.innerHTML=summaryChips(ing);
+}
 
 $("ings").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-act]"); if (!b) return;
   const id = +b.closest("tr").dataset.id;
-  if (b.dataset.act === "del") { mix.ingredients = mix.ingredients.filter((x) => x._id !== id); open.delete(id); detailPanels.delete(id); renderIngs(); update(); }
-  else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
+  if(b.dataset.act==="hazards"){
+    const panel=document.getElementById(`hazard-editor-${id}`);
+    if(!panel)return;
+    panel.open=!panel.open;
+    if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+    b.setAttribute("aria-expanded",String(panel.open));
+    b.textContent=panel.open?"− Hide hazard search":"+ Add / edit hazards";
+    b.setAttribute("aria-label",(panel.open?"Hide":"Show")+" hazard search for "+
+      (mix.ingredients.find(i=>i._id===id)?.name||"ingredient"));
+    if(panel.open)panel.querySelector("input[data-hazard-query]")?.focus();
+    else b.focus();
+  }
+  else if (b.dataset.act === "del") {
+    mix.ingredients = mix.ingredients.filter((x) => x._id !== id);
+    open.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
+    renderIngs(); update();
+  } else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
 });
 function onIngInput(e) {
   const t = e.target; const p = t.dataset.p; if (!p) return;
@@ -2158,14 +2473,14 @@ function onIngInput(e) {
     i.reproDev = reproOnly.reproDev;
     i.hcodes = revisedCodes;
     i.hcodeDetails = CLP.parseHCodeTokens(revisedCodes).codes;
-    const codeInput = document.querySelector(`tr[data-id="${id}"] input[data-p="hcodes"]`);
+    const codeInput = document.querySelector(`tr[data-sum="${id}"] input[data-p="hcodes"]`);
     if (codeInput) codeInput.value = i.hcodes;
     $("parsenotes").innerHTML = applied.notes.length ? `<div class="alert"><b>${esc(i.name || "Ingredient")}:</b> ${applied.notes.map(esc).join(" ")}</div>` : "";
     refreshRow(id); update(); return;
   }
   if (p === "hcodes") {
-    const r = CLP.applyHCodes(i, v);
-    $("parsenotes").innerHTML = r.notes.length ? '<div class="alert" style="margin-top:8px"><b>' + esc(i.name || "Ingredient") + ":</b> " + r.notes.map(esc).join(" ") + "</div>" : "";
+    if(e.type==="input")return; // Preserve typing position; commit advanced codes on change/blur.
+    applyIngredientHazards(i,v);
     refreshRow(id);
   } else if (p.startsWith("scl.")) {
     i.scl[p.slice(4)] = v;
@@ -2178,6 +2493,18 @@ function onIngInput(e) {
 // Native detail groups preserve their expanded/collapsed state across a data refresh.
 $("ings").addEventListener("toggle",(event)=>{
   const group=event.target;
+  if(group.matches?.("details[data-hazard-panel]")){
+    const id=Number(group.dataset.id),expanded=group.open;
+    if(expanded)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
+    const button=document.querySelector(`tr[data-id="${id}"] button[data-act="hazards"]`);
+    if(button){
+      button.setAttribute("aria-expanded",String(expanded));
+      button.textContent=expanded?"− Hide hazard search":"+ Add / edit hazards";
+      button.setAttribute("aria-label",(expanded?"Hide":"Show")+" hazard search for "+
+        (mix.ingredients.find(i=>i._id===id)?.name||"ingredient"));
+    }
+    return;
+  }
   if (!group.matches || !group.matches("details[data-detail-section]")) return;
   const holder=group.closest(".detail[data-id]"); if(!holder)return;
   const id=+holder.dataset.id;
@@ -2192,11 +2519,77 @@ $("ings").addEventListener("click",(event)=>{
   const expanded=button.dataset.detailAction==="expand";
   detail.querySelectorAll("details[data-detail-section]").forEach(group=>group.open=expanded);
 });
+
+$("ings").addEventListener("input",event=>{
+ const input=event.target.closest("input[data-hazard-query]");
+ if(input)renderHazardSuggestions(input);
+});
+$("ings").addEventListener("keydown",event=>{
+ const input=event.target.closest("input[data-hazard-query]");
+ if(!input)return;
+ const list=input.closest("[data-hazard-picker]")?.querySelector("[role=listbox]");
+ if(!list)return;
+ const options=[...list.querySelectorAll("button[data-hazard-option]")];
+ if(event.key==="Escape"){closeHazardSuggestions(input);return;}
+ if(event.key==="ArrowDown"||event.key==="ArrowUp"){
+   if(list.hidden)renderHazardSuggestions(input);
+   const choices=[...list.querySelectorAll("button[data-hazard-option]")];
+   if(!choices.length)return;
+   event.preventDefault();
+   const current=Number(input.dataset.activeIndex??-1);
+   const next=event.key==="ArrowDown"?(current+1)%choices.length:(current<=0?choices.length-1:current-1);
+   input.dataset.activeIndex=String(next);
+   choices.forEach((option,i)=>option.setAttribute("aria-selected",String(i===next)));
+   input.setAttribute("aria-activedescendant",choices[next].id);
+   choices[next].scrollIntoView({block:"nearest"});
+ }
+ if(event.key==="Enter"&&!list.hidden&&options.length){
+   event.preventDefault();
+   const index=Math.max(0,Number(input.dataset.activeIndex??-1));
+   chooseIngredientHazard(input,options[Math.min(index,options.length-1)].dataset.hazardOption);
+ }
+});
+$("ings").addEventListener("click",event=>{
+ const option=event.target.closest("button[data-hazard-option]");
+ if(option){
+   const input=option.closest("[data-hazard-picker]")?.querySelector("input[data-hazard-query]");
+   if(input)chooseIngredientHazard(input,option.dataset.hazardOption);
+   return;
+ }
+ const remove=event.target.closest("button[data-remove-hazard]");
+ if(remove){
+   const owner=remove.closest("[data-id]"),id=+(owner?.dataset.id||0);
+   const ing=mix.ingredients.find(i=>i._id===id);
+   if(!ing)return;
+   const removedCode=remove.dataset.removeHazard;
+   changeIngredientHazard(ing,removedCode,false);
+   refreshRow(id);update();
+   // The chip was removed from the DOM: restore keyboard focus to the next
+   // remaining chip, or the Add/edit button when there are no more chips.
+   const remaining=document.querySelector(`tr[data-id="${id}"]`);
+   const nextChip=remaining?.querySelector("button[data-remove-hazard]");
+   if(nextChip)nextChip.focus();
+   else remaining?.querySelector('button[data-act="hazards"]')?.focus();
+ }
+});
+document.addEventListener("click",event=>{
+ if(event.target.closest("[data-hazard-picker]"))return;
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+});
+window.addEventListener("scroll",event=>{
+ // Preserve scrolling inside the dropdown; close when the underlying page/table moves.
+ if(event.target.closest?.(".hazard-suggestions"))return;
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+},true);
+window.addEventListener("resize",()=>{
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+});
+
 $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
 $("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
-$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
 function renderManual() {
@@ -2352,7 +2745,7 @@ function exampleMix() {
   const W = newIng({ name: "Water", pct: "30" });
   return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
-$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- save / load / report ---------- */
 function download(name, text, type) { const b = new Blob([text], { type: type || "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }

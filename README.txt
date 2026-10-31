@@ -49,6 +49,56 @@ is provided for the scroll region, details summaries and form controls.
 Colours, typography and responsive spacing were refined; no classification,
 Article 26/27/28 or report calculation rules were changed by this UI commit.
 
+SEARCHABLE INGREDIENT HAZARDS
+The ingredient editor has three separate H/EUH search pickers: Physical, Health
+and Environmental. Start typing an H-code (H225 / EUH440), a classification
+(e.g. "Skin Corr. 1B", "Flam. Liq. 2") or part of its hazard statement
+(e.g. "severe skin burns"). Choose a suggestion with the mouse or Arrow keys
+and Enter. Selected codes appear as labelled, removable chips directly
+in the ingredient table's Hazard overview column, replacing the previous
+"5 selected / Edit below" placeholder. Click × on a chip there to remove it,
+even while the detailed hazard search section is collapsed.
+Search results exclude already selected codes.
+
+Selecting or removing a hazard updates the ingredient H/EUH codes and the
+existing deterministic parser, and refreshes mixture calculations. Manually
+refined ingredient categories are preserved when their underlying H-code
+classification is unaffected (e.g. Skin Corr. 1B remains when H314 remains).
+When a source code changes a hazard class, that field is re-evaluated.
+The Details panel remains available for deciding between Acute Tox. 1/2,
+Skin Corr. 1A/1B/1C, CMR differentiations, and substance-specific values.
+
+The full Hazards search editor is a native collapsible panel beneath each
+ingredient row, initially closed to reduce scrolling. Expand it using the
+"+ Add / edit hazards" button in the ingredient row or its "Hazards" summary.
+The disclosure remembers whether it is open while the formulation is edited,
+including after adding or removing hazards. The selected chips stay visible
+in the row, not duplicated inside the three search groups. Open/closed state
+is a local UI preference, not part of the regulatory calculation or exported
+formulation.
+
+The "Advanced: paste or edit H/EUH codes" field remains available beneath
+the search pickers for SDS code lists and codes not in the suggestion catalogue.
+Advanced edits apply when the input loses focus. Pre-existing H/EUH codes
+load as chips even if outside the current suggestion catalogue, and can be
+removed. The UI stores the same ingredient JSON field "hcodes" as before;
+no data migration or recalculation-method changes are required.
+
+IMPORTANT: H-code suggestions are INGREDIENT classification information.
+The presence of a physical hazard code on an ingredient does not establish
+the physical classification of the resulting MIXTURE. Physical hazards other
+than flammable liquids still need an independent finished-mixture assessment
+and, when appropriate, a manual classification entry. Suggested class labels
+may represent several subcategories sharing one H-code; verify the actual
+category from the supplier SDS or harmonised entry. Exact source phrases
+should be checked against the current CLP Annex III before regulatory use.
+
+The dropdown is positioned above the scrollable ingredient table and can
+be controlled with arrow keys, Enter and Escape. It dismisses on page scroll,
+resize, or clicking outside. Escape does not delete any selected codes.
+The selection/edit logic is covered by:
+  node verification/test_hazard_picker.js
+
 VIEWER SETTINGS
 Open the collapsible "Viewer Settings — show / hide results" panel in the right-hand
 results viewer. Tick or untick:
@@ -113,6 +163,7 @@ Run from repository root:
   node verification/test_ui_structure.js
   node verification/test_viewer_settings.js
   node verification/test_ui_cleanup.js
+  node verification/test_hazard_picker.js
 The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
