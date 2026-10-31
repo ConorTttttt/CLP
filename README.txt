@@ -54,8 +54,11 @@ The ingredient editor has three separate H/EUH search pickers: Physical, Health
 and Environmental. Start typing an H-code (H225 / EUH440), a classification
 (e.g. "Skin Corr. 1B", "Flam. Liq. 2") or part of its hazard statement
 (e.g. "severe skin burns"). Choose a suggestion with the mouse or Arrow keys
-and Enter. Selected codes appear as labelled chips; click the × on a chip
-to remove that code. Search results exclude already selected codes.
+and Enter. Selected codes appear as labelled, removable chips directly
+in the ingredient table's Hazard overview column, replacing the previous
+"5 selected / Edit below" placeholder. Click × on a chip there to remove it,
+even while the detailed hazard search section is collapsed.
+Search results exclude already selected codes.
 
 Selecting or removing a hazard updates the ingredient H/EUH codes and the
 existing deterministic parser, and refreshes mixture calculations. Manually
@@ -64,6 +67,15 @@ classification is unaffected (e.g. Skin Corr. 1B remains when H314 remains).
 When a source code changes a hazard class, that field is re-evaluated.
 The Details panel remains available for deciding between Acute Tox. 1/2,
 Skin Corr. 1A/1B/1C, CMR differentiations, and substance-specific values.
+
+The full Hazards search editor is a native collapsible panel beneath each
+ingredient row, initially closed to reduce scrolling. Expand it using the
+"+ Add / edit hazards" button in the ingredient row or its "Hazards" summary.
+The disclosure remembers whether it is open while the formulation is edited,
+including after adding or removing hazards. The selected chips stay visible
+in the row, not duplicated inside the three search groups. Open/closed state
+is a local UI preference, not part of the regulatory calculation or exported
+formulation.
 
 The "Advanced: paste or edit H/EUH codes" field remains available beneath
 the search pickers for SDS code lists and codes not in the suggestion catalogue.
