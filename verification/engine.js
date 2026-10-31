@@ -923,7 +923,7 @@
       });
     };
     P28_RULES.forEach((rule) => {
-      if (rule.consumer && audience === 'consumer') add(rule,'consumer products');
+      if (rule.consumer && audience === 'consumer' && hs.length) add(rule,'consumer products (where relevant)');
       if (rule.h) hazards.forEach(({h,from}) => {
         if (rule.h.some((x) => matches(x,h))) add(rule,from + ' (' + h + ')');
       });
@@ -943,7 +943,12 @@
       if (!rule) {
         add({code,text:'[Official Annex IV wording must be verified before use]',group:'manual',priority:110},'manual selection',true);
         warnings.push('Manual '+code+' has no verified wording in this limited catalogue: check Annex IV Part 2 and eligibility.');
-      } else add(rule,'manual selection',true);
+        review.push({severity:'blocker',code,reason:'Manual P-code '+code+' has no independently verified Annex IV wording/eligibility in this catalogue. Do not print as a final statement until checked.'});
+      } else {
+        add(rule,'manual selection',true);
+        if (rule.h && !hs.some(h => rule.h.some(pattern => matches(pattern,h))))
+          review.push({severity:'review',code,reason:'Manually added '+code+' does not match any mapped classification for this mixture. Confirm applicability against Annex I and IV.'});
+      }
       const entry=active.get(code);
       if (entry) { entry.manual=true; entry.priority=Math.max(entry.priority,110); }
     });
@@ -991,6 +996,8 @@
         reason:c.code+' requires supplier choice of relevant dust/fume/gas/mist/vapour/spray forms.'});
       if(c.condition && c.code==='P273') review.push({severity:'review',code:c.code,
         reason:'P273 is conditional: if environmental release is the intended use, applicability must be reconsidered.'});
+      if(c.condition && c.condition.includes('square-bracket'))
+        review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
     }
 
     // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
@@ -1030,7 +1037,7 @@
     if(eligible.length>6) review.push({severity:'blocker',code:'six-statements',
       reason:eligible.length+' eligible P-statement candidates exceed the six-statement default. The proposed six are a provisional priority shortlist, NOT a legally determined final set. Verify all requirements; Article 28(3) permits more when needed.'});
     const unresolved=decisions.filter(d=>d.decision==='proposed' &&
-      (d.text.includes('…')||d.text.includes('[SPECIFY')||d.text.includes('[Specify')||d.text.includes('/doctor/')||d.text.includes('/…')));
+      (d.text.includes('…')||d.text.includes('[')||d.text.includes('/doctor/')||d.text.includes('/…')));
     if(unresolved.length) review.push({severity:'blocker',code:'wording',
       reason:'Selected P statements with supplier choices/unfinished wording: '+unresolved.map(x=>x.code).join(', ')+'. Complete Annex IV wording before release.'});
     const matchedHS=new Set();
