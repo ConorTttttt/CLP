@@ -877,22 +877,22 @@
     {code:'P101', text:'If medical advice is needed, have product container or label at hand.', consumer:true, priority:30, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P102', text:'Keep out of reach of children.', consumer:true, priority:80, group:'general', basis:'Annex IV Table 6.1, consumer products'},
     {code:'P103', text:'Read carefully and follow all instructions.', consumer:true, priority:25, group:'general', basis:'Annex IV Table 6.1, consumer products; omit if P202 is used'},
-    {code:'P210', text:'Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.', h:['H224','H225','H226'], priority:95, group:'prevention', basis:'Annex IV Table 6.2, flammable liquids 1-3'},
+    {code:'P210', text:'Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.', h:['H201','H202','H203','H204','H205','H206','H207','H208','H220','H221','H222','H223','H224','H225','H226','H228','H240','H241','H242','H250','H271','H272'], priority:95, group:'prevention', basis:'Annex IV Table 6.2, flammable liquids 1-3'},
     {code:'P202', text:'Do not handle until all safety precautions have been read and understood.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:86, group:'prevention', basis:'Annex IV Table 6.2, CMR / lactation'},
-    {code:'P280', text:'Wear protective gloves/protective clothing/eye protection/face protection/hearing protection/…', h:['H224','H225','H226','H314','H315','H317','H318','H319','H340','H341','H350','H350i','H351','H360*','H361*'], priority:65, group:'prevention', needs:'ppe', basis:'Annex IV Table 6.2; specify suitable protective equipment'},
+    {code:'P280', text:'Wear protective gloves/protective clothing/eye protection/face protection/hearing protection/…', h:['H200','H201','H202','H203','H204','H205','H220','H221','H224','H225','H226','H228','H240','H241','H242','H250','H251','H252','H260','H261','H271','H272','H310','H311','H312','H314','H315','H317','H318','H319','H340','H341','H350','H350i','H351','H360*','H361*'], priority:65, group:'prevention', needs:'ppe', basis:'Annex IV Table 6.2; specify suitable protective equipment'},
     {code:'P273', text:'Avoid release to the environment.', h:['H400','H410','H411','H412','H413'], priority:64, group:'prevention', condition:'only where release is not the intended use', basis:'Annex IV Table 6.2, aquatic hazard; intended use'},
-    {code:'P261', text:'Avoid breathing dust/fume/gas/mist/vapours/spray.', h:['H317','H334','H335','H336','H332'], priority:57, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; specify exposure medium'},
+    {code:'P261', text:'Avoid breathing dust/fume/gas/mist/vapours/spray.', h:['H317','H334','H335','H336','H331','H332'], priority:57, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; specify exposure medium'},
     {code:'P260', text:'Do not breathe dust/fume/gas/mist/vapours/spray.', h:['H330','H370','H371','H372','H373','H362'], priority:79, group:'prevention', needs:'exposure', basis:'Annex IV Table 6.2; check exact category/exposure medium'},
     {code:'P301+P330+P331', text:'IF SWALLOWED: Rinse mouth. Do NOT induce vomiting.', h:['H314'], priority:90, group:'response', basis:'Annex IV Table 6.3, skin corrosion'},
     {code:'P305+P351+P338', text:'IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.', h:['H314','H318','H319'], priority:95, group:'response', basis:'Annex IV Table 6.3, skin corrosion / eye damage or irritation'},
     {code:'P303+P361+P353', text:'IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water [or shower].', h:['H314','H224','H225','H226'], priority:71, group:'response', basis:'Annex IV Table 6.3, skin corrosion / flammable liquids', condition:'square-bracket alternatives require review'},
-    {code:'P302+P352', text:'IF ON SKIN: Wash with plenty of water/…', h:['H315','H317'], priority:62, group:'response', needs:'wash', basis:'Annex IV Table 6.3, irritation/sensitisation'},
+    {code:'P302+P352', text:'IF ON SKIN: Wash with plenty of water/…', h:['H310','H311','H312','H315','H317'], priority:62, group:'response', needs:'wash', basis:'Annex IV Table 6.3, irritation/sensitisation'},
     {code:'P333+P313', text:'If skin irritation or rash occurs: Get medical advice/attention.', h:['H317'], priority:62, group:'response', basis:'Annex IV Table 6.3, skin sensitisation'},
     {code:'P337+P313', text:'If eye irritation persists: Get medical advice/attention.', h:['H319'], priority:50, group:'response', basis:'Annex IV Table 6.3, eye irritation 2'},
     {code:'P301+P310', text:'IF SWALLOWED: Immediately call a POISON CENTER/doctor/…', h:['H300','H301','H304'], priority:94, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 1-3 / aspiration 1'},
     {code:'P301+P312', text:'IF SWALLOWED: Call a POISON CENTER/doctor/… if you feel unwell.', h:['H302'], priority:78, group:'response', needs:'emergency', basis:'Annex IV Table 6.3, acute oral 4'},
     {code:'P331', text:'Do NOT induce vomiting.', h:['H304'], priority:86, group:'response', basis:'Annex IV Table 6.3, aspiration hazard 1'},
-    {code:'P304+P340', text:'IF INHALED: Remove person to fresh air and keep comfortable for breathing.', h:['H330','H331','H332','H334','H335','H336'], priority:78, group:'response', basis:'Annex IV Table 6.3, acute inhalation / respiratory sensitisation / STOT SE3'},
+    {code:'P304+P340', text:'IF INHALED: Remove person to fresh air and keep comfortable for breathing.', h:['H314','H330','H331','H332','H334','H335','H336'], priority:78, group:'response', basis:'Annex IV Table 6.3, acute inhalation / respiratory sensitisation / STOT SE3'},
     {code:'P308+P313', text:'IF exposed or concerned: Get medical advice/attention.', h:['H340','H341','H350','H350i','H351','H360*','H361*','H362'], priority:81, group:'response', basis:'Annex IV Table 6.3, CMR / lactation'},
     {code:'P501', text:'Dispose of contents/container to …', h:['H224','H225','H226','H300','H301','H302','H310','H311','H312','H314','H317','H330','H331','H334','H340','H341','H350','H350i','H351','H360*','H361*','H370','H371','H372','H373','H304','H335','H336','H400','H410','H411','H412','H413'], priority:65, group:'disposal', needs:'disposal', basis:'Annex IV Table 6.5; Article 28(2) for the general public, subject to Article 22'}
   ]);
@@ -915,7 +915,7 @@
    * Prefix "*" in the final column = condition must be verified before use.
    */
   const P28_CATALOGUE_ROWS = [
-    ['P201','prevention','H340 H341 H350 H350i H351 H360* H361* H362','Obtain special instructions before use.',52,'consumer supply, P202 is an alternative'],
+    ['P201','prevention','H200 H340 H341 H350 H350i H351 H360* H361* H362','Obtain special instructions before use.',52,'consumer supply, P202 is an alternative'],
     ['P211','prevention','H222 H223','Do not spray on an open flame or other ignition source.',91,''],
     ['P212','prevention','H206 H207 H208','Avoid heating under confinement or reduction of the desensitising agent.',75,''],
     ['P220','prevention','H270 H271 H272','Keep away from clothing and other combustible materials.',91,''],
@@ -1076,7 +1076,8 @@
     };
     P28_RULES.forEach((rule) => {
       if (rule.consumer && audience === 'consumer' && hs.length) add(rule,'consumer products (where relevant)');
-      if (rule.h && !rule.componentOnly && (!rule.code.startsWith('P201') || audience === 'consumer')) hazards.forEach(({h,from}) => {
+      if (rule.h && !rule.componentOnly) hazards.forEach(({h,from}) => {
+        if (rule.code === 'P201' && audience !== 'consumer' && h !== 'H200') return;
         if (rule.h.some((x) => matches(x,h))) add(rule,from + ' (' + h + ')');
       });
     });
