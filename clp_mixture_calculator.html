@@ -2226,6 +2226,7 @@ function hazardEditorHTML(i){
  }).join("");
  return `<div class="hazard-editor" data-id="${i._id}">
    <div class="hazard-editor-head"><b>Hazards</b><small class="hint">${selected.length} selected · search to add · × removes</small></div>
+   <div class="hint hazard-source-note">Ingredient classifications from source evidence. Physical hazards for the finished mixture, other than flammable liquids, require independent assessment and a manual mixture classification.</div>
    <div class="hazard-groups">${groups}</div>
    <div class="hazard-resolution" data-resolved>${summaryChips(i)}</div>
    <details class="hazard-advanced"><summary>Advanced: paste or edit H/EUH codes</summary>
