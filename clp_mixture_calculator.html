@@ -356,18 +356,23 @@ img[src$="GHS05.svg"] {
       const rank = { '2': 1, '1B': 2, '1A': 3 };
       if (!ing[field] || rank[cat] > rank[ing[field]]) ing[field] = cat;
     };
+    const setAcute = (route, cat) => {
+      const old = ing.acute[route].cat;
+      if (old && old !== cat) notes.push('Conflicting acute toxicity categories for ' + route + ' (' + old + ' and ' + cat + '): most severe retained. Verify the source classification.');
+      if (!old || Number(cat) < Number(old)) ing.acute[route].cat = cat;
+    };
     const setChronic = (c) => { if (!ing.aquaChronic || c < ing.aquaChronic) ing.aquaChronic = c; };
     parsed.codes.forEach(({ code, base, suffix }) => {
       switch (base) {
-        case 'H300': ing.acute.oral.cat = '1'; notes.push('H300 read as Acute Tox. 1 (oral) – change to Category 2 if applicable.'); break;
-        case 'H301': ing.acute.oral.cat = '3'; break;
-        case 'H302': ing.acute.oral.cat = '4'; break;
-        case 'H310': ing.acute.dermal.cat = '1'; notes.push('H310 read as Acute Tox. 1 (dermal) – change to Category 2 if applicable.'); break;
-        case 'H311': ing.acute.dermal.cat = '3'; break;
-        case 'H312': ing.acute.dermal.cat = '4'; break;
-        case 'H330': ing.acute.inh.cat = '1'; notes.push('H330 read as Acute Tox. 1 (inhalation) – check Category 1/2 and vapour/dust-mist/gas.'); break;
-        case 'H331': ing.acute.inh.cat = '3'; break;
-        case 'H332': ing.acute.inh.cat = '4'; break;
+        case 'H300': setAcute('oral', '1'); notes.push('H300 read as Acute Tox. 1 (oral) – change to Category 2 if applicable.'); break;
+        case 'H301': setAcute('oral', '3'); break;
+        case 'H302': setAcute('oral', '4'); break;
+        case 'H310': setAcute('dermal', '1'); notes.push('H310 read as Acute Tox. 1 (dermal) – change to Category 2 if applicable.'); break;
+        case 'H311': setAcute('dermal', '3'); break;
+        case 'H312': setAcute('dermal', '4'); break;
+        case 'H330': setAcute('inh', '1'); notes.push('H330 read as Acute Tox. 1 (inhalation) – check Category 1/2 and vapour/dust-mist/gas.'); break;
+        case 'H331': setAcute('inh', '3'); break;
+        case 'H332': setAcute('inh', '4'); break;
         case 'H314': ing.skinCorr = '1'; notes.push('H314 read as Skin Corr. 1 (no sub-category) – set 1A/1B/1C if known.'); break;
         case 'H315': if (!ing.skinCorr) ing.skinCorr = '2'; break;
         case 'H318': ing.eye = '1'; break;
