@@ -1384,7 +1384,7 @@ img[src$="GHS05.svg"] {
       notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
     notes.push('Article 26 pictogram precedence applied with per-hazard contributions and explanations; physical pictogram omissions are optional and off by default. Article 26(2) severity for manual entries requires review.');
     if (art26.pictogramReview.length) notes.push('Article 26 human review required for: ' + art26.pictogramReview.map((r) => r.codes.join(' / ')).join('; ') + '.');
-    notes.push('Article 27 H/EUH omission rules applied with an audit. Additional case-specific Article 27 reviews and Article 28 P-statement selection remain outstanding.');
+    notes.push('Articles 26 and 27 label precedence are applied with audits. Article 28 P-statement selection is now implemented as a PARTIAL candidate catalogue: Annex I/IV selection coverage, supplier-specific wording, and final label approval remain outstanding.');
     if (art27.review.length) notes.push('Article 27 case-specific statement review required: ' + art27.review.map((x) => x.codes.join(' / ')).join('; ') + '.');
     if (art28.review.some((x) => x.severity === 'blocker'))
       notes.push('Article 28 P-statement selection is provisional and has blocking gaps (audience, disposal, wording, coverage, or six-statement prioritisation). Review the Article 28 audit.');
@@ -1447,7 +1447,7 @@ img[src$="GHS05.svg"] {
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
     result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}`));
-    L.push('', 'LABEL ELEMENTS (Article 26 pictograms and Article 27 H/EUH decisions applied; Article 28 pending): ',
+    L.push('', 'LABEL ELEMENTS (Article 26/27 applied; Article 28 P statements are provisional, NOT a final label): ',
       `Signal word: ${result.label.signal || 'none'}`,
       `Pictograms (Article 26 selected): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
