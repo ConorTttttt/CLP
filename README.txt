@@ -16,6 +16,24 @@ and shows every calculation step with the Annex I table/page reference:
 - Flammable liquid from flash point / initial boiling point
 - Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
 
+VIEWER SETTINGS
+Open the collapsible "Viewer Settings — show / hide results" panel in the right-hand
+results viewer. Tick or untick:
+- Full results sections: mixture classification, label elements, Article 26 pictograms,
+  Article 27 H/EUH precedence, Article 28 P-statement decisions, SDS-on-request triggers,
+  calculation trail, notes/limitations and the plain-text report panel.
+- Individual label components: signal word, GHS pictograms, H-statements, EUH statements,
+  supplemental information, P-statements and not-assessed notices.
+Use "Hide Article explanations" for a compact results view, "Show all" to display
+everything, or "Reset to defaults" to restore the original full display.
+These preferences are saved in the browser's localStorage under
+clp_calc_viewer_settings_v1, independent of the mixture and its JSON export.
+This only changes visibility; it does NOT modify classifications, Article 26/27/28
+selection calculations, the complete text report, or saved formulation data.
+Top-level validation warnings and incomplete-input alerts ALWAYS remain visible,
+even when every optional results section is hidden.
+The Viewer Settings panel does not appear in printed results.
+
 HOW TO USE
 1. Enter mixture data (flash point, IBP, viscosity at 40 C, pH where known).
 2. Add ingredients: name, %, and the ingredient's H/EUH codes (from Annex VI, the C&L Inventory or the SDS).
@@ -58,6 +76,7 @@ Run from repository root:
   node verification/test_article26.js
   node verification/test_article28.js
   node verification/test_ui_structure.js
+  node verification/test_viewer_settings.js
 The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
