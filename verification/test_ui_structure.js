@@ -20,6 +20,9 @@ for (const code of ['H350i', 'H360F', 'H360D', 'H360FD', 'H360Fd', 'H360Df', 'H3
   check('Differentiation supported: ' + code, html.includes(code));
 }
 check('Browser load migrates legacy data', html.includes('CLP.normalise({ ingredients: [{...r, pct: 100}] })'));
+check('Article 27 decisions shown', html.includes('Article 27 — hazard-statement decisions'));
+check('Article 27 label header clearly qualified', html.includes('H/EUH Article 27 rules applied'));
+check('Article 27 includes omission rationale', html.includes('d.reason') && html.includes('d.basis'));
 check('Quick pick preserves other manual category edits', html.includes('i.reproFert = reproOnly.reproFert') &&
   html.includes('i.reproDev = reproOnly.reproDev') && !html.includes('CLP.applyHCodes(i, (otherCodes'));
 console.log(pass + ' UI source checks passed');
