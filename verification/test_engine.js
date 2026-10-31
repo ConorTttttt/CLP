@@ -263,6 +263,17 @@ t('FP not entered -> nodata', fl('', '').nodata.length === 1);
   t('ambiguous or invalid suffix rejected', ar.invalid.length === 2 && ar.codes.length === 1 &&
     ar.codes[0].code === 'H360FD' && ambiguous.repro === '1B' && ambiguous.carc === '');
   t('ambiguous suffix produces review warning', ar.notes.some(s => /H360fd.*ambiguous/.test(s)));
+  for (const [route, severe, mild] of [
+    ['oral', 'H300', 'H302'],
+    ['dermal', 'H310', 'H312'],
+    ['inh', 'H330', 'H332']
+  ]) {
+    for (const str of [severe + ' ' + mild, mild + ' ' + severe]) {
+      const i = CLP.blankIngredient(), r = CLP.applyHCodes(i, str);
+      t('acute most severe '+route+' '+str, i.acute[route].cat === '1');
+      t('acute conflict flagged '+route+' '+str, r.notes.some(s => s.includes('Conflicting acute toxicity categories')));
+    }
+  }
   const legacy = CLP.blankIngredient();
   legacy.name = 'Test'; legacy.pct = 1; legacy.hcodes = 'H360Df';
   legacy.repro = '1A'; // manually set: do not overwrite during normalise
