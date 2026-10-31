@@ -366,8 +366,15 @@
     const pH = num(mix.pH), phTrig = has(pH) && (pH <= 2 + EPS || pH >= 11.5 - EPS), reserveOk = !!mix.pHReserveOk;
 
     /* ---- skin ---- */
-    const sRel = ings.filter((i) => i.skinCorr && ge(i.pct, 1));
-    ings.filter((i) => i.skinCorr && !ge(i.pct, 1)).forEach((i) => S.notes.push(`${nm(i)} (${i.skinCorr === '2' ? 'Skin Irrit. 2' : 'Skin Corr. ' + i.skinCorr}) at ${fmt(i.pct)} % is below the 1 % cut-off and is not counted. Corrosive ingredients < 1 % can still be relevant (3.2.3.3.1, 3.2.3.3.6) – consider testing.`));
+    const skinCut = (i) => {
+      const specific = i.skinCorr === '2' ? sclValue(i, 'skinIrrit') : sclValue(i, 'skinCorr');
+      return has(specific) ? Math.min(1,specific) : 1;
+    };
+    const sRel = ings.filter((i) => i.skinCorr && ge(i.pct, skinCut(i)));
+    ings.filter((i) => i.skinCorr && !ge(i.pct, skinCut(i))).forEach((i) =>
+      S.notes.push(nm(i)+' ('+(i.skinCorr === '2' ? 'Skin Irrit. 2' : 'Skin Corr. '+i.skinCorr)+
+        ') at '+fmt(i.pct)+' % is below relevance threshold '+fmt(skinCut(i))+
+        ' %. Lower test-supported effect levels can still matter (3.2.3.3.6).'));
     const sAdd = sRel.filter((i) => !i.nonAdditive), sNon = sRel.filter((i) => i.nonAdditive);
     const by = (list, c) => sum(list.filter((i) => i.skinCorr === c).map((i) => i.pct));
     const s1A = by(sAdd, '1A'), s1B = by(sAdd, '1B'), s1C = by(sAdd, '1C'), s1U = by(sAdd, '1'), s2 = by(sAdd, '2');
@@ -376,7 +383,29 @@
     if (sAdd.length) {
       S.steps.push(`Additive ingredients (≥ 1 %): ` + sAdd.map((i) => `${nm(i)} ${fmt(i.pct)} % [${i.skinCorr === '2' ? 'Cat. 2' : 'Cat. ' + i.skinCorr}]`).join('; '));
       S.steps.push(`Σ corrosive (1/1A/1B/1C) = ${fmt(corr)} % ; Σ irritant (Cat. 2) = ${fmt(s2)} % ; 10 × corrosive + irritant = ${fmt(10 * corr + s2)} %`);
-      if (ge(corr, 5)) {
+      // Article 10(5): use SCLs in the additive potency-weighted summation
+      // rather than summing raw concentrations against generic limits.
+      const withSCL=sAdd.some(i => has(sclValue(i,i.skinCorr==='2'?'skinIrrit':'skinCorr')) ||
+        (i.skinCorr!=='2' && has(sclValue(i,'skinIrrit'))));
+      if (withSCL) {
+        const corrosives=sAdd.filter(i=>i.skinCorr!=='2');
+        const contribution=(list,key,gcl)=>sum(list.map(i=>i.pct/concentrationLimit(i,key,gcl)));
+        const allCorr=contribution(corrosives,'skinCorr',5);
+        const categoryCorr=(cats)=>contribution(corrosives.filter(i=>cats.includes(i.skinCorr)),'skinCorr',5);
+        const irritation = contribution(corrosives,'skinIrrit',1) +
+          contribution(sAdd.filter(i=>i.skinCorr==='2'),'skinIrrit',10);
+        S.steps.push('SCL-aware additive approach: Σ (ingredient % / applicable SCL or GCL), threshold ≥ 1. '+
+          'Corrosion = '+fmt(allCorr,5)+'; irritation = '+fmt(irritation,5)+'.');
+        if(ge(allCorr,1)) {
+          if(corrosives.some(i=>i.skinCorr==='1')) sCat='1';
+          else if(ge(categoryCorr(['1A']),1))sCat='1A';
+          else if(ge(categoryCorr(['1A','1B']),1))sCat='1B';
+          else sCat='1C';
+          sWhy.push('Weighted corrosion summation ≥ 1 → Skin Corr. '+sCat);
+        } else if(ge(irritation,1)){
+          sCat='2';sWhy.push('Weighted irritation summation ≥ 1 → Skin Irrit. 2');
+        } else sWhy.push('Below weighted SCL/GCL thresholds.');
+      } else if (ge(corr, 5)) {
         if (s1U > 0) sCat = '1'; else if (ge(s1A, 5)) sCat = '1A'; else if (ge(s1A + s1B, 5)) sCat = '1B'; else sCat = '1C';
         sWhy.push(`Σ corrosive ${fmt(corr)} % ≥ 5 % → Skin Corr. ${sCat === '1' ? '1 (no sub-category)' : sCat}`);
       } else if (ge(corr, 1)) { sCat = '2'; sWhy.push(`Σ corrosive ${fmt(corr)} % is ≥ 1 % but < 5 % → Skin Irrit. 2`); }
@@ -388,9 +417,13 @@
     }
     sNon.forEach((i) => {
       const corrI = i.skinCorr !== '2';
-      if (corrI && ge(i.pct, 1)) { S.steps.push(`Non-additive ${nm(i)} (corrosive) ${fmt(i.pct)} % ≥ 1 % → Skin Corr. 1 (Table 3.2.4)`); sCat = '1'; }
-      else if (!corrI && ge(i.pct, 3)) { S.steps.push(`Non-additive ${nm(i)} (irritant) ${fmt(i.pct)} % ≥ 3 % → Skin Irrit. 2 (Table 3.2.4)`); if (!sCat) sCat = '2'; }
-      else S.steps.push(`Non-additive ${nm(i)} ${fmt(i.pct)} % is below the Table 3.2.4 limit (${corrI ? '1' : '3'} %).`);
+      const limit=concentrationLimit(i,corrI?'skinCorr':'skinIrrit',corrI?1:3);
+      if (ge(i.pct,limit)) {
+        const target=corrI?'1':'2';
+        S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
+          ' % ('+(has(sclValue(i,corrI?'skinCorr':'skinIrrit'))?'SCL':'Table 3.2.4')+') → Skin '+(corrI?'Corr. 1':'Irrit. 2'));
+        if(corrI || !sCat) sCat=target;
+      } else S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
       if (phTrig && !reserveOk) { S.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Skin Corr. 1 in the absence of other information (3.2.3.1.2).`); if (!sCat || sCat === '2') sCat = '1'; }
@@ -403,16 +436,33 @@
 
     /* ---- eye ---- */
     const eRel = ings.filter((i) => (i.skinCorr && i.skinCorr !== '2') || i.eye);
-    const eRelC = eRel.filter((i) => ge(i.pct, 1));
+    const eyeCut=(i) => {
+      const specific=sclValue(i,((i.skinCorr&&i.skinCorr!=='2') || i.eye==='1')?'eyeDam':'eyeIrrit');
+      return has(specific)?Math.min(1,specific):1;
+    };
+    const eRelC = eRel.filter((i) => ge(i.pct, eyeCut(i)));
     const eCorr = (i) => (i.skinCorr && i.skinCorr !== '2') || i.eye === '1';
-    eRel.filter((i) => !ge(i.pct, 1)).forEach((i) => E.notes.push(`${nm(i)} at ${fmt(i.pct)} % is below the 1 % cut-off and is not counted (3.3.3.3.1, 3.3.3.3.6).`));
+    eRel.filter((i) => !ge(i.pct, eyeCut(i))).forEach((i) =>
+      E.notes.push(nm(i)+' at '+fmt(i.pct)+' % is below relevance threshold '+fmt(eyeCut(i))+
+        ' %. Lower evidence-based limits still require evaluation (3.3.3.3.6).'));
     const eAdd = eRelC.filter((i) => !i.nonAdditive), eNon = eRelC.filter((i) => i.nonAdditive);
     const e1 = sum(eAdd.filter(eCorr).map((i) => i.pct)), e2 = sum(eAdd.filter((i) => !eCorr(i) && i.eye === '2').map((i) => i.pct));
     let eCat = null;
     if (eAdd.length) {
       E.steps.push('Additive ingredients (≥ 1 %): ' + eAdd.map((i) => `${nm(i)} ${fmt(i.pct)} % [${eCorr(i) ? 'skin corr./eye dam. 1' : 'eye irrit. 2'}]`).join('; ') + ' (an ingredient that is both skin-corrosive and Eye Dam. 1 is counted once, Table 3.3.3 note a)');
       E.steps.push(`Σ skin corrosive + Eye Dam. 1 = ${fmt(e1)} % ; Σ Eye Irrit. 2 = ${fmt(e2)} % ; 10 × Σ Cat. 1 + Σ Cat. 2 = ${fmt(10 * e1 + e2)} %`);
-      if (ge(e1, 3)) { eCat = '1'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % ≥ 3 % → Eye Dam. 1`); }
+      const withSCL=eAdd.some(i=>has(sclValue(i,'eyeDam')) || has(sclValue(i,'eyeIrrit')));
+      if(withSCL) {
+        const severe=eAdd.filter(eCorr),irrit=eAdd.filter(i=>!eCorr(i)&&i.eye==='2');
+        const damage=sum(severe.map(i=>i.pct/concentrationLimit(i,'eyeDam',3)));
+        const irritation=sum(severe.map(i=>i.pct/concentrationLimit(i,'eyeIrrit',1)))+
+          sum(irrit.map(i=>i.pct/concentrationLimit(i,'eyeIrrit',10)));
+        E.steps.push('SCL-aware eye additivity: Σ(%/applicable SCL or GCL); damage = '+
+          fmt(damage,5)+'; irritation = '+fmt(irritation,5)+' (threshold ≥ 1).');
+        if(ge(damage,1)){eCat='1';E.steps.push('   Weighted damage ≥ 1 → Eye Dam. 1');}
+        else if(ge(irritation,1)){eCat='2';E.steps.push('   Weighted irritation ≥ 1 → Eye Irrit. 2');}
+        else E.steps.push('   Below SCL/GCL weighted eye limits.');
+      } else if (ge(e1, 3)) { eCat = '1'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % ≥ 3 % → Eye Dam. 1`); }
       else if (ge(e1, 1)) { eCat = '2'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % is ≥ 1 % but < 3 % → Eye Irrit. 2`); }
       else if (ge(e2, 10)) { eCat = '2'; E.steps.push(`   Σ irritant ${fmt(e2)} % ≥ 10 % → Eye Irrit. 2`); }
       else if (ge(10 * e1 + e2, 10)) { eCat = '2'; E.steps.push(`   10 × Σ Cat. 1 + Σ Cat. 2 = ${fmt(10 * e1 + e2)} % ≥ 10 % → Eye Irrit. 2`); }
@@ -420,9 +470,13 @@
       if (e1 > 0 || e2 > 0) E.notes.push('3.3.3.3.4.1: care is needed with acids, bases, inorganic salts, aldehydes, phenols and surfactants (many are damaging at < 1 %). Mark such ingredients "additivity not applicable" to use Table 3.3.4, or use pH.');
     }
     eNon.forEach((i) => {
-      if (eCorr(i) && ge(i.pct, 1)) { E.steps.push(`Non-additive ${nm(i)} (corrosive/Eye Dam. 1) ${fmt(i.pct)} % ≥ 1 % → Eye Dam. 1 (Table 3.3.4)`); eCat = '1'; }
-      else if (!eCorr(i) && ge(i.pct, 3)) { E.steps.push(`Non-additive ${nm(i)} (eye irritant) ${fmt(i.pct)} % ≥ 3 % → Eye Irrit. 2 (Table 3.3.4)`); if (!eCat) eCat = '2'; }
-      else E.steps.push(`Non-additive ${nm(i)} ${fmt(i.pct)} % is below the Table 3.3.4 limit.`);
+      const severe=eCorr(i),key=severe?'eyeDam':'eyeIrrit';
+      const limit=concentrationLimit(i,key,severe?1:3);
+      if(ge(i.pct,limit)) {
+        E.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
+          ' % ('+(has(sclValue(i,key))?'SCL':'Table 3.3.4')+') → Eye '+(severe?'Dam. 1':'Irrit. 2'));
+        if(severe || !eCat)eCat=severe?'1':'2';
+      } else E.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
       if (phTrig && !reserveOk) { E.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Eye Dam. 1 in the absence of other information (3.3.3.1.2).`); eCat = '1'; }
