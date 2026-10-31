@@ -249,7 +249,7 @@ pre.rep{padding:14px}
 .hazard-chip button:hover{background:var(--panel)}
 .hazard-search-wrap{position:relative}
 .hazard-search-wrap>input{width:100%;min-width:0;font-size:12px}
-.hazard-suggestions{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;min-width:240px;max-height:290px;overflow-y:auto;background:var(--panel);border:1px solid var(--accent);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.13);padding:4px}
+.hazard-suggestions{position:fixed;z-index:9999;top:auto;left:auto;right:auto;min-width:240px;max-height:290px;overflow-y:auto;background:var(--panel);border:1px solid var(--accent);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.13);padding:4px}
 .hazard-suggestion{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;text-align:left;align-items:start;min-height:43px;width:100%;border:0;border-radius:6px;padding:7px;background:var(--panel);font-weight:400}
 .hazard-suggestion:hover,.hazard-suggestion[aria-selected=true]{background:var(--soft)}
 .hazard-suggestion code{font-weight:700;color:var(--accent)}
@@ -2313,6 +2313,18 @@ function renderHazardSuggestions(input){
    <span><b>${esc(item.classification)}</b><small>${esc(item.text)}</small></span>
  </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification in this group. Use Advanced for another H/EUH code.</div>':"");
  list.hidden=!input.value.trim();
+ if(!list.hidden){
+   // Viewport positioning avoids clipping inside the horizontally scrolling ingredient table.
+   const rect=input.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight;
+   const width=Math.min(Math.max(rect.width,320),Math.max(240,vw-16));
+   const left=Math.max(8,Math.min(rect.left,vw-width-8));
+   const below=Math.max(0,vh-rect.bottom-10),above=Math.max(0,rect.top-10);
+   const aboveInput=below<190&&above>below;
+   const room=aboveInput?above:below;
+   const height=Math.min(290,Math.max(80,room-4));
+   list.style.width=width+"px";list.style.left=left+"px";list.style.maxHeight=height+"px";
+   list.style.top=(aboveInput?Math.max(8,rect.top-Math.min(list.scrollHeight,height)-5):rect.bottom+4)+"px";
+ }
  input.setAttribute("aria-expanded",String(!list.hidden));
  input.removeAttribute("aria-activedescendant");
  input.dataset.activeIndex="-1";
@@ -2469,6 +2481,14 @@ $("ings").addEventListener("click",event=>{
 });
 document.addEventListener("click",event=>{
  if(event.target.closest("[data-hazard-picker]"))return;
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+});
+window.addEventListener("scroll",event=>{
+ // Preserve scrolling inside the dropdown; close when the underlying page/table moves.
+ if(event.target.closest?.(".hazard-suggestions"))return;
+ document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
+},true);
+window.addEventListener("resize",()=>{
  document.querySelectorAll("input[data-hazard-query][aria-expanded=true]").forEach(closeHazardSuggestions);
 });
 
