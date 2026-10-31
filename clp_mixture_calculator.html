@@ -116,19 +116,141 @@ img[src$="GHS05.svg"] {
     transform: rotate(-45deg) scale(0.85);
 }
 
+
+/* Workspace polish: presentation-only, no hazard decision logic */
+:root{--soft:color-mix(in srgb,var(--accent) 6%,var(--panel));--focus:color-mix(in srgb,var(--accent) 25%,transparent)}
+html{scroll-behavior:smooth}
+body{font-size:14px;line-height:1.5}
+header{padding:15px clamp(14px,3vw,32px);align-items:center;gap:5px 16px}
+header h1{font-size:clamp(18px,2vw,22px);letter-spacing:-.025em}
+header .sub{font-size:12px}
+.banner{padding:10px clamp(14px,3vw,32px);border-left:4px solid #c88b13}
+.banner summary{cursor:pointer;font-weight:600;margin-top:4px}
+.banner .banner-detail{max-width:1100px;margin:8px 0 2px}
+.workspace-nav{display:flex;align-items:center;gap:8px;padding:10px clamp(14px,3vw,32px);border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto}
+.workspace-nav a{padding:6px 11px;border-radius:99px;white-space:nowrap;text-decoration:none;color:var(--mute);font-weight:600;font-size:12px;border:1px solid transparent}
+.workspace-nav a:hover,.workspace-nav a:focus-visible{color:var(--accent);background:var(--soft);border-color:var(--line)}
+.wrap{gap:clamp(14px,2.1vw,28px);padding:clamp(12px,2.1vw,28px) clamp(14px,3vw,32px);grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)}
+.wrap>section{min-width:0}
+.workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px;padding:0 2px}
+.workspace-heading h2{margin:0;text-transform:none;letter-spacing:-.025em;color:var(--ink);font-size:clamp(17px,1.8vw,20px)}
+.workspace-heading .hint{font-size:12px}
+.card{padding:16px 18px;border-radius:12px;margin-bottom:14px;box-shadow:0 1px 2px rgba(20,33,48,.025);min-width:0}
+.card>h2,.card>.row h2{font-size:12px;letter-spacing:.085em;color:var(--mute)}
+.card>.hint{line-height:1.55}
+input,select,textarea,button{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+input:not([type=checkbox]),select,textarea{max-width:100%;min-height:36px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;box-shadow:0 0 0 3px var(--focus)}
+button{font-weight:600}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.small{padding:5px 10px}
+label{font-size:12px;font-weight:550;line-height:1.5}
+.g{gap:12px}
+.row{gap:8px}
+.chk{line-height:1.4;padding:3px 0}
+.chk input{accent-color:var(--accent)}
+.hint{line-height:1.55}
+.card h3{margin:13px 0 7px;font-size:13px}
+.ingredient-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:9px;scrollbar-color:var(--line) transparent}
+.ingredient-scroll table{border-collapse:separate;border-spacing:0;min-width:670px}
+.ingredient-scroll th{padding:9px 8px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11.5px;letter-spacing:.03em}
+.ingredient-scroll td{padding:8px;vertical-align:middle}
+.ingredient-scroll tr.ing>td{border-top:1px solid var(--line)}
+.ingredient-scroll tr[data-sum]>td{padding:0 8px 8px}
+.ingredient-scroll tr[data-detrow]>td{padding:0 8px 10px}
+.ingredient-scroll input[data-p="hcodes"]{min-width:148px}
+.ingredient-scroll .chip{margin-bottom:2px}
+.ingredient-scroll .ing:focus-within{background:var(--soft)}
+.ingredient-tip{font-size:12px;margin:5px 0 9px}
+.disclosure-card>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none;font-weight:700;font-size:13px}
+.disclosure-card>summary::-webkit-details-marker{display:none}
+.disclosure-card>summary:after{content:"⌄";color:var(--mute);font-size:22px;font-weight:400;line-height:1}
+.disclosure-card[open]>summary:after{transform:rotate(180deg)}
+.disclosure-card>summary small{font-weight:400;color:var(--mute);font-size:12px;margin-left:auto}
+.disclosure-card[open]>summary{padding-bottom:11px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.disclosure-card .card-inner{min-width:0}
+.detail{padding:12px;border-radius:10px;background:var(--panel)}
+.detail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 11px}
+.detail-toolbar strong{font-size:14px}
+.detail-group{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;overflow:hidden;background:var(--panel)}
+.detail-group>summary{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none;padding:10px 12px;font-size:13px;font-weight:650}
+.detail-group>summary::-webkit-details-marker{display:none}
+.detail-group>summary:before{content:"+";width:19px;height:19px;flex:none;display:grid;place-items:center;border-radius:5px;color:var(--accent);background:var(--soft);font-weight:800}
+.detail-group[open]>summary:before{content:"−"}
+.detail-group[open]>summary{border-bottom:1px solid var(--line);background:var(--soft)}
+.detail-group-body{padding:12px}
+.detail-group-body>.hint{margin:4px 0 10px}
+.detail-group-body label{display:block}
+.detail-group-body>.g>*{min-width:0}
+.detail-group-body select{width:100%}
+.detail-group-body input:not([type=checkbox]){width:100%}
+.detail-group .chk{display:flex}
+.detail-group .g3>div,.detail-group .g4>div{min-width:0}
+.result-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 13px}
+.result-stat{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:11px 12px;min-width:0}
+.result-stat strong{font-size:19px;line-height:1.2;display:block}
+.result-stat span{font-size:11px;color:var(--mute)}
+.result-status{margin:0 0 12px;padding:8px 12px;background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;font-size:12px}
+.hrow{grid-template-columns:minmax(72px,108px) minmax(0,1fr);column-gap:12px;row-gap:2px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 65%,transparent)}
+.hrow:last-child{border-bottom:0}
+.hrow>code{overflow-wrap:anywhere;line-height:1.5}
+.hrow>div{min-width:0;overflow-wrap:anywhere}
+.hrow small{line-height:1.4}
+.pstatement-row{grid-template-columns:max-content minmax(0,1fr);column-gap:16px}
+.pstatement-row>code{overflow-wrap:normal}
+details.h{padding:9px 0}
+details.h>summary{line-height:1.45}
+.note{line-height:1.55;padding:2px 0}
+.alert{padding:10px 12px;line-height:1.55;border-left:3px solid #c88b13}
+.alert.bad{border-left-color:var(--bad)}
+.viewer-settings-groups fieldset{padding:10px 12px}
+.viewer-settings-groups label{padding:3px 0;cursor:pointer}
+#viewersettings>summary{cursor:pointer}
+pre.rep{padding:14px}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+@media(max-width:720px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-nav{gap:2px}}
+@media(max-width:540px){
+  header{padding:12px 14px}.card{padding:13px 12px}
+  .wrap{padding:12px 10px}.workspace-heading{padding:0 4px}
+  .g4,.g3,.g2{grid-template-columns:minmax(0,1fr)}
+  .result-overview{gap:6px}
+  .result-stat{padding:9px 8px}.result-stat strong{font-size:17px}
+  .hrow,.pstatement-row{grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0}
+  .pstatement-row>code{white-space:normal;overflow-wrap:anywhere}
+  .detail{padding:8px}.detail-group-body{padding:10px}
+  .disclosure-card>summary{flex-wrap:wrap}
+  .disclosure-card>summary small{width:100%;margin-left:0}
+}
+@media print{
+  .workspace-nav,.detail-toolbar,.result-overview{display:none!important}
+  .card,.disclosure-card,.detail-group{box-shadow:none}
+  .wrap{padding:0}
+}
+
 </style>
 </head>
 <body>
 <header>
-  <h1>CLP Mixture Classification Calculator</h1>
-  <span class="sub">Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026 &middot; ingredient-based method &middot; works offline, no AI needed</span>
+  <h1>CLP Mixture Calculator</h1>
+  <span class="sub">EU CLP &middot; Annex I (01.07.2026) &middot; Local and offline &middot; Regulatory review required</span>
 </header>
-<div class="banner"><b>Decision-support only.</b> You supply the ingredient classifications (from Annex VI / C&amp;L Inventory / SDS); the calculator applies the Annex I mixture rules and shows every step. It does <u>not</u> model bridging principles, tested-mixture data, physical hazards other than flammable liquids, independent validation of manual hazard classifications under Article 26(2), full Article 27 case-by-case redundancy review, or complete Article 28 P-statement selection. It applies Article 26 pictogram precedence, explicit Article 27 Annex III H/EUH omission pairs, and a conservative Article 28 candidate selector, each with an audit trail. Verify against the official text before relying on a result.</div>
+<nav class="workspace-nav noprint" aria-label="Jump to calculator section">
+  <a href="#mixture-card">Mixture</a>
+  <a href="#ingredients-card">Ingredients</a>
+  <a href="#p28settings">Labelling context</a>
+  <a href="#results">Results</a>
+</nav>
+<div class="banner" role="note"><b>Decision-support only — not a final classification or label.</b> Check input evidence, unresolved warnings and current CLP requirements before use.
+  <details><summary>Read calculation scope and regulatory limitations</summary>
+    <div class="banner-detail">You supply the ingredient classifications (from Annex VI / C&amp;L Inventory / SDS); the calculator applies its implemented Annex I mixture rules and shows every step. It does <u>not</u> model bridging principles, tested-mixture data, physical hazards other than flammable liquids, independent validation of manual hazard classifications under Article 26(2), full Article 27 case-by-case redundancy review, or complete Article 28 P-statement selection. It applies Article 26 pictogram precedence, explicit Article 27 Annex III H/EUH omission pairs, and a conservative Article 28 candidate selector, each with an audit trail. Verify against the official text before relying on a result.</div>
+  </details>
+</div>
 
 <div class="wrap">
-<section id="inputs">
-  <div class="card">
-    <h2>Mixture</h2>
+<section id="inputs" aria-label="Formulation inputs">
+  <div class="workspace-heading"><h2>Formulation</h2><span class="hint">Edit inputs &middot; results update automatically</span></div>
+  <div class="card" id="mixture-card">
+    <h2>1. Mixture information</h2>
     <div class="g g4">
       <div style="grid-column:span 2"><label for="mname">Name</label><input id="mname" style="width:100%" placeholder="Product / trade name"></div>
       <div><label for="mstate">Physical state</label><select id="mstate" style="width:100%"><option value="liquid">Liquid / solid</option><option value="gas">Gas</option></select></div>
@@ -143,9 +265,9 @@ img[src$="GHS05.svg"] {
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="mart26"> Omit optional Article 26 physical pictograms (GHS02/GHS03/GHS04, where eligible; mandatory rules always apply)</label>
   </div>
 
-  <div class="card">
+  <div class="card" id="ingredients-card">
     <div class="row" style="justify-content:space-between;margin-bottom:6px">
-      <h2 style="margin:0">Ingredients <span id="tot" class="hint"></span></h2>
+      <h2 style="margin:0">2. Ingredients <span id="tot" class="hint"></span></h2>
       <div class="row">
         <button class="small primary" id="addIng">+ Add ingredient</button>
         <button class="small" id="ex">Load example</button>
@@ -153,15 +275,19 @@ img[src$="GHS05.svg"] {
       </div>
     </div>
     <div class="hint" style="margin-bottom:6px">Type the ingredient's H-codes (e.g. <code>H302 H315 H318 H410</code>) and the classes are filled in. Use <b>Details</b> to set categories, ATE values, M-factors, specific concentration limits (SCLs) and exceptions the codes cannot express (e.g. Skin Corr. 1B, Acute Tox. 1 vs 2).</div>
+    <div class="hint ingredient-tip">On smaller screens, scroll the ingredient table horizontally to access all columns.</div>
+    <div class="ingredient-scroll" role="region" tabindex="0" aria-label="Ingredient table; scroll horizontally to access all fields">
     <table>
       <thead><tr><th style="width:28%">Name</th><th style="width:15%">CAS</th><th style="width:11%">% w/w</th><th>H / EUH codes</th><th style="width:118px"></th></tr></thead>
       <tbody id="ings"></tbody>
     </table>
+    </div>
     <div id="parsenotes"></div>
   </div>
 
-  <div class="card" id="p28settings">
-    <h2>Article 28 — P-statement selection context</h2>
+  <details class="card disclosure-card" id="p28settings">
+    <summary>3. Labelling context <small>Article 28: audience, use, disposal and P-statements</small></summary>
+    <div class="card-inner">
     <div class="hint">Precautionary statements depend on intended use, the supply audience, the hazard classification and Annex IV criteria. This is a partial, auditable candidate selector — not a final approved label.</div>
     <div class="g g3" style="margin-top:9px">
       <div><label for="maudience">Supplied to</label>
@@ -183,14 +309,17 @@ img[src$="GHS05.svg"] {
         <textarea id="mpreason" rows="2" style="width:100%" placeholder="Required for an exclusion to take effect"></textarea></div>
     </div>
     <div class="hint">Consumer disposal: Article 28(2) normally requires a disposal statement covering contents and packaging, subject to Article 22. This is a category-level requirement, not a claim that every candidate P-code is mandatory. Annex IV wording with unresolved choices must be completed before release.</div>
-  </div>
+    </div>
+  </details>
 
-  <div class="card">
-    <h2>Manual classifications (from test data, physical hazards, etc.)</h2>
+  <details class="card disclosure-card" id="manualsettings">
+    <summary>4. Manual classifications <small>From measured data or independently determined hazards</small></summary>
+    <div class="card-inner">
     <div class="hint" style="margin-bottom:6px">Anything you determined yourself &mdash; e.g. Oxid. Liq. 3, Eye Irrit. 2 from a test. It is added to the label summary as entered, not calculated.</div>
     <div id="manual"></div>
     <button class="small" id="addMan">+ Add manual entry</button>
-  </div>
+    </div>
+  </details>
 
   <div class="card">
     <div class="row">
@@ -224,7 +353,10 @@ img[src$="GHS05.svg"] {
   </details>
 </section>
 
-<section id="results">
+<section id="results" aria-label="Classification results">
+  <div class="workspace-heading"><h2>Classification results</h2><span class="hint">Live preview &middot; not final approval</span></div>
+  <div id="result-overview" class="result-overview" aria-live="polite"></div>
+  <div class="result-status" role="note">Draft calculations: verify all input warnings and regulatory selection decisions before use.</div>
   <details class="card noprint" id="viewersettings">
     <summary aria-label="Open Viewer Settings">⚙ Viewer Settings — show / hide results</summary>
     <div class="hint" style="margin-top:8px">Only changes which results you see. Calculations, warning messages, saved formulations and the full text report are not changed. Important calculation errors always remain visible.</div>
