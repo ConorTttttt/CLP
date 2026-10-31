@@ -86,8 +86,78 @@ const flagged=(r,frag)=>r.review.some(x=>x.reason.includes(frag));
 }
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'P272'});
- t('Manual code outside partial catalogue explicitly unverified',cand(r,'P272')?.manual&&r.warnings.some(x=>x.includes('no verified wording')));
- t('Unverified manual P code blocks final approval',r.review.some(x=>x.code==='P272'&&x.severity==='blocker'));
+ t('P272 is now recognised from Annex IV table 6.2',cand(r,'P272')?.manual&&cand(r,'P272')?.text.includes('Contaminated work clothing'));
+ t('Manually added P272 without matching skin sensitisation flagged',r.review.some(x=>x.code==='P272'&&x.severity==='review'));
+}
+{
+ const r=choose(['H317'],{audience:'professional'});
+ t('P272 now mapped for skin sensitisation',!!cand(r,'P272'));
+ t('P362+P364 also mapped for skin sensitisation',!!cand(r,'P362+P364'));
+}
+{
+ const r=choose(['H281'],{audience:'industrial'});
+ t('Refrigerated gas protective cold gloves recognised',!!cand(r,'P282'));
+ t('Refrigerated gas thawing response recognised',!!cand(r,'P336+P315'));
+}
+{
+ const r=choose(['H420'],{audience:'consumer'});
+ t('Ozone hazard P502 is included',picked(r,'P502'));
+ t('P501 not falsely applied to ozone',!cand(r,'P501'));
+ t('P502 does not automatically satisfy consumer packaging disposal obligation',
+   r.requiredObligations.some(x=>x.status==='requires-review'));
+}
+{
+ const r=choose(['H200'],{audience:'consumer'});
+ t('Explosives P503 included in candidate audit',!!cand(r,'P503'));
+ t('Explosives P503 wording pending supplier verification',cand(r,'P503').decision==='condition pending');
+ t('Explosives condition unresolved until supplier assessment',r.review.some(x=>x.code==='P503'));
+}
+{
+ const r=choose(['H225'],{audience:'professional'});
+ t('Flammable liquid vented storage conditional unless assessed',
+   cand(r,'P403+P235').decision==='condition pending');
+ t('High-priority unconditional ignition prevention remains proposed',picked(r,'P210'));
+ t('Conditional instructions excluded from six-statement provisional proposal',!picked(r,'P403+P235'));
+}
+{
+ const r=choose(['H225'],{audience:'professional',manualPExtra:'P403+P235'});
+ t('Manual selection can enable conditional candidate for further review',
+   cand(r,'P403+P235').decision==='proposed'&&
+   r.review.some(x=>x.code==='P403+P235'));
+}
+{
+ const r=choose(['H350'],{audience:'professional'});
+ t('P201 restricted to consumer products in normal hazard matching',!cand(r,'P201'));
+}
+{
+ const r=choose(['H350'],{audience:'consumer'});
+ t('P201/202 redundancy option supported when both apply',cand(r,'P201')?.decision==='redundant');
+}
+{
+ const r=choose(['H290'],{audience:'industrial'});
+ t('Metals corrosion has separate P390',!!cand(r,'P390'));
+ t('Metals corrosion has P234 and P406 optional omission',cand(r,'P406')?.decision==='redundant');
+}
+{
+ const r=choose(['H410'],{audience:'consumer'});
+ t('Aquatic environmental spillage P391 recognised',!!cand(r,'P391'));
+}
+{
+ const r=choose(['H319'],{audience:'professional'});
+ t('P264 candidate is conditional pending supplier specification',cand(r,'P264')?.decision==='condition pending');
+}
+{
+ const r=choose(['H314'],{audience:'professional'});
+ t('Storage P405 recognised for corrosive mixtures',!!cand(r,'P405'));
+}
+{
+ const r=choose(['H999'],{audience:'industrial',manualPExtra:'P999'});
+ t('Noncatalogue P code remains blocked',r.review.some(x=>x.code==='P999'&&x.severity==='blocker'));
+}
+{
+ const r=choose(['H225'],{audience:'professional'});
+ t('Expanded catalogue metadata indicates broad coverage',r.catalogueSize>=95);
+ t('Annex IV source version recorded',r.annexIVVersion==='01.07.2026');
 }
 {
  const r=choose(['H225'],{audience:'professional',manualPExtra:'P305 + P351 + P338'});
