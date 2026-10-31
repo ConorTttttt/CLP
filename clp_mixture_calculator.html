@@ -2070,7 +2070,7 @@ function detailHTML(i) {
   <section class="detail-category" data-detail-category="physical">
     <h4>Physical hazards</h4>
     <div class="hint">Physical hazard classifications are recorded using the ingredient H/EUH codes in the Hazards search above. Most finished-mixture physical hazards require separate assessment; they are not calculated from ingredient classifications.</div>
-    <div class="hazard-chip-list">${ingredientHCodes(i).filter(code=>groupForCode(code)==="physical").map(code=>hazardChip(code).replace(/<button[\\s\\S]*?<\\/button>/,"")).join("")||'<span class="hint">No physical hazards selected</span>'}</div>
+    <div class="hazard-chip-list">${ingredientHCodes(i).filter(code=>groupForCode(code)==="physical").map(code=>`<span class="hazard-chip"><strong>${esc(code)}</strong><span>${esc(HAZARD_MAP.get(code)?.classification||"Physical hazard")}</span></span>`).join("")||'<span class="hint">No physical hazards selected</span>'}</div>
   </section>
   <section class="detail-category" data-detail-category="health">
     <h4>Health hazards</h4>
