@@ -208,11 +208,16 @@ details.h>summary{line-height:1.45}
 #viewersettings>summary{cursor:pointer}
 pre.rep{padding:14px}
 @media(max-width:1100px){.wrap{grid-template-columns:1fr}}
-@media(max-width:720px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-nav{gap:2px}}
+@media(max-width:720px){
+  .g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3>[style*="grid-column:span 3"],.g4>[style*="grid-column:span 3"]{grid-column:1/-1!important}
+  .workspace-nav{gap:2px}
+}
 @media(max-width:540px){
   header{padding:12px 14px}.card{padding:13px 12px}
   .wrap{padding:12px 10px}.workspace-heading{padding:0 4px}
   .g4,.g3,.g2{grid-template-columns:minmax(0,1fr)}
+  .g3>[style*="grid-column:span"],.g4>[style*="grid-column:span"]{grid-column:1/-1!important}
   .result-overview{gap:6px}
   .result-stat{padding:9px 8px}.result-stat strong{font-size:17px}
   .hrow,.pstatement-row{grid-template-columns:minmax(0,1fr);gap:2px;padding:8px 0}
@@ -267,7 +272,7 @@ pre.rep{padding:14px}
 
   <div class="card" id="ingredients-card">
     <div class="row" style="justify-content:space-between;margin-bottom:6px">
-      <h2 style="margin:0">2. Ingredients <span id="tot" class="hint"></span></h2>
+      <h2 style="margin:0">2. Ingredients <span id="tot" class="hint" aria-live="polite"></span></h2>
       <div class="row">
         <button class="small primary" id="addIng">+ Add ingredient</button>
         <button class="small" id="ex">Load example</button>
@@ -322,6 +327,7 @@ pre.rep{padding:14px}
   </details>
 
   <div class="card">
+    <h2>Formulation files</h2>
     <div class="row">
       <button class="small" id="save">Save as JSON</button>
       <button class="small" id="loadb">Load JSON&hellip;</button><input type="file" id="loadf" accept=".json,application/json" hidden>
@@ -2195,10 +2201,10 @@ $("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all in
 /* ---------- manual entries ---------- */
 function renderManual() {
   $("manual").innerHTML = mix.manual.map((m, k) => `<div class="row" data-k="${k}" style="margin-bottom:6px">
-    <input data-m="label" value="${esc(m.label)}" placeholder="Class & category, e.g. Oxid. Liq. 3" style="flex:2;min-width:150px">
-    <input data-m="h" value="${esc(m.h)}" placeholder="H-codes" style="flex:1;min-width:80px">
-    <select data-m="signal"><option value="">no signal</option><option${m.signal === "Danger" ? " selected" : ""}>Danger</option><option${m.signal === "Warning" ? " selected" : ""}>Warning</option></select>
-    <select data-m="picto"><option value="">no pictogram</option>${Object.keys(CLP.PICTO).map((p) => `<option value="${p}"${m.picto === p ? " selected" : ""}>${p} ${CLP.PICTO[p]}</option>`).join("")}</select>
+    <input data-m="label" aria-label="Manual hazard classification and category" value="${esc(m.label)}" placeholder="Class & category, e.g. Oxid. Liq. 3" style="flex:2;min-width:150px">
+    <input data-m="h" aria-label="Manual entry H-statement codes" value="${esc(m.h)}" placeholder="H-codes" style="flex:1;min-width:80px">
+    <select data-m="signal" aria-label="Manual hazard signal word"><option value="">no signal</option><option${m.signal === "Danger" ? " selected" : ""}>Danger</option><option${m.signal === "Warning" ? " selected" : ""}>Warning</option></select>
+    <select data-m="picto" aria-label="Manual hazard pictogram"><option value="">no pictogram</option>${Object.keys(CLP.PICTO).map((p) => `<option value="${p}"${m.picto === p ? " selected" : ""}>${p} ${CLP.PICTO[p]}</option>`).join("")}</select>
     <button class="x small" data-del="${k}" aria-label="Remove manual entry">✕</button></div>`).join("");
 }
 $("manual").addEventListener("input", (e) => { const r = e.target.closest("[data-k]"); if (!r || !e.target.dataset.m) return; mix.manual[+r.dataset.k][e.target.dataset.m] = e.target.value; update(); });
@@ -2324,7 +2330,7 @@ let tm = null;
 function update() { save(); clearTimeout(tm); tm = setTimeout(compute, 60); }
 function compute() {
   const tot = mix.ingredients.reduce((s, i) => { const n = CLP.num(i.pct); return s + (isFinite(n) ? n : 0); }, 0);
-  $("tot").textContent = mix.ingredients.length ? `— total ${CLP.fmt(tot)} %` : "";
+  $("tot").textContent = mix.ingredients.length ? `— ${CLP.fmt(tot)} % entered` : "";
   try { last = CLP.classify(mix); renderResult(last); $("rep").textContent = CLP.report(mix, last, {}); }
   catch (e) { $("res").innerHTML = `<div class="alert bad">Calculation error: ${esc(e.message)}</div>`; last = null; }
 }
