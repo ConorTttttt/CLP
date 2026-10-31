@@ -237,8 +237,13 @@ pre.rep{padding:14px}
 .hazard-editor{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:5px 0 12px;min-width:0}
 .hazard-editor-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .hazard-editor-head>b{font-size:13px}
-.hazard-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hazard-groups{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
 .hazard-picker{background:var(--bg);border:1px solid var(--line);border-radius:9px;min-width:0;padding:10px;position:relative}
+.detail-category{border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0 14px;background:var(--panel);min-width:0}
+.detail-category>h4{font-size:14px;margin:2px 2px 10px;font-weight:700}
+.detail-category>.detail-group{margin-top:8px}
+.detail-category>.hint{margin:8px 3px}
+.detail-category .hazard-chip-list{margin:6px 0}
 .hazard-picker>strong{display:block;font-size:12.5px}
 .hazard-picker>.hint{display:block;font-size:11px}
 .hazard-chip-list{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0;min-height:24px;align-items:center}
@@ -2041,7 +2046,8 @@ function detailHTML(i) {
     stot: !!(i.stotSE || i.stotRE || i.stotSEresp || i.stotSEnarc || i.asp),
     aquatic: !!(i.aquaAcute || i.aquaChronic || i.aquaUnknown ||
       hasValue(i.mAcute) || hasValue(i.mChronic)),
-    newHazards: !!(i.edHH || i.edEnv || i.pbt || i.vpvb || i.pmt || i.vpvm || i.ozone),
+    edHH: !!i.edHH,
+    newHazards: !!(i.edEnv || i.pbt || i.vpvb || i.pmt || i.vpvm || i.ozone),
     otherSCL: Object.entries(scl).some(([k,v]) =>
       !['skinCorr','skinIrrit','eyeDam','eyeIrrit'].includes(k) && hasValue(v)),
     provenance: !!String(i.valueSource || "").trim()
@@ -2061,6 +2067,13 @@ function detailHTML(i) {
       <button type="button" class="small" data-detail-action="collapse">Collapse all</button>
     </div>
   </div>
+  <section class="detail-category" data-detail-category="physical">
+    <h4>Physical hazards</h4>
+    <div class="hint">Physical hazard classifications are recorded using the ingredient H/EUH codes in the Hazards search above. Most finished-mixture physical hazards require separate assessment; they are not calculated from ingredient classifications.</div>
+    <div class="hazard-chip-list">${ingredientHCodes(i).filter(code=>groupForCode(code)==="physical").map(code=>hazardChip(code).replace(/<button[\\s\\S]*?<\\/button>/,"")).join("")||'<span class="hint">No physical hazards selected</span>'}</div>
+  </section>
+  <section class="detail-category" data-detail-category="health">
+    <h4>Health hazards</h4>
   <details class="detail-group" data-detail-section="acute"${sectionOpen("acute")}><summary>Acute toxicity (give a category <i>or</i> a measured/derived ATE; ATE wins)</summary><div class="detail-group-body">
     <div class="hint">ATE units depend on exposure route: oral/dermal mg/kg, vapour or dust/mist mg/L, gas ppmV. An ATE that conflicts with the entered category is flagged. Category-only entries use CLP Table 3.1.2 conversion values.</div>
     <div class="g g3">
@@ -2113,6 +2126,12 @@ function detailHTML(i) {
       <div>${CHK("asp", i.asp, "Asp. Tox. 1 (H304)")}</div>
     </div>
   </div></details>
+  <details class="detail-group" data-detail-section="edHH"${sectionOpen("edHH")}><summary>Endocrine disruption — human health</summary><div class="detail-group-body">
+    <label>ED human health</label>${SEL("edHH", CATS([["1", "1"], ["2", "2"]]), i.edHH)}
+  </div></details>
+  </section>
+  <section class="detail-category" data-detail-category="environmental">
+    <h4>Environmental hazards</h4>
   <details class="detail-group" data-detail-section="aquatic"${sectionOpen("aquatic")}><summary>Aquatic environment</summary><div class="detail-group-body">
     <div class="hint" style="margin-bottom:6px">For Aquatic Acute 1 and Chronic 1 enter the applicable M-factor separately, even if it equals 1. Missing or invalid values use a provisional lower-bound screen and trigger warnings; they are not accepted as an approved aquatic classification.</div>
     <div class="g g4">
@@ -2123,13 +2142,16 @@ function detailHTML(i) {
     </div>
     ${CHK("aquaUnknown", i.aquaUnknown, "aquatic hazard data unavailable for this ingredient")}
   </div></details>
-  <details class="detail-group" data-detail-section="newHazards"${sectionOpen("newHazards")}><summary>New classes (apply to mixtures from 1 May 2026; transition to 1 May 2028 for products already on the market)</summary><div class="detail-group-body">
+  <details class="detail-group" data-detail-section="newHazards"${sectionOpen("newHazards")}><summary>Environmental endocrine disruption, PBT, PMT and ozone</summary><div class="detail-group-body">
+    <div class="hint">New CLP hazard classes: check the applicable implementation and transition dates.</div>
     <div class="g g3">
-      <div><label>ED human health</label>${SEL("edHH", CATS([["1", "1"], ["2", "2"]]), i.edHH)}</div>
       <div><label>ED environment</label>${SEL("edEnv", CATS([["1", "1"], ["2", "2"]]), i.edEnv)}</div>
       <div class="row">${CHK("pbt", i.pbt, "PBT")}${CHK("vpvb", i.vpvb, "vPvB")}${CHK("pmt", i.pmt, "PMT")}${CHK("vpvm", i.vpvm, "vPvM")}${CHK("ozone", i.ozone, "Ozone 1")}</div>
     </div>
   </div></details>
+  </section>
+  <section class="detail-category" data-detail-category="shared">
+    <h4>Shared limits &amp; source evidence</h4>
   <details class="detail-group" data-detail-section="otherSCL"${sectionOpen("otherSCL")}><summary>Specific concentration limits for this ingredient (Annex VI / Inventory) &mdash; blank = generic limit</summary><div class="detail-group-body">
     <div class="g g4">${sclF("skinSens", "Skin sens.")}${sclF("respSens", "Resp. sens.")}${sclF("muta", "Muta.")}${sclF("carc", "Carc.")}${sclF("repro", "Repr. common")}${sclF("reproFert", "Repr. fertility")}${sclF("reproDev", "Repr. development")}${sclF("lact", "Lact.")}${sclF("stotSE", "STOT SE")}${sclF("stotRE", "STOT RE")}${sclF("edHH", "ED HH")}${sclF("edEnv", "ED ENV")}</div>
     <div class="hint">Skin/eye SCLs are entered above and used for potency-weighted additivity and non-additive thresholds; confirm endpoints and source evidence. Acute toxicity uses route-specific ATE values and Annex I conversions, not a skin/eye-style SCL.</div>
@@ -2139,6 +2161,7 @@ function detailHTML(i) {
       ${TXT("valueSource", i.valueSource ?? "", "e.g. Annex VI entry, supplier SDS revision 4, test report 2026")}</div>
     <div class="hint">Optional but recommended. Saved with ingredient data and included in the classification report. The app flags specific values without a recorded source.</div>
   </div></details>
+  </section>
   </div>`;
 }
 
@@ -2211,7 +2234,7 @@ function searchHazards(group,query,existing=[]){
  const q=String(query||"").trim().toLowerCase();
  if(!q)return [];
  const selected=new Set(existing);
- return HAZARD_CHOICES.filter(x=>x.group===group&&!selected.has(x.code))
+ return HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group)&&!selected.has(x.code))
    .filter(x=>(x.code+" "+x.classification+" "+x.text).toLowerCase().includes(q))
    .sort((a,b)=>{
      const score=x=>x.code.toLowerCase().startsWith(q)?0:x.classification.toLowerCase().startsWith(q)?1:2;
@@ -2241,19 +2264,16 @@ function hazardRowControlsHTML(i){
 }
 function hazardEditorHTML(i){
  const selected=ingredientHCodes(i);
- const groups=HAZARD_GROUPS.map(g=>{
-   const listId="hazard-options-"+i._id+"-"+g.id;
-   return `<div class="hazard-picker" data-hazard-picker data-group="${g.id}">
-     <strong>${esc(g.title)}</strong><small class="hint">${esc(g.hint)}</small>
-     <div class="hazard-search-wrap">
-       <input type="text" data-hazard-query data-group="${g.id}" role="combobox" autocomplete="off"
-         aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}"
-         aria-label="Add ${esc(g.title)} by H code, classification or phrase"
-         placeholder="+ Search code, class or phrase">
-       <div id="${listId}" class="hazard-suggestions" role="listbox" hidden></div>
-     </div>
-   </div>`;
- }).join("");
+ const listId="hazard-options-"+i._id+"-all";
+ const groups=`<div class="hazard-picker" data-hazard-picker data-group="all">
+   <div class="hazard-search-wrap">
+     <input type="text" data-hazard-query data-group="all" role="combobox" autocomplete="off"
+       aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}"
+       aria-label="Add any ingredient hazard by H or EUH code, classification or phrase"
+       placeholder="+ Search any H/EUH code, classification or hazard phrase">
+     <div id="${listId}" class="hazard-suggestions" role="listbox" hidden></div>
+   </div>
+ </div>`;
  return `<details class="hazard-editor" data-hazard-panel data-id="${i._id}"
    id="hazard-editor-${i._id}"${hazardPanelsOpen.has(i._id)?' open':''}>
    <summary class="hazard-editor-head"><b>Hazards</b>
@@ -2343,7 +2363,7 @@ function renderHazardSuggestions(input){
    role="option" aria-selected="false" id="${list.id}-opt-${n}"
    data-hazard-option="${esc(item.code)}"><code>${esc(item.code)}</code>
    <span><b>${esc(item.classification)}</b><small>${esc(item.text)}</small></span>
- </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification in this group. Use Advanced for another H/EUH code.</div>':"");
+ </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification. Use Advanced for another H/EUH code.</div>':"");
  list.hidden=!input.value.trim();
  if(!list.hidden){
    // Viewport positioning avoids clipping inside the horizontally scrolling ingredient table.
@@ -2372,7 +2392,7 @@ function closeHazardSuggestions(input){
 function chooseIngredientHazard(input,code){
  const holder=input.closest("[data-id]"),id=+(holder?.dataset.id||0);
  const ing=mix.ingredients.find(item=>item._id===id);
- if(!ing||HAZARD_MAP.get(code)?.group!==input.dataset.group)return;
+ if(!ing||(input.dataset.group!=="all"&&HAZARD_MAP.get(code)?.group!==input.dataset.group))return;
  changeIngredientHazard(ing,code,true);
  refreshRow(id);update();
  const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
