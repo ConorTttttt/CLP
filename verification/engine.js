@@ -45,8 +45,14 @@
     H334: 'May cause allergy or asthma symptoms or breathing difficulties if inhaled',
     H335: 'May cause respiratory irritation', H336: 'May cause drowsiness or dizziness',
     H340: 'May cause genetic defects', H341: 'Suspected of causing genetic defects',
-    H350: 'May cause cancer', H351: 'Suspected of causing cancer',
+    H350: 'May cause cancer', H350i: 'May cause cancer by inhalation', H351: 'Suspected of causing cancer',
     H360: 'May damage fertility or the unborn child', H361: 'Suspected of damaging fertility or the unborn child',
+    H360F: 'May damage fertility', H360D: 'May damage the unborn child',
+    H360FD: 'May damage fertility. May damage the unborn child',
+    H360Fd: 'May damage fertility. Suspected of damaging the unborn child',
+    H360Df: 'May damage the unborn child. Suspected of damaging fertility',
+    H361f: 'Suspected of damaging fertility', H361d: 'Suspected of damaging the unborn child',
+    H361fd: 'Suspected of damaging fertility. Suspected of damaging the unborn child',
     H362: 'May cause harm to breast-fed children',
     H370: 'Causes damage to organs', H371: 'May cause damage to organs',
     H372: 'Causes damage to organs through prolonged or repeated exposure',
@@ -85,7 +91,7 @@
       name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [],
       acute: { oral: { cat: '', ate: '' }, dermal: { cat: '', ate: '' }, inh: { form: 'vapour', cat: '', ate: '' }, unknown: false },
       skinCorr: '', eye: '', nonAdditive: false,
-      skinSens: '', respSens: '', muta: '', carc: '', repro: '', lact: false,
+      skinSens: '', respSens: '', muta: '', carc: '', carcRoute: '', repro: '', reproFert: '', reproDev: '', lact: false,
       stotSE: '', stotSEresp: false, stotSEnarc: false, stotRE: '', asp: false,
       aquaAcute: false, mAcute: '', aquaChronic: '', mChronic: '', aquaUnknown: false,
       edHH: '', edEnv: '', pbt: false, vpvb: false, pmt: false, vpvm: false, ozone: false,
@@ -93,7 +99,7 @@
     };
   }
 
-  const CLEAR_KEYS = ['skinCorr', 'eye', 'skinSens', 'respSens', 'muta', 'carc', 'repro', 'stotSE', 'stotRE', 'aquaChronic', 'edHH', 'edEnv'];
+  const CLEAR_KEYS = ['skinCorr', 'eye', 'skinSens', 'respSens', 'muta', 'carc', 'carcRoute', 'repro', 'reproFert', 'reproDev', 'stotSE', 'stotRE', 'aquaChronic', 'edHH', 'edEnv'];
   const CLEAR_BOOL = ['lact', 'stotSEresp', 'stotSEnarc', 'asp', 'aquaAcute', 'pbt', 'vpvb', 'pmt', 'vpvm', 'ozone'];
 
   /* Annex VI 1.1.2.1.2 differentiations are CASE-SENSITIVE, notably H360FD/Fd/Df.
@@ -192,21 +198,30 @@
         case 'H341': setCMR('muta', '2'); break;
         case 'H350':
           setCMR('carc', '1B');
+          if (code === 'H350' || ing.carcRoute !== 'general') ing.carcRoute = code === 'H350i' ? 'inhalation' : 'general';
           notes.push(code === 'H350i'
             ? 'H350i: inhalation-specific carcinogenicity preserved in hcodeDetails; verify the exposure route and final mixture hazard-statement wording.'
             : 'H350 read as Carc. 1B – set 1A if applicable (same concentration limit).');
           break;
         case 'H351': setCMR('carc', '2'); break;
-        case 'H360':
-          setCMR('repro', '1B');
-          notes.push((suffix ? code : 'H360') + ': reproductive-effect differentiation ' +
-            (suffix ? 'retained in hcodeDetails' : 'unspecified') +
-            '; mixture-specific fertility/development statement selection requires review. Set Category 1A if applicable.');
+        case 'H360': {
+          if (suffix) {
+            const effects = REPRO_DIFFERENTIATIONS[code];
+            if (effects[0]) setCMR('reproFert', effects[0] === 1 ? '1B' : '2');
+            if (effects[1]) setCMR('reproDev', effects[1] === 1 ? '1B' : '2');
+          } else setCMR('repro', '1B');
+          notes.push(code + ': ' + (suffix ? 'fertility/development categories populated in Details' : 'effect unspecified; change only if supported') + '. For Category 1, verify 1A versus 1B.');
           break;
-        case 'H361':
-          setCMR('repro', '2');
-          if (suffix) notes.push(code + ': reproductive-effect differentiation retained in hcodeDetails; review the mixture statement wording.');
+        }
+        case 'H361': {
+          if (suffix) {
+            const effects = REPRO_DIFFERENTIATIONS[code];
+            if (effects[0]) setCMR('reproFert', '2');
+            if (effects[1]) setCMR('reproDev', '2');
+          } else setCMR('repro', '2');
+          if (suffix) notes.push(code + ': fertility/development categories populated in Details.');
           break;
+        }
         case 'H362': ing.lact = true; break;
         case 'H370': ing.stotSE = '1'; break;
         case 'H371': if (ing.stotSE !== '1') ing.stotSE = '2'; break;
@@ -473,16 +488,58 @@
     }, ings, mix);
     const m = mk('muta', 'Germ cell mutagenicity', 'muta', 'Muta.', { '1A': 0.1, '1B': 0.1, '2': 1.0 }, 'Annex I 3.5.3.1 · Table 3.5.2 (cons. p.166); label Table 3.5.3 (p.167)', 'H340', 'H341');
     const c = mk('carc', 'Carcinogenicity', 'carc', 'Carc.', { '1A': 0.1, '1B': 0.1, '2': 1.0 }, 'Annex I 3.6.3.1 · Table 3.6.2 (cons. p.171); label Table 3.6.3 (p.172)', 'H350', 'H351');
-    const r = mk('repro', 'Reproductive toxicity', 'repro', 'Repr.', { '1A': 0.3, '1B': 0.3, '2': 3.0 }, 'Annex I 3.7.3.1 · Table 3.7.2 (cons. pp.180–181); label Table 3.7.3 (pp.181–182)', 'H360', 'H361');
+    /* Mixture reproductive effects are tested independently using Table 3.7.2.
+       Generic/undifferentiated reproductive toxicity remains separate. */
+    const r = hz('repro', 'Reproductive toxicity – fertility / development',
+      'Annex I 3.7.1.1 and 3.7.3.1, Table 3.7.2; Annex VI 1.1.2.1.2');
+    const rank = { '1A': 3, '1B': 2, '2': 1 };
+    const genericLimit = { '1A': 0.3, '1B': 0.3, '2': 3 };
+    const assess = (field, name) => {
+      let best = '';
+      ings.filter((i) => rank[i[field]]).forEach((i) => {
+        const exact = num((i.scl || {})[field]), common = num((i.scl || {}).repro);
+        const lim = exact > 0 ? exact : common > 0 ? common : genericLimit[i[field]];
+        const triggered = ge(i.pct, lim);
+        r.steps.push(name + ': ' + nm(i) + ' Repr. ' + i[field] + ' ' + fmt(i.pct) +
+          ' % ' + (triggered ? '≥' : '<') + ' ' + fmt(lim) + ' % (' +
+          (exact > 0 ? 'effect-specific SCL' : common > 0 ? 'common reproductive SCL' : 'generic limit') +
+          ')' + (triggered ? ' → triggers' : ''));
+        if (triggered && (!best || rank[i[field]] > rank[best])) best = i[field];
+      });
+      return best;
+    };
+    const f = assess('reproFert', 'Fertility'), d = assess('reproDev', 'Development');
+    const u = assess('repro', 'Undifferentiated reproductive effect');
+    const f1 = f === '1A' || f === '1B', d1 = d === '1A' || d === '1B';
+    const code = f1 && d1 ? 'H360FD' : f1 && d === '2' ? 'H360Fd'
+      : d1 && f === '2' ? 'H360Df' : f1 ? 'H360F' : d1 ? 'H360D'
+      : f === '2' && d === '2' ? 'H361fd' : f === '2' ? 'H361f'
+      : d === '2' ? 'H361d' : '';
+    const statements = [];
+    if (code) statements.push(code);
+    if (u) statements.push(u === '2' ? 'H361' : 'H360');
+    const best = [f, d, u].filter(Boolean).sort((x,y)=>rank[y]-rank[x])[0];
+    if (best) {
+      r.status = 'classified';
+      r.outcomes.push(out('Repr. ' + best, statements,
+        best === '2' ? 'Warning' : 'Danger', ['GHS08'],
+        { reproductiveEffects: { fertility: f || null, development: d || null, unspecified: u || null } }));
+      r.steps.push('Mixture: fertility ' + (f || 'not triggered') +
+        ', development ' + (d || 'not triggered') + ', unspecified ' + (u || 'not triggered') +
+        ' -> ' + statements.join(', '));
+      if (u && code) r.notes.push('Generic and differentiated reproductive effects both trigger. Article 27 redundancy must be reviewed before use on a label.');
+    } else r.steps.push('No reproductive endpoint met its applicable concentration limit.');
     const l = thresholdHazard({
       id: 'lact', name: 'Effects on or via lactation', ref: 'Annex I 3.7.3.1.2 · Table 3.7.2 (cons. p.181); label Table 3.7.3 (p.182)',
       get: (i) => (i.lact ? 'L' : ''), order: ['L'], catLabel: () => 'Lact.', gcl: () => 0.3,
       outcome: () => out('Lact.', ['H362'], null, [])
     }, ings, mix);
+    if (c.status === 'classified' && ings.some((i) => i.carcRoute === 'inhalation'))
+      c.notes.push('A source H350i does not establish that the mixture is carcinogenic only by inhalation. H350 is used until the route is justified.');
     /* SDS on request (notes to tables) */
     ings.forEach((i) => {
       if (i.carc === '2' && ge(i.pct, 0.1)) ctx.sds.push(`SDS available on request: Carc. 2 ingredient ${nm(i)} ≥ 0.1 % (Table 3.6.2 note 1).`);
-      if ((i.repro || i.lact) && ge(i.pct, 0.1)) ctx.sds.push(`SDS available on request: reproductive toxicant / lactation ingredient ${nm(i)} ≥ 0.1 % (Table 3.7.2 note 1).`);
+      if ((i.repro || i.reproFert || i.reproDev || i.lact) && ge(i.pct, 0.1)) ctx.sds.push(`SDS available on request: reproductive toxicant / lactation ingredient ${nm(i)} ≥ 0.1 % (Table 3.7.2 note 1).`);
     });
     return [m, c, r, l];
   }
@@ -650,6 +707,21 @@
       i.pct = num(raw.pct);
       // Re-derive source H-code differentiations without overwriting manual category edits.
       i.hcodeDetails = parseHCodeTokens(i.hcodes).codes;
+      // Recover differentiated effects from legacy saved formulations, preserving a
+      // generic category where the original H-code did not identify a specific effect.
+      if (!Object.prototype.hasOwnProperty.call(raw, 'reproFert') &&
+          !Object.prototype.hasOwnProperty.call(raw, 'reproDev') &&
+          raw.repro && i.hcodeDetails.some((d) => d.fertility || d.development)) {
+        const inferred = blankIngredient();
+        applyHCodes(inferred, i.hcodes);
+        i.reproFert = inferred.reproFert;
+        i.reproDev = inferred.reproDev;
+        if (raw.repro === '1A') {
+          if (i.reproFert === '1B') i.reproFert = '1A';
+          if (i.reproDev === '1B') i.reproDev = '1A';
+        }
+        i.repro = inferred.repro;
+      }
       return i;
     }).filter((i) => {
       if (!has(i.pct) || i.pct <= 0) { if ((i.name || '').trim() || i.pct === 0) warnings.push(`Ingredient "${nm(i)}" has no concentration > 0 and is ignored.`); return false; }
@@ -695,8 +767,8 @@
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
     const nodata = hazards.filter((h) => h.status === 'nodata');
     const notes = [];
-    if (ings.some((i) => i.hcodeDetails.some((d) => d.suffix)))
-      notes.push('Differentiated ingredient H-codes (e.g. H350i, H360F/H360D/H360Fd/H360Df or H361fd) were retained. The current mixture H350/H360/H361 wording is generic; review effect- and route-specific label wording before release.');
+    if (ings.some((i) => i.carcRoute === 'inhalation'))
+      notes.push('H350i in an ingredient does not automatically establish an inhalation-only hazard for the mixture; H350 is retained pending route-specific evidence.');
     if (pict.GHS07 && (pict.GHS05 || pict.GHS06 || pict.GHS08))
       notes.push('Pictogram precedence (CLP Art. 26 – not in the supplied package): where GHS05, GHS06 or GHS08 apply, GHS07 may be omitted for certain classes (e.g. skin/eye irritation, acute toxicity Cat. 4). Check the Article before dropping GHS07.');
     notes.push('Signal word: "Danger" takes precedence over "Warning" (CLP Art. 20 – not in the supplied package). Hazard-statement precedence/duplication rules (Art. 27) and precautionary-statement selection (Art. 28) are not applied.');
@@ -735,7 +807,12 @@
       if (i.eye) c.push(i.eye === '1' ? 'Eye Dam. 1' : 'Eye Irrit. 2');
       if (i.nonAdditive) c.push('additivity not applicable');
       if (i.skinSens) c.push('Skin Sens. ' + i.skinSens); if (i.respSens) c.push('Resp. Sens. ' + i.respSens);
-      if (i.muta) c.push('Muta. ' + i.muta); if (i.carc) c.push('Carc. ' + i.carc); if (i.repro) c.push('Repr. ' + i.repro); if (i.lact) c.push('Lact.');
+      if (i.muta) c.push('Muta. ' + i.muta);
+      if (i.carc) c.push('Carc. ' + i.carc + (i.carcRoute === 'inhalation' ? ' (source H350i)' : ''));
+      if (i.reproFert) c.push('Fertility ' + i.reproFert);
+      if (i.reproDev) c.push('Development ' + i.reproDev);
+      if (i.repro) c.push('Repr. ' + i.repro + ' (effect unspecified)');
+      if (i.lact) c.push('Lact.');
       if (i.stotSE) c.push('STOT SE ' + i.stotSE + (i.stotSE === '3' ? ` (${[i.stotSEresp && 'resp.', i.stotSEnarc && 'narc.'].filter(Boolean).join('/') || 'effect n/s'})` : ''));
       if (i.stotRE) c.push('STOT RE ' + i.stotRE); if (i.asp) c.push('Asp. Tox. 1');
       if (i.aquaAcute) c.push('Aquatic Acute 1' + (i.mAcute ? ` (M=${i.mAcute})` : '')); if (i.aquaChronic) c.push('Aquatic Chronic ' + i.aquaChronic + (i.mChronic && i.aquaChronic === '1' ? ` (M=${i.mChronic})` : ''));
