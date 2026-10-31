@@ -706,17 +706,18 @@
     { keep: 'EUH451', omit: 'EUH450', basis: 'CLP Annex III Part 1(d), Regulation (EU) 2023/707', reason: 'The stronger vPvM water-contamination statement covers the PMT statement.' }
   ]);
 
-  function selectArticle27(hazardStatements, euhStatements) {
+  function selectArticle27(hazardStatements, euhStatements, options) {
+    const omitOptional = !options || options.omitOptional !== false;
     const hazard = (hazardStatements || []).map((x) => Object.assign({}, x));
     const euh = (euhStatements || []).map((x) => Object.assign({}, x));
     const all = hazard.concat(euh);
     const present = new Set(all.map((x) => x.code));
     const decisions = [], omitted = [], selectedHazard = [], selectedEuh = [];
     all.forEach((entry) => {
-      const rule = ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
+      const rule = omitOptional && ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
       const decision = Object.assign({}, entry, {
         decision: rule ? 'omitted' : 'retained',
-        reason: rule ? rule.reason : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
+        reason: rule ? rule.reason : !omitOptional ? 'User elected to retain all triggered H/EUH statements (optional Annex III omissions disabled).' : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
         basis: rule ? rule.basis : 'CLP Article 27',
         overriddenBy: rule ? rule.keep : null
       });
@@ -737,7 +738,7 @@
       triggeredHazardStatements: hazard, triggeredEuhStatements: euh,
       omittedHazardStatements: omitted.filter((x) => !x.code.startsWith('EUH')),
       omittedEuhStatements: omitted.filter((x) => x.code.startsWith('EUH')),
-      decisions, review
+      decisions, review, omitOptional
     };
   }
 
@@ -811,7 +812,8 @@
     outcomes.filter((o) => !o.omitOnLabel).forEach((o) => o.h.forEach((c) => { if (!seen.has(c)) { seen.add(c); hs.push({ code: c, text: HTEXT[c] || '', from: o.label }); } else { const e = hs.find((x) => x.code === c); if (e && !e.from.includes(o.label)) e.from += ', ' + o.label; } }));
     const art27 = selectArticle27(
       hs.filter((x) => !/^EUH/.test(x.code)),
-      [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))]
+      [...hs.filter((x) => /^EUH/.test(x.code)), ...ctx.euh.map((x) => ({ code: x.code, text: x.text, from: x.why }))],
+      { omitOptional: m.article27Mode !== 'keepAll' }
     );
     const hasDanger = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Danger'), hasWarn = outcomes.some((o) => !o.omitOnLabel && o.signal === 'Warning');
     const incomplete = hazards.filter((h) => h.status === 'incomplete');
@@ -882,7 +884,8 @@
       `Pictograms (as triggered, Article 26 pending): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
       `Retained EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
-    L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:');
+    L.push('', 'ARTICLE 27 H/EUH STATEMENT AUDIT:',
+      'Optional Annex III omissions: ' + (result.label.omitOptional ? 'enabled' : 'disabled (keep all triggered statements)'));
     (result.label.decisions || []).forEach((d) => {
       L.push('- ' + d.code + ': ' + d.decision +
         (d.overriddenBy ? ' (covered by ' + d.overriddenBy + ')' : '') +
