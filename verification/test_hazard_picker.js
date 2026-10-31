@@ -63,6 +63,14 @@ test("Unrelated removals preserve refined carcinogenicity",()=>{
  const i=make("H350 H410");i.carc="1A";ui.changeIngredientHazard(i,"H410",false);
  assert.equal(i.carc,"1A");
 });
+test("Removing H315 retains manually refined H314 subcategory",()=>{
+ const i=make("H314 H315");i.skinCorr="1B";ui.changeIngredientHazard(i,"H315",false);
+ assert.equal(i.skinCorr,"1B");
+});
+test("Introducing H314 resets outdated Skin Irrit. 2 source classification",()=>{
+ const i=make("H315");ui.changeIngredientHazard(i,"H314",true);
+ assert.equal(i.skinCorr,"1");
+});
 test("Changed source code resets affected field",()=>{
  const i=make("H314");i.skinCorr="1B";ui.changeIngredientHazard(i,"H314",false);
  assert.equal(i.skinCorr,"");
