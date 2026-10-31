@@ -381,7 +381,7 @@
     return H;
   }
 
-  function corrosionHazards(mix, ings) {
+  function corrosionHazards(mix, ings, ctx) {
     const S = hz('skin', 'Skin corrosion / irritation', 'Annex I 3.2.3 (cons. pp.145–147); Tables 3.2.3 and 3.2.4 (p.147); cut-off Table 1.1 (p.68)');
     const E = hz('eye', 'Serious eye damage / eye irritation', 'Annex I 3.3.3 (cons. pp.151–154); Tables 3.3.3 and 3.3.4 (p.153–154); cut-off Table 1.1 (p.68)');
     const pH = num(mix.pH), phTrig = has(pH) && (pH <= 2 + EPS || pH >= 11.5 - EPS), reserveOk = !!mix.pHReserveOk;
@@ -461,6 +461,14 @@
 
     /* ---- eye ---- */
     const eRel = ings.filter((i) => (i.skinCorr && i.skinCorr !== '2') || i.eye);
+    const skinSCLEyeReview=ings.filter(i=>i.skinCorr && i.skinCorr!=='2' &&
+      has(sclValue(i,'skinCorr')) && !has(sclValue(i,'eyeDam')) && !i.eye);
+    if (skinSCLEyeReview.length) {
+      const message='Skin corrosion SCLs were entered for '+skinSCLEyeReview.map(nm).join(', ')+
+        ' without separately established eye-damage SCLs. Eye hazards are screened using the available generic limits. Review the ingredient evidence and eye classification independently.';
+      E.notes.push(message);
+      ctx.warnings.push('DATA REVIEW: '+message);
+    }
     const eyeCut=(i) => {
       const specific=sclValue(i,((i.skinCorr&&i.skinCorr!=='2') || i.eye==='1')?'eyeDam':'eyeIrrit');
       return has(specific) && specific < 1 ? EPS : 1;
@@ -1270,7 +1278,7 @@
     const hazards = [];
     hazards.push(flammability(m));
     hazards.push(acute(m, ings, ctx));
-    hazards.push(...corrosionHazards(m, ings));
+    hazards.push(...corrosionHazards(m, ings, ctx));
     hazards.push(...sensitisation(m, ings, ctx));
     hazards.push(...cmr(m, ings, ctx));
     hazards.push(...stot(m, ings, ctx));
@@ -1393,7 +1401,9 @@
       const scl = Object.entries(i.scl).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([k2, v]) => `SCL ${k2} ${v} %`);
       const differentiated = (i.hcodeDetails || []).filter((d) => d.suffix).map((d) => d.code);
       if (differentiated.length) c.push('source H differentiations: ' + differentiated.join(', '));
-      L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl).join('; ') || 'not classified'}`);
+      const provenance = i.valueSource && String(i.valueSource).trim()
+        ? ['Specific value source: '+(anon?'[reference withheld]':String(i.valueSource).trim())] : [];
+      L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl,provenance).join('; ') || 'not classified'}`);
     });
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
@@ -1443,7 +1453,7 @@
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
-    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
+    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, complete tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
     return L.join('\n');
   }
   function anonymiseText(s, ings) {
