@@ -81,6 +81,13 @@ Supported Annex IV redundancy relationships include:
 - **P406 → P234** for compatible original packaging when applicable.
 - **P235 → P411/P413** subject to the relevant temperature-control condition.
 
+The engine also applies **source-aware combination precedence**: when an
+authorised combined statement (for example P301+P310 or P410+P412) covers every
+classified hazard source that triggers a standalone code (P310 or P412), the
+standalone statement may be marked redundant. A standalone code is retained
+if another hazard source still requires it. A conditional combined code
+cannot suppress a standalone statement before its use condition is confirmed.
+
 These are optional omissions where Annex IV permits them; the underlying hazard
 classification remains unchanged. Conditional candidates may need independent review
 before any supposed redundancy can be relied upon.
@@ -110,7 +117,7 @@ node verification/test_article28.js
 node verification/test_ui_structure.js
 ```
 
-The Article 28 suite currently has 94 tests. It checks consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
+The Article 28 suite currently has 103 tests. It checks consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
 
 ## Primary legal references
 
