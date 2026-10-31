@@ -2565,8 +2565,9 @@ $("ings").addEventListener("click",event=>{
    // The chip was removed from the DOM: restore keyboard focus to the next
    // remaining chip, or the Add/edit button when there are no more chips.
    const remaining=document.querySelector(`tr[data-id="${id}"]`);
-   remaining?.querySelector("button[data-remove-hazard]")?.focus() ||
-     remaining?.querySelector('button[data-act="hazards"]')?.focus();
+   const nextChip=remaining?.querySelector("button[data-remove-hazard]");
+   if(nextChip)nextChip.focus();
+   else remaining?.querySelector('button[data-act="hazards"]')?.focus();
  }
 });
 document.addEventListener("click",event=>{
