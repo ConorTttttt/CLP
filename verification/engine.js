@@ -714,12 +714,16 @@
     const present = new Set(all.map((x) => x.code));
     const decisions = [], omitted = [], selectedHazard = [], selectedEuh = [];
     all.forEach((entry) => {
-      const rule = omitOptional && ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
+      const availableRule = ARTICLE27_RULES.find((r) => r.omit === entry.code && present.has(r.keep));
+      const rule = omitOptional ? availableRule : null;
       const decision = Object.assign({}, entry, {
         decision: rule ? 'omitted' : 'retained',
-        reason: rule ? rule.reason : !omitOptional ? 'User elected to retain all triggered H/EUH statements (optional Annex III omissions disabled).' : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
-        basis: rule ? rule.basis : 'CLP Article 27',
-        overriddenBy: rule ? rule.keep : null
+        reason: rule ? rule.reason : availableRule && !omitOptional
+          ? 'User elected to retain this statement despite the optional Annex III omission permitted when ' + availableRule.keep + ' is assigned.'
+          : 'No explicit Annex III omission rule applied; retained pending any case-specific Article 27 review.',
+        basis: availableRule ? availableRule.basis : 'CLP Article 27',
+        overriddenBy: rule ? rule.keep : null,
+        optionalOmissionAvailable: !rule && !!availableRule
       });
       decisions.push(decision);
       if (rule) omitted.push(decision);
