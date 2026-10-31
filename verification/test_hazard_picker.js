@@ -7,8 +7,9 @@ assert(begin>=0&&end>begin,"picker source block missing");
 const s=script.slice(begin,end),dom={};
 const $=id=>dom[id]||(dom[id]={innerHTML:""}),mix={ingredients:[]};
 const esc=x=>String(x??"").replace(/[&<>"']/g,k=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
-const ui=new Function("CLP","esc","$","mix",s+
- "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,ingredientHCodes,changeIngredientHazard,applyIngredientHazards,groupForCode};")(C,esc,$,mix);
+const hazardPanelsOpen=new Set();
+const ui=new Function("CLP","esc","$","mix","hazardPanelsOpen",s+
+ "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,changeIngredientHazard,applyIngredientHazards,groupForCode};")(C,esc,$,mix,hazardPanelsOpen);
 const make=(codes="")=>{const i=C.blankIngredient();i._id=1;C.applyHCodes(i,codes);mix.ingredients=[i];return i};
 let n=0;function test(name,fn){try{fn();n++}catch(e){throw Error(name+": "+e.message)}}
 test("Three separate search groups",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
@@ -25,18 +26,70 @@ test("Search bounded to group and eight suggestions",()=>{
  assert.deepEqual(ui.searchHazards("health",""),[]);
 });
 test("Selected hazards excluded from suggestions",()=>assert(!ui.searchHazards("health","H314",["H314"]).some(x=>x.code==="H314")));
-test("Chips from all groups have remove buttons",()=>{
+test("Three hazard search groups retained inside collapsible editor",()=>{
  const h=ui.hazardEditorHTML(make("H225 H314 H410"));
  assert.equal((h.match(/class="hazard-picker"/g)||[]).length,3);
- assert.equal((h.match(/data-remove-hazard=/g)||[]).length,3);
- for(const code of ["H225","H314","H410"])assert(h.includes('data-remove-hazard="'+code+'"'));
+ assert.match(h,/<details class="hazard-editor" data-hazard-panel/);
+ assert.equal((h.match(/data-remove-hazard=/g)||[]).length,0,
+   "Chips must be in table cell rather than duplicated inside editor");
+});
+test("Removable selected chips appear in the ingredient row",()=>{
+ const chips=ui.hazardRowControlsHTML(make("H225 H314 H410"));
+ assert.equal((chips.match(/data-remove-hazard=/g)||[]).length,3);
+ for(const code of ["H225","H314","H410"])
+   assert(chips.includes('data-remove-hazard="'+code+'"'));
+ assert(!chips.includes("Edit below"));
 });
 test("Accessible labels for search and removal",()=>{
- const h=ui.hazardEditorHTML(make("H314"));
- assert.match(h,/aria-label="Remove H314:/);
- assert.match(h,/role="combobox"/);
- assert.match(h,/role="listbox"/);
- assert(!h.includes('class="chip on"'));
+ const i=make("H314"),row=ui.hazardRowControlsHTML(i),editor=ui.hazardEditorHTML(i);
+ assert.match(row,/aria-label="Remove H314:/);
+ assert.match(row,/aria-controls="hazard-editor-1"/);
+ assert.match(editor,/role="combobox"/);
+ assert.match(editor,/role="listbox"/);
+ assert(!row.includes('class="chip on"'));
+});
+test("Hazards editor is collapsed by default, even with selected hazards",()=>{
+ const item=make("H225 H314 H410");
+ const html=ui.hazardEditorHTML(item);
+ assert.match(html,/id="hazard-editor-1"/);
+ assert(!html.includes('id="hazard-editor-1" open'));
+ assert.match(html,/<summary class="hazard-editor-head">/);
+ assert.match(html,/data-hazard-selected-count>3</);
+});
+test("Expanding one ingredient updates the disclosure and edit button",()=>{
+ const item=make("H314");
+ hazardPanelsOpen.add(item._id);
+ const panel=ui.hazardEditorHTML(item),row=ui.hazardRowControlsHTML(item);
+ assert.match(panel,/id="hazard-editor-1" open/);
+ assert.match(row,/aria-expanded="true"/);
+ assert.match(row,/Hide hazard search/);
+ hazardPanelsOpen.delete(item._id);
+ assert.match(ui.hazardRowControlsHTML(item),/aria-expanded="false"/);
+});
+test("Empty ingredient has add/edit control without a selection count placeholder",()=>{
+ const row=ui.hazardRowControlsHTML(make());
+ assert.match(row,/No hazards selected/);
+ assert.match(row,/Add \/ edit hazards/);
+});
+test("Row chips remain visible when hazard editor is collapsed",()=>{
+ const item=make("H225 H314");
+ assert(!hazardPanelsOpen.has(item._id));
+ assert(ui.hazardRowChipsHTML(item).includes('data-remove-hazard="H225"'));
+ assert(ui.hazardRowChipsHTML(item).includes('data-remove-hazard="H314"'));
+});
+test("Hazard panel state survives full ingredient rerender",()=>{
+ assert(script.includes("rememberHazardPanelStates();"));
+ assert(script.includes('hazardPanelsOpen.add(id)'));
+ assert(script.includes('hazardPanelsOpen.delete(id)'));
+ assert(script.includes("data-hazard-panel"));
+});
+test("Adding or removing chips does not replace open search DOM",()=>{
+ const start=script.indexOf("function refreshRow("),end=script.indexOf("function refreshSummaryOnly(",start);
+ const block=script.slice(start,end);
+ assert(!block.includes("s.innerHTML = hazardEditorHTML(i)"));
+ assert(block.includes('chips.innerHTML=hazardRowChipsHTML(i)'));
+ assert(block.includes('panel.querySelector("[data-hazard-selected-count]")'));
+ assert(script.includes("closeHazardSuggestions(replacement)"));
 });
 test("Add H-code sets source classification",()=>{
  const i=make("H314");ui.changeIngredientHazard(i,"H317",true);
@@ -94,7 +147,7 @@ test("Adding hazard preserves SCL, M-factor and ATE inputs",()=>{
 test("Unknown legacy EUH code retained when other code removed",()=>{
  const i=make("EUH071 H315");ui.changeIngredientHazard(i,"H315",false);
  assert(ui.ingredientHCodes(i).includes("EUH071"));
- assert(ui.hazardEditorHTML(i).includes('data-remove-hazard="EUH071"'));
+ assert(ui.hazardRowControlsHTML(i).includes('data-remove-hazard="EUH071"'));
 });
 test("Unrecognized free text is preserved on addition",()=>{
  const i=make("SupplierNote H315");ui.changeIngredientHazard(i,"H317",true);
