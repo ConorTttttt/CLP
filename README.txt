@@ -57,7 +57,7 @@ Run from repository root:
   node verification/test_engine.js
   node verification/test_article26.js
   node verification/test_ui_structure.js
-The original engine suite currently has 221 checks; the additional Article 26-specific suite has 41 checks. UI structure checks verify that the HTML scripts compile,
+The original engine suite currently has 221 checks; the additional Article 26-specific suite has 49 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -105,7 +105,12 @@ The user can turn on optional physical omission in the Mixture panel. Manual phy
 entries are not validated by this tool; check the Type B exception and Article 26(2) most-severe
 category requirements against actual physical test data before approving the final pictograms.
 The Article 26 audit lists retained/omitted pictograms and the individual hazard contributions
-with the legal basis for each decision.
+with the legal basis for each decision. It explicitly identifies H319-derived GHS07 when it is
+omitted because H314 requires GHS05 (Article 26(1)(c)). If H319 is only an INGREDIENT hazard and
+the mixture itself is not classified H319, it explains that GHS07 was never triggered by the
+mixture and therefore no pictogram omission occurred. If another hazard (e.g. Acute Tox. 4)
+requires GHS07, the exclamation mark remains despite the omitted H319-specific contribution.
+This pictogram decision must not be confused with Article 27 H-statement precedence.
 Output: result.label.pictograms (selected), triggeredPictograms (original), omittedPictograms,
 pictogramDecisions (including per-hazard contributions), pictogramReview (manual review cases),
 omitOptionalPictograms (user preference). Article 27 label fields remain unchanged.
