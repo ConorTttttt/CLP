@@ -27,6 +27,17 @@
   };
   const has = (x) => typeof x === 'number' && isFinite(x);
 
+
+  // A recorded numerical input is not silently replaced by a default when
+  // malformed. Source-specific thresholds take precedence over generic values.
+  const entered = (value) => value !== '' && value !== null && value !== undefined;
+  const validPositive = (value) => has(num(value)) && num(value) > 0;
+  const sclValue = (ingredient, key) => {
+    const value = (ingredient.scl || {})[key];
+    return validPositive(value) && num(value) <= 100 ? num(value) : NaN;
+  };
+  const concentrationLimit = (i, key, generic) => has(sclValue(i,key)) ? sclValue(i,key) : generic;
+
   /* ---------------- reference data ---------------- */
   const PICTO = {
     GHS01: 'exploding bomb', GHS02: 'flame', GHS03: 'flame over circle', GHS04: 'gas cylinder',
@@ -88,8 +99,8 @@
   /* ---------------- H-code parser ---------------- */
   function blankIngredient() {
     return {
-      name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [],
-      acute: { oral: { cat: '', ate: '' }, dermal: { cat: '', ate: '' }, inh: { form: 'vapour', cat: '', ate: '' }, unknown: false },
+      name: '', cas: '', pct: '', hcodes: '', hcodeDetails: [], valueSource: '',
+      acute: { oral: { cat: '', ate: '', unknown: false }, dermal: { cat: '', ate: '', unknown: false }, inh: { form: 'vapour', cat: '', ate: '', unknown: false }, unknown: false },
       skinCorr: '', eye: '', nonAdditive: false,
       skinSens: '', respSens: '', muta: '', carc: '', carcRoute: '', repro: '', reproFert: '', reproDev: '', lact: false,
       stotSE: '', stotSEresp: false, stotSEnarc: false, stotRE: '', asp: false,
@@ -282,7 +293,14 @@
 
   function acute(mix, ings, ctx) {
     const H = hz('acute', 'Acute toxicity', 'Annex I 3.1.3.6 (cons. pp.138–139); Table 3.1.1 (p.134); conversions Table 3.1.2 (pp.139–140); cut-offs Table 1.1 (p.68)');
-    const unknown = ings.filter((i) => i.acute.unknown && ge(i.pct, 1));
+    const unknown = ings.filter((i) => {
+      if (!ge(i.pct,1)) return false;
+      return ['oral','dermal','inh'].some(key => {
+        const route=i.acute[key];
+        return (i.acute.unknown || !!route.unknown) &&
+          !validPositive(route.ate) && !['1','2','3','4'].includes(String(route.cat));
+      });
+    });
     const unkSum = sum(unknown.map((i) => i.pct));
     const routes = [
       ['oral', (i) => i.acute.oral], ['dermal', (i) => i.acute.dermal],
@@ -291,7 +309,13 @@
       ['gas', (i) => (i.acute.inh.form === 'gas' ? i.acute.inh : null)]
     ];
     const anyAcute = ings.filter((i) => ['oral', 'dermal'].some((r) => has(num(i.acute[r].ate)) || i.acute[r].cat) || has(num(i.acute.inh.ate)) || i.acute.inh.cat);
-    if (!anyAcute.length && !unknown.length) { H.steps.push('No ingredient carries acute-toxicity data → not classified.'); return H; }
+    if (!anyAcute.length && !unknown.length) {
+      if(ctx.warnings.some(x=>x.startsWith('DATA VALIDATION:') && x.includes('ATE'))) {
+        H.status='incomplete';
+        H.steps.push('Invalid ATE input was provided without a valid category fallback. Correct it before claiming an acute-toxicity determination.');
+      } else H.steps.push('No ingredient carries acute-toxicity data → not classified.');
+      return H;
+    }
     if (unkSum > 0) {
       const corrected = unkSum > 10 + EPS;
       H.steps.push(`Ingredients with no usable acute-toxicity data (≥ 1 %): ${unknown.map(nm).join(', ')} = ${fmt(unkSum)} %. ` +
@@ -302,21 +326,55 @@
     if (inhForms.size > 1) H.notes.push('Inhalation data are given in different forms (' + [...inhForms].join(', ') + '). Each form is calculated separately – check that this is appropriate for your mixture.');
     routes.forEach(([key, getter]) => {
       const T = AT[key], rows = [], skipped = [];
+      const routeUnknown = ings.filter((i) => {
+        if (!ge(i.pct,1)) return false;
+        const r=getter(i);
+        if (!r || (key!=='oral'&&key!=='dermal'&&i.acute.inh.form!==key)) return false;
+        const known=(validPositive(r.ate) || ['1','2','3','4'].includes(String(r.cat)));
+        return (i.acute.unknown || !!r.unknown) && !known;
+      });
+      const routeUnknownSum=sum(routeUnknown.map(i=>i.pct));
+      if(routeUnknownSum>0) {
+        H.steps.push('— '+T.label+' unknown data: '+routeUnknown.map(nm).join(', ')+
+          ' = '+fmt(routeUnknownSum)+' %. '+
+          (routeUnknownSum>10+EPS?'Corrected formula numerator 100 − unknown fraction.':'Standard formula numerator 100.'));
+      }
       ings.forEach((i) => {
         const r = getter(i); if (!r) return;
         const tested = num(r.ate); const cat0 = parseInt(r.cat, 10) || 0;
         if (!(tested > 0) && !cat0) return;
         let cat, ate, src;
-        if (tested > 0) { ate = tested; cat = catFromATE(key, ate); src = 'tested/derived ATE'; }
-        else { cat = cat0; ate = T.conv[cat - 1]; src = 'Table 3.1.2 conversion of Category ' + cat; }
+        if (tested > 0) {
+          ate = tested; cat = catFromATE(key, ate); src = 'tested/derived ATE';
+          if (cat0 && cat !== cat0) {
+            const detail=nm(i)+' '+T.label+': Category '+cat0+
+              ' conflicts with entered ATE '+fmt(ate)+' '+T.unit+
+              ' ('+(cat ? 'Category '+cat : 'outside Category 4 range')+'). ATE was used, but verify source evidence.';
+            H.notes.push(detail); ctx.warnings.push('DATA REVIEW: '+detail);
+          }
+        } else { cat = cat0; ate = T.conv[cat - 1]; src = 'Table 3.1.2 conversion of Category ' + cat; }
         if (!cat) { skipped.push(`${nm(i)}: ATE ${fmt(ate)} is above the Category 4 range → not acutely toxic, ignored (3.1.3.6.1(b),(c)).`); return; }
         const cut = cat <= 3 ? 0.1 : 1;
         if (i.pct < cut - EPS) { skipped.push(`${nm(i)} (Cat. ${cat}) at ${fmt(i.pct)} % is below the Table 1.1 cut-off of ${cut} % → not taken into account.`); return; }
         rows.push({ i, ate, cat, src });
       });
-      if (!rows.length) { if (skipped.length) { H.steps.push(`— ${T.label}: ` + skipped.join(' ')); } return; }
+      if (!rows.length) {
+        if (skipped.length) H.steps.push(`— ${T.label}: ` + skipped.join(' '));
+        if(routeUnknownSum>0) {
+          if(H.status!=='classified')H.status='incomplete';
+          H.notes.push(T.label+': the unknown-data flag is present, but no known ATE contributions are available for this route.');
+        }
+        return;
+      }
       const terms = rows.map((r) => r.i.pct / r.ate);
-      const denom = sum(terms), numer = unkSum > 10 + EPS ? 100 - unkSum : 100;
+      const denom = sum(terms), numer = routeUnknownSum > 10 + EPS ? 100 - routeUnknownSum : 100;
+      if (!(numer > 0) || !(denom > 0)) {
+        H.status='incomplete';
+        const detail='Acute toxicity formula for '+T.label+
+          ' has an invalid numerator or denominator; the unknown fraction must be reviewed.';
+        H.notes.push(detail); ctx.warnings.push('DATA VALIDATION: '+detail);
+        return;
+      }
       const ateMix = numer / denom, cat = catFromATE(key, ateMix);
       H.steps.push(`— ${T.label} (${T.unit}): ` + rows.map((r, k) => `${nm(r.i)} ${fmt(r.i.pct)} % ÷ ${fmt(r.ate)} [${r.src}] = ${fmt(terms[k], 6)}`).join(' ; '));
       H.steps.push(`   ATEmix = ${fmt(numer)} / ${fmt(denom, 6)} = ${fmt(ateMix)} ${T.unit}  → ` + (cat ? `Category ${cat} (limit ≤ ${fmt(T.limits[cat - 1])})` : `above Category 4 limit (${fmt(T.limits[3])}) → not classified for this route`));
@@ -335,15 +393,26 @@
     return H;
   }
 
-  function corrosionHazards(mix, ings) {
+  function corrosionHazards(mix, ings, ctx) {
     const S = hz('skin', 'Skin corrosion / irritation', 'Annex I 3.2.3 (cons. pp.145–147); Tables 3.2.3 and 3.2.4 (p.147); cut-off Table 1.1 (p.68)');
     const E = hz('eye', 'Serious eye damage / eye irritation', 'Annex I 3.3.3 (cons. pp.151–154); Tables 3.3.3 and 3.3.4 (p.153–154); cut-off Table 1.1 (p.68)');
     const pH = num(mix.pH), phTrig = has(pH) && (pH <= 2 + EPS || pH >= 11.5 - EPS), reserveOk = !!mix.pHReserveOk;
 
     /* ---- skin ---- */
-    const sRel = ings.filter((i) => i.skinCorr && ge(i.pct, 1));
-    ings.filter((i) => i.skinCorr && !ge(i.pct, 1)).forEach((i) => S.notes.push(`${nm(i)} (${i.skinCorr === '2' ? 'Skin Irrit. 2' : 'Skin Corr. ' + i.skinCorr}) at ${fmt(i.pct)} % is below the 1 % cut-off and is not counted. Corrosive ingredients < 1 % can still be relevant (3.2.3.3.1, 3.2.3.3.6) – consider testing.`));
+    const skinCut = (i) => {
+      const specific = i.skinCorr === '2' ? sclValue(i, 'skinIrrit') : sclValue(i, 'skinCorr');
+      // Preserve additive contributions even when each ingredient is below
+      // its own low SCL: e.g. 0.3/0.5 + 0.3/0.5 >= 1.
+      return has(specific) && specific < 1 ? EPS : 1;
+    };
+    const sRel = ings.filter((i) => i.skinCorr && ge(i.pct, skinCut(i)));
+    ings.filter((i) => i.skinCorr && !ge(i.pct, skinCut(i))).forEach((i) =>
+      S.notes.push(nm(i)+' ('+(i.skinCorr === '2' ? 'Skin Irrit. 2' : 'Skin Corr. '+i.skinCorr)+
+        ') at '+fmt(i.pct)+' % is below relevance threshold '+fmt(skinCut(i))+
+        ' %. Lower test-supported effect levels can still matter (3.2.3.3.6).'));
     const sAdd = sRel.filter((i) => !i.nonAdditive), sNon = sRel.filter((i) => i.nonAdditive);
+    if(sAdd.some(i=>i.pct < 1 && skinCut(i) < 1))
+      S.notes.push('Ingredients below 1 % with a lower SCL are included in the additive potency-ratio check. Verify their relevant concentration and substance evidence before approval.');
     const by = (list, c) => sum(list.filter((i) => i.skinCorr === c).map((i) => i.pct));
     const s1A = by(sAdd, '1A'), s1B = by(sAdd, '1B'), s1C = by(sAdd, '1C'), s1U = by(sAdd, '1'), s2 = by(sAdd, '2');
     const corr = s1A + s1B + s1C + s1U;
@@ -351,7 +420,29 @@
     if (sAdd.length) {
       S.steps.push(`Additive ingredients (≥ 1 %): ` + sAdd.map((i) => `${nm(i)} ${fmt(i.pct)} % [${i.skinCorr === '2' ? 'Cat. 2' : 'Cat. ' + i.skinCorr}]`).join('; '));
       S.steps.push(`Σ corrosive (1/1A/1B/1C) = ${fmt(corr)} % ; Σ irritant (Cat. 2) = ${fmt(s2)} % ; 10 × corrosive + irritant = ${fmt(10 * corr + s2)} %`);
-      if (ge(corr, 5)) {
+      // Article 10(5): use SCLs in the additive potency-weighted summation
+      // rather than summing raw concentrations against generic limits.
+      const withSCL=sAdd.some(i => has(sclValue(i,i.skinCorr==='2'?'skinIrrit':'skinCorr')) ||
+        (i.skinCorr!=='2' && has(sclValue(i,'skinIrrit'))));
+      if (withSCL) {
+        const corrosives=sAdd.filter(i=>i.skinCorr!=='2');
+        const contribution=(list,key,gcl)=>sum(list.map(i=>i.pct/concentrationLimit(i,key,gcl)));
+        const allCorr=contribution(corrosives,'skinCorr',5);
+        const categoryCorr=(cats)=>contribution(corrosives.filter(i=>cats.includes(i.skinCorr)),'skinCorr',5);
+        const irritation = contribution(corrosives,'skinIrrit',1) +
+          contribution(sAdd.filter(i=>i.skinCorr==='2'),'skinIrrit',10);
+        S.steps.push('SCL-aware additive approach: Σ (ingredient % / applicable SCL or GCL), threshold ≥ 1. '+
+          'Corrosion = '+fmt(allCorr,5)+'; irritation = '+fmt(irritation,5)+'.');
+        if(ge(allCorr,1)) {
+          if(corrosives.some(i=>i.skinCorr==='1')) sCat='1';
+          else if(ge(categoryCorr(['1A']),1))sCat='1A';
+          else if(ge(categoryCorr(['1A','1B']),1))sCat='1B';
+          else sCat='1C';
+          sWhy.push('Weighted corrosion summation ≥ 1 → Skin Corr. '+sCat);
+        } else if(ge(irritation,1)){
+          sCat='2';sWhy.push('Weighted irritation summation ≥ 1 → Skin Irrit. 2');
+        } else sWhy.push('Below weighted SCL/GCL thresholds.');
+      } else if (ge(corr, 5)) {
         if (s1U > 0) sCat = '1'; else if (ge(s1A, 5)) sCat = '1A'; else if (ge(s1A + s1B, 5)) sCat = '1B'; else sCat = '1C';
         sWhy.push(`Σ corrosive ${fmt(corr)} % ≥ 5 % → Skin Corr. ${sCat === '1' ? '1 (no sub-category)' : sCat}`);
       } else if (ge(corr, 1)) { sCat = '2'; sWhy.push(`Σ corrosive ${fmt(corr)} % is ≥ 1 % but < 5 % → Skin Irrit. 2`); }
@@ -363,9 +454,13 @@
     }
     sNon.forEach((i) => {
       const corrI = i.skinCorr !== '2';
-      if (corrI && ge(i.pct, 1)) { S.steps.push(`Non-additive ${nm(i)} (corrosive) ${fmt(i.pct)} % ≥ 1 % → Skin Corr. 1 (Table 3.2.4)`); sCat = '1'; }
-      else if (!corrI && ge(i.pct, 3)) { S.steps.push(`Non-additive ${nm(i)} (irritant) ${fmt(i.pct)} % ≥ 3 % → Skin Irrit. 2 (Table 3.2.4)`); if (!sCat) sCat = '2'; }
-      else S.steps.push(`Non-additive ${nm(i)} ${fmt(i.pct)} % is below the Table 3.2.4 limit (${corrI ? '1' : '3'} %).`);
+      const limit=concentrationLimit(i,corrI?'skinCorr':'skinIrrit',corrI?1:3);
+      if (ge(i.pct,limit)) {
+        const target=corrI?'1':'2';
+        S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
+          ' % ('+(has(sclValue(i,corrI?'skinCorr':'skinIrrit'))?'SCL':'Table 3.2.4')+') → Skin '+(corrI?'Corr. 1':'Irrit. 2'));
+        if(corrI || !sCat) sCat=target;
+      } else S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
       if (phTrig && !reserveOk) { S.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Skin Corr. 1 in the absence of other information (3.2.3.1.2).`); if (!sCat || sCat === '2') sCat = '1'; }
@@ -378,16 +473,43 @@
 
     /* ---- eye ---- */
     const eRel = ings.filter((i) => (i.skinCorr && i.skinCorr !== '2') || i.eye);
-    const eRelC = eRel.filter((i) => ge(i.pct, 1));
+    const skinSCLEyeReview=ings.filter(i=>i.skinCorr && i.skinCorr!=='2' &&
+      has(sclValue(i,'skinCorr')) && !has(sclValue(i,'eyeDam')) && !i.eye);
+    if (skinSCLEyeReview.length) {
+      const message='Skin corrosion SCLs were entered for '+skinSCLEyeReview.map(nm).join(', ')+
+        ' without separately established eye-damage SCLs. Eye hazards are screened using the available generic limits. Review the ingredient evidence and eye classification independently.';
+      E.notes.push(message);
+      ctx.warnings.push('DATA REVIEW: '+message);
+    }
+    const eyeCut=(i) => {
+      const specific=sclValue(i,((i.skinCorr&&i.skinCorr!=='2') || i.eye==='1')?'eyeDam':'eyeIrrit');
+      return has(specific) && specific < 1 ? EPS : 1;
+    };
+    const eRelC = eRel.filter((i) => ge(i.pct, eyeCut(i)));
     const eCorr = (i) => (i.skinCorr && i.skinCorr !== '2') || i.eye === '1';
-    eRel.filter((i) => !ge(i.pct, 1)).forEach((i) => E.notes.push(`${nm(i)} at ${fmt(i.pct)} % is below the 1 % cut-off and is not counted (3.3.3.3.1, 3.3.3.3.6).`));
+    eRel.filter((i) => !ge(i.pct, eyeCut(i))).forEach((i) =>
+      E.notes.push(nm(i)+' at '+fmt(i.pct)+' % is below relevance threshold '+fmt(eyeCut(i))+
+        ' %. Lower evidence-based limits still require evaluation (3.3.3.3.6).'));
     const eAdd = eRelC.filter((i) => !i.nonAdditive), eNon = eRelC.filter((i) => i.nonAdditive);
+    if(eAdd.some(i=>i.pct < 1 && eyeCut(i) < 1))
+      E.notes.push('Eye damage/irritation contributors below 1 % with a lower SCL are included in additive potency ratios; verify relevance and source evidence.');
     const e1 = sum(eAdd.filter(eCorr).map((i) => i.pct)), e2 = sum(eAdd.filter((i) => !eCorr(i) && i.eye === '2').map((i) => i.pct));
     let eCat = null;
     if (eAdd.length) {
       E.steps.push('Additive ingredients (≥ 1 %): ' + eAdd.map((i) => `${nm(i)} ${fmt(i.pct)} % [${eCorr(i) ? 'skin corr./eye dam. 1' : 'eye irrit. 2'}]`).join('; ') + ' (an ingredient that is both skin-corrosive and Eye Dam. 1 is counted once, Table 3.3.3 note a)');
       E.steps.push(`Σ skin corrosive + Eye Dam. 1 = ${fmt(e1)} % ; Σ Eye Irrit. 2 = ${fmt(e2)} % ; 10 × Σ Cat. 1 + Σ Cat. 2 = ${fmt(10 * e1 + e2)} %`);
-      if (ge(e1, 3)) { eCat = '1'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % ≥ 3 % → Eye Dam. 1`); }
+      const withSCL=eAdd.some(i=>has(sclValue(i,'eyeDam')) || has(sclValue(i,'eyeIrrit')));
+      if(withSCL) {
+        const severe=eAdd.filter(eCorr),irrit=eAdd.filter(i=>!eCorr(i)&&i.eye==='2');
+        const damage=sum(severe.map(i=>i.pct/concentrationLimit(i,'eyeDam',3)));
+        const irritation=sum(severe.map(i=>i.pct/concentrationLimit(i,'eyeIrrit',1)))+
+          sum(irrit.map(i=>i.pct/concentrationLimit(i,'eyeIrrit',10)));
+        E.steps.push('SCL-aware eye additivity: Σ(%/applicable SCL or GCL); damage = '+
+          fmt(damage,5)+'; irritation = '+fmt(irritation,5)+' (threshold ≥ 1).');
+        if(ge(damage,1)){eCat='1';E.steps.push('   Weighted damage ≥ 1 → Eye Dam. 1');}
+        else if(ge(irritation,1)){eCat='2';E.steps.push('   Weighted irritation ≥ 1 → Eye Irrit. 2');}
+        else E.steps.push('   Below SCL/GCL weighted eye limits.');
+      } else if (ge(e1, 3)) { eCat = '1'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % ≥ 3 % → Eye Dam. 1`); }
       else if (ge(e1, 1)) { eCat = '2'; E.steps.push(`   Σ Cat. 1 ${fmt(e1)} % is ≥ 1 % but < 3 % → Eye Irrit. 2`); }
       else if (ge(e2, 10)) { eCat = '2'; E.steps.push(`   Σ irritant ${fmt(e2)} % ≥ 10 % → Eye Irrit. 2`); }
       else if (ge(10 * e1 + e2, 10)) { eCat = '2'; E.steps.push(`   10 × Σ Cat. 1 + Σ Cat. 2 = ${fmt(10 * e1 + e2)} % ≥ 10 % → Eye Irrit. 2`); }
@@ -395,9 +517,13 @@
       if (e1 > 0 || e2 > 0) E.notes.push('3.3.3.3.4.1: care is needed with acids, bases, inorganic salts, aldehydes, phenols and surfactants (many are damaging at < 1 %). Mark such ingredients "additivity not applicable" to use Table 3.3.4, or use pH.');
     }
     eNon.forEach((i) => {
-      if (eCorr(i) && ge(i.pct, 1)) { E.steps.push(`Non-additive ${nm(i)} (corrosive/Eye Dam. 1) ${fmt(i.pct)} % ≥ 1 % → Eye Dam. 1 (Table 3.3.4)`); eCat = '1'; }
-      else if (!eCorr(i) && ge(i.pct, 3)) { E.steps.push(`Non-additive ${nm(i)} (eye irritant) ${fmt(i.pct)} % ≥ 3 % → Eye Irrit. 2 (Table 3.3.4)`); if (!eCat) eCat = '2'; }
-      else E.steps.push(`Non-additive ${nm(i)} ${fmt(i.pct)} % is below the Table 3.3.4 limit.`);
+      const severe=eCorr(i),key=severe?'eyeDam':'eyeIrrit';
+      const limit=concentrationLimit(i,key,severe?1:3);
+      if(ge(i.pct,limit)) {
+        E.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
+          ' % ('+(has(sclValue(i,key))?'SCL':'Table 3.3.4')+') → Eye '+(severe?'Dam. 1':'Irrit. 2'));
+        if(severe || !eCat)eCat=severe?'1':'2';
+      } else E.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
       if (phTrig && !reserveOk) { E.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Eye Dam. 1 in the absence of other information (3.3.3.1.2).`); eCat = '1'; }
@@ -604,8 +730,21 @@
 
   function aquatic(mix, ings, ctx) {
     const H = hz('aquatic', 'Hazardous to the aquatic environment', 'Annex I 4.1.3.5 (cons. pp.218–220); Tables 4.1.1–4.1.3 (pp.219–221); relevance 4.1.3.1 (pp.214–215); label Table 4.1.4 (pp.221–222)');
-    const mA = (i) => { const m = num(i.mAcute); return has(m) && m >= 1 ? m : 1; };
-    const mC = (i) => { const m = num(i.mChronic); return has(m) && m >= 1 ? m : 1; };
+    const validM = (raw) => {
+      const value=num(raw);
+      return Number.isInteger(value) && value >= 1 ? value : NaN;
+    };
+    const mA = (i) => has(validM(i.mAcute)) ? validM(i.mAcute) : 1;
+    const mC = (i) => has(validM(i.mChronic)) ? validM(i.mChronic) : 1;
+    const missingM=ings.filter(i=>
+      (i.aquaAcute && !has(validM(i.mAcute))) ||
+      (i.aquaChronic==='1' && !has(validM(i.mChronic))));
+    if(missingM.length) {
+      const names=missingM.map(nm).join(', ');
+      H.notes.push('Aquatic M-factor incomplete for '+names+
+        '. An interim M=1 lower-bound is used for missing/invalid factors, but the final aquatic classification cannot be confirmed.');
+      H.steps.push('PROVISIONAL: M-factor not established for '+names+'. M=1 is a lower-bound screen only.');
+    }
     const unk = ings.filter((i) => i.aquaUnknown && ge(i.pct, 1));
     if (unk.length) {
       const u = sum(unk.map((i) => i.pct));
@@ -621,6 +760,7 @@
     if (!a1.length && !c1.length && !c2.length && !c3.length && !c4.length) {
       if (!H.steps.length) H.steps.push('No ingredient classified for the aquatic environment.');
       else H.steps.push('No relevant aquatic ingredient above its cut-off → not classified.');
+      if (missingM.length) H.status='incomplete';
       return H;
     }
     // Acute 1
@@ -658,7 +798,8 @@
       H.steps.push('→ Aquatic Chronic ' + chronic);
     }
     if (!H.outcomes.length) H.steps.push('→ no summation limit reached: not classified for the aquatic environment.');
-    H.notes.push('M-factors must come from Annex VI / the C&L Inventory (or be derived with Table 4.1.3). Blank M-factors are treated as 1. If toxicity data exist for ingredients, the additivity formula (4.1.3.5.2) may be used instead – not implemented here; the more conservative result applies (4.1.3.5.4).');
+    if (missingM.length && H.status !== 'classified') H.status = 'incomplete';
+    H.notes.push('M-factors for Acute/Chronic 1 must be substantiated; missing or invalid M-factors only receive a provisional M=1 lower-bound screen. The aquatic additivity formula for tested ingredients is not implemented.');
     return H;
   }
 
@@ -1068,6 +1209,48 @@
     const warnings = [];
     const ings = (m.ingredients || []).map((raw) => {
       const i = Object.assign(blankIngredient(), raw);
+      const id = (raw.name || raw.cas || 'Unnamed ingredient').trim();
+      const invalid = (field, value, units) => warnings.push('DATA VALIDATION: '+id+
+        ' — invalid '+field+' '+JSON.stringify(value)+'. '+units+
+        ' Result may be unreliable until corrected.');
+      ['oral','dermal','inh'].forEach((route) => {
+        const a = (raw.acute || {})[route] || {};
+        if (entered(a.ate) && !validPositive(a.ate))
+          invalid(route+' ATE',a.ate,'ATE must be a positive finite number in the selected route units.');
+        if (entered(a.cat) && !['1','2','3','4'].includes(String(a.cat)))
+          invalid(route+' acute category',a.cat,'Use Category 1, 2, 3 or 4.');
+        if(a.unknown && (entered(a.cat) || entered(a.ate)))
+          warnings.push('DATA REVIEW: '+id+' — '+route+' route marked unknown but an ATE/category is also entered. Known route information takes precedence; verify the flag.');
+      });
+      if (raw.aquaAcute && !entered(raw.mAcute))
+        warnings.push('DATA GAP: '+id+' — Aquatic Acute 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
+      if (raw.aquaChronic === '1' && !entered(raw.mChronic))
+        warnings.push('DATA GAP: '+id+' — Aquatic Chronic 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
+      for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
+        if (!entered(raw[field])) continue;
+        const mFactor = num(raw[field]);
+        if (!has(mFactor) || mFactor < 1 || !Number.isSafeInteger(mFactor))
+          invalid(field,raw[field],'M-factor must be an integer of at least 1; do not use a silent default.');
+        if (!applicable)
+          warnings.push('INPUT REVIEW: '+id+' — '+field+' supplied but the corresponding aquatic Category 1 classification is not selected.');
+      }
+      for (const [field,value] of Object.entries(raw.scl || {})) {
+        if (!entered(value)) continue;
+        const n=num(value);
+        if (!has(n) || n <= 0 || n > 100) invalid('SCL '+field,value,'SCL must be a percentage greater than 0 and at most 100.');
+      }
+      if (!entered(raw.valueSource) &&
+          (['oral','dermal','inh'].some(route=>validPositive(((raw.acute||{})[route]||{}).ate)) ||
+          Object.values(raw.scl || {}).some(entered) ||
+          (raw.aquaAcute && entered(raw.mAcute)) ||
+          (raw.aquaChronic==='1' && entered(raw.mChronic))))
+        warnings.push('EVIDENCE REVIEW: '+id+' — ATE/SCL/M-factor values are entered but no source reference is recorded. Verify against Annex VI, measured data or supplier evidence.');
+      if (raw.acute && raw.acute.unknown &&
+          ['oral','dermal','inh'].some((route)=>{
+            const a=raw.acute[route] || {};
+            return entered(a.cat) || entered(a.ate);
+          })) warnings.push('DATA REVIEW: '+id+
+          ' is marked unknown acute toxicity but also has route-specific ATE/category data. Confirm which routes are unknown; the current unknown flag is ingredient-wide.');
       i.acute = Object.assign({}, blankIngredient().acute, raw.acute || {});
       ['oral', 'dermal', 'inh'].forEach((r) => (i.acute[r] = Object.assign({}, blankIngredient().acute[r], (raw.acute || {})[r] || {})));
       i.scl = Object.assign({}, raw.scl || {});
@@ -1103,10 +1286,11 @@
     const total = sum(ings.map((i) => i.pct));
     if (!ings.length) warnings.push('No ingredients with a concentration were entered.');
     else if (Math.abs(total - 100) > 0.5) warnings.push(`Concentrations add up to ${fmt(total)} %, not 100 %. Classification uses the percentages as entered.`);
+    if(total>100+EPS) warnings.push('DATA VALIDATION: Total mixture concentration exceeds 100%; SCL, ATE and aquatic summation results may be misleading. Correct the formulation.');
     const hazards = [];
     hazards.push(flammability(m));
     hazards.push(acute(m, ings, ctx));
-    hazards.push(...corrosionHazards(m, ings));
+    hazards.push(...corrosionHazards(m, ings, ctx));
     hazards.push(...sensitisation(m, ings, ctx));
     hazards.push(...cmr(m, ings, ctx));
     hazards.push(...stot(m, ings, ctx));
@@ -1229,7 +1413,9 @@
       const scl = Object.entries(i.scl).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([k2, v]) => `SCL ${k2} ${v} %`);
       const differentiated = (i.hcodeDetails || []).filter((d) => d.suffix).map((d) => d.code);
       if (differentiated.length) c.push('source H differentiations: ' + differentiated.join(', '));
-      L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl).join('; ') || 'not classified'}`);
+      const provenance = i.valueSource && String(i.valueSource).trim()
+        ? ['Specific value source: '+(anon?'[reference withheld]':String(i.valueSource).trim())] : [];
+      L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl,provenance).join('; ') || 'not classified'}`);
     });
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
@@ -1279,7 +1465,7 @@
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
-    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, specific concentration limits for skin/eye/acute, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
+    L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, complete tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
     return L.join('\n');
   }
   function anonymiseText(s, ings) {

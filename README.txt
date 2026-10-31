@@ -6,15 +6,98 @@ Gemini features are optional and only run when you click them, with your own API
 WHAT IT DOES
 Applies the ingredient-based mixture rules of Regulation (EC) 1272/2008 Annex I (consolidated 01.07.2026)
 and shows every calculation step with the Annex I table/page reference:
-- Acute toxicity: ATEmix, Table 3.1.2 conversion values, unknown-ingredient (>10 %) correction
-- Skin corrosion/irritation and serious eye damage/irritation: additivity (Tables 3.2.3, 3.3.3),
-  non-additive route (3.2.4, 3.3.4), pH <= 2 / >= 11.5 criterion
+- Acute toxicity: route-specific ATEmix, Table 3.1.2 category conversions, input ATE
+  precedence and mismatch alerts, per-route unknown (>10 %) correction; oral/dermal
+  values are mg/kg, gas ppmV and vapour/dust/mist mg/l
+- Skin corrosion/irritation and serious eye damage/irritation: SCL-aware potency-weighted
+  additivity (Tables 3.2.3, 3.3.3), SCL-aware non-additive routes (3.2.4, 3.3.4),
+  pH <= 2 / >= 11.5 criterion; category- and evidence-specific review remains required
 - Skin / respiratory sensitisation, CMR, lactation (generic limits or your SCLs), EUH208 elicitation
 - STOT single / repeated, aspiration (with viscosity)
-- Aquatic acute / chronic summation with M-factors
+- Aquatic acute / chronic summation with independently entered Acute/Chronic 1 M-factors;
+  missing/invalid M values trigger prominent provisional classification warnings
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
 - Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
+
+WORKSPACE UI (PRESENTATION ONLY)
+The single-file calculator now uses a cleaner two-column workspace on wide screens
+and a single-column workspace on tablets or narrow devices. A section navigation
+bar links directly to Mixture, Ingredients, Labelling context and Results.
+The mandatory decision-support warning remains visible; detailed regulatory
+limitations are available via its disclosure.
+
+For a typical workflow:
+1. Enter the mixture details and ingredient rows.
+2. Open Details on a row, then expand only the hazard groups you need.
+   Available groups: Acute toxicity / ATE; Skin and eye / SCL; Sensitisation
+   and CMR; STOT and aspiration; Aquatic / M-factors; New hazard classes;
+   Other SCLs; Value source evidence. Entered classifications automatically
+   expand the corresponding groups when opening the ingredient details.
+3. Use Expand all / Collapse all to inspect or reduce that ingredient's fields.
+   Expanded selections are remembered while you edit the current formulation.
+4. Expand Labelling context (Article 28) or Manual classifications only when
+   needed. Imported manual classification rows are automatically revealed.
+5. Review the results overview: number of identified classifications, input
+   warnings, and unresolved review checks. The counts are informational;
+   a zero does NOT mean that the formulation or label is regulator-approved.
+   Important warnings remain outside optional Viewer Settings sections.
+
+On narrow displays, the ingredient table scrolls horizontally within its
+own clearly labelled region instead of overlapping fields. Keyboard access
+is provided for the scroll region, details summaries and form controls.
+Colours, typography and responsive spacing were refined; no classification,
+Article 26/27/28 or report calculation rules were changed by this UI commit.
+
+SEARCHABLE INGREDIENT HAZARDS
+The ingredient editor has three separate H/EUH search pickers: Physical, Health
+and Environmental. Start typing an H-code (H225 / EUH440), a classification
+(e.g. "Skin Corr. 1B", "Flam. Liq. 2") or part of its hazard statement
+(e.g. "severe skin burns"). Choose a suggestion with the mouse or Arrow keys
+and Enter. Selected codes appear as labelled, removable chips directly
+in the ingredient table's Hazard overview column, replacing the previous
+"5 selected / Edit below" placeholder. Click × on a chip there to remove it,
+even while the detailed hazard search section is collapsed.
+Search results exclude already selected codes.
+
+Selecting or removing a hazard updates the ingredient H/EUH codes and the
+existing deterministic parser, and refreshes mixture calculations. Manually
+refined ingredient categories are preserved when their underlying H-code
+classification is unaffected (e.g. Skin Corr. 1B remains when H314 remains).
+When a source code changes a hazard class, that field is re-evaluated.
+The Details panel remains available for deciding between Acute Tox. 1/2,
+Skin Corr. 1A/1B/1C, CMR differentiations, and substance-specific values.
+
+The full Hazards search editor is a native collapsible panel beneath each
+ingredient row, initially closed to reduce scrolling. Expand it using the
+"+ Add / edit hazards" button in the ingredient row or its "Hazards" summary.
+The disclosure remembers whether it is open while the formulation is edited,
+including after adding or removing hazards. The selected chips stay visible
+in the row, not duplicated inside the three search groups. Open/closed state
+is a local UI preference, not part of the regulatory calculation or exported
+formulation.
+
+The "Advanced: paste or edit H/EUH codes" field remains available beneath
+the search pickers for SDS code lists and codes not in the suggestion catalogue.
+Advanced edits apply when the input loses focus. Pre-existing H/EUH codes
+load as chips even if outside the current suggestion catalogue, and can be
+removed. The UI stores the same ingredient JSON field "hcodes" as before;
+no data migration or recalculation-method changes are required.
+
+IMPORTANT: H-code suggestions are INGREDIENT classification information.
+The presence of a physical hazard code on an ingredient does not establish
+the physical classification of the resulting MIXTURE. Physical hazards other
+than flammable liquids still need an independent finished-mixture assessment
+and, when appropriate, a manual classification entry. Suggested class labels
+may represent several subcategories sharing one H-code; verify the actual
+category from the supplier SDS or harmonised entry. Exact source phrases
+should be checked against the current CLP Annex III before regulatory use.
+
+The dropdown is positioned above the scrollable ingredient table and can
+be controlled with arrow keys, Enter and Escape. It dismisses on page scroll,
+resize, or clicking outside. Escape does not delete any selected codes.
+The selection/edit logic is covered by:
+  node verification/test_hazard_picker.js
 
 VIEWER SETTINGS
 Open the collapsible "Viewer Settings — show / hide results" panel in the right-hand
@@ -55,8 +138,9 @@ OPTIONAL GEMINI (Gemini panel at the bottom left)
 The classification is always computed locally; Gemini never changes it.
 
 NOT MODELLED (do these yourself)
-Bridging principles; tested-mixture data (use "Manual classifications"); aquatic additivity formula for
-tested ingredients; SCLs for skin/eye/acute toxicity; physical hazards other than flammable liquids;
+Bridging principles; tested-mixture data (use "Manual classifications"); aquatic additivity
+formula for tested ingredients; full SCL category and scientifically justified
+skin/eye weight-of-evidence pathways; physical hazards other than flammable liquids;
 Article 26(2) severity for unverified manual classifications, complete Annex I/IV P-statement coverage / final Article 28 selection and approved wording, and additional case-specific Article 27 redundancy decisions. Four explicit Annex III Article 27 omissions are implemented and tested.
 H-codes only give default categories (H300 -> Cat 1, H314 -> Skin Corr. 1 etc.): set sub-categories yourself.
 The parser preserves differentiated ingredient codes (H350i, H360F/D/FD/Fd/Df and H361f/d/fd)
@@ -73,10 +157,13 @@ reviewed category fields intact.
 VERIFICATION
 Run from repository root:
   node verification/test_engine.js
+  node verification/test_specific_values.js
   node verification/test_article26.js
   node verification/test_article28.js
   node verification/test_ui_structure.js
   node verification/test_viewer_settings.js
+  node verification/test_ui_cleanup.js
+  node verification/test_hazard_picker.js
 The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
@@ -155,3 +242,31 @@ Article 28 form. Add/exclude P codes manually with a documented justification.
 Unmapped hazards, unresolved supplier wording and case-specific selection are flagged.
 The output is NEVER described as final/approved. Full Annex IV is still to be incorporated.
 Regulatory reference: docs/article_28_precautionary_statement_selection.md
+
+SCL / ATE / M-FACTOR RELIABILITY IMPROVEMENTS
+Skin/eye ingredient Details now contain separate SCL fields for Skin Corr.,
+Skin Irrit., Eye Dam. and Eye Irrit. Generic additivity is retained where
+no SCL is assigned; when SCLs are entered the engine evaluates potency-weighted
+sum-of-fractions against the applicable GCL/SCL. The non-additive pathway also
+accepts supported individual SCLs; low SCLs can trigger classification or
+jointly contribute to an additive result below the usual 1% screening level.
+Do not assume a Skin Corr. SCL is automatically an Eye Dam. SCL; distinct
+endpoint evidence is required and cross-endpoint use triggers review notes.
+ATE handling now distinguishes oral, dermal and inhalation exposure forms,
+validates numeric inputs and category mismatches, applies category-conversion
+values where a usable ATE is absent, and uses a per-route unknown-fraction
+correction. Old ingredient-wide unknown flags still import, but are applied
+only where a particular route actually lacks known values; new per-route
+unknown checkboxes are provided.
+Aquatic Acute 1 and Chronic 1 now require explicitly recorded M-factors
+(or a provisional warning). A missing/invalid M uses M=1 solely as a
+conservative lower-bound screen, not as an established final result.
+Entered factors must be safe positive integers; values outside the relevant
+aquatic hazard category trigger a data review.
+The Details panel also offers a source-reference field for ingredient-specific
+ATE/SCL/M-factor evidence. The classification report records the value source,
+omitting it in anonymised reports. Missing provenance prompts a review alert.
+DATA VALIDATION, DATA GAP, DATA REVIEW and EVIDENCE REVIEW warnings appear
+in the viewer independently of its optional visibility settings.
+This feature improves reliability; it does not replace expert review of
+specific substance evidence, experimental mixture data or complex CLP cases.
