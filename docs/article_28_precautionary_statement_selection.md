@@ -61,7 +61,7 @@ Annex IV Part 1 requires a supplier to choose bracketed/diagonal alternatives an
 - Some medical response codes require an appropriate source of medical advice.
 - P273 should be selected with reference to intended use (especially where release is the intended use).
 
-The engine treats unresolved choices as review/blocking items and never marks the full output approved.
+The engine treats unresolved choices as review/blocking items and never marks the full output approved. It also blocks unverified manual codes and conditional square-bracket alternatives, and it does not add general consumer precautions when no classified hazards have been entered.
 
 ## Verification
 
@@ -74,7 +74,7 @@ node verification/test_article28.js
 node verification/test_ui_structure.js
 ```
 
-The Article 28 suite tests consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
+The Article 28 suite currently has 50 tests. It checks consumer disposal, applicability, unknown audience, wording placeholders, six-statement overflow, Annex IV redundancy, manual additions and exclusions, deduplication and report outputs. UI tests are **source checks**, not live-browser interaction tests.
 
 ## Primary legal references
 
