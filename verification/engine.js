@@ -201,8 +201,8 @@
         case 'H315': if (!ing.skinCorr) ing.skinCorr = '2'; break;
         case 'H318': ing.eye = '1'; break;
         case 'H319': if (ing.eye !== '1') ing.eye = '2'; break;
-        case 'H317': ing.skinSens = '1'; break;
-        case 'H334': ing.respSens = '1'; break;
+        case 'H317': ing.skinSens = '1'; notes.push('H317 read as Skin Sens. 1 (1 % limit) – set 1A (0.1 %; elicitation 0.01 %) or 1B, or enter the SCL, where the source classification says so.'); break;
+        case 'H334': ing.respSens = '1'; notes.push('H334 read as Resp. Sens. 1 – set 1A (0.1 %; elicitation 0.01 %) or 1B, or enter the SCL, where the source classification says so.'); break;
         case 'H335': ing.stotSE = ing.stotSE && ing.stotSE !== '3' ? ing.stotSE : '3'; ing.stotSEresp = true; break;
         case 'H336': ing.stotSE = ing.stotSE && ing.stotSE !== '3' ? ing.stotSE : '3'; ing.stotSEnarc = true; break;
         case 'H340': setCMR('muta', '1B'); notes.push('H340 read as Muta. 1B – set 1A if applicable (same concentration limit).'); break;
@@ -272,6 +272,7 @@
   function flammability(mix) {
     const H = hz('flam', 'Flammable liquid (physical hazard – from test data)', 'Annex I 2.6 · Table 2.6.1 (cons. p.101); closed-cup requirement 2.6.4.1 (p.102)');
     if (mix.state === 'gas') { H.status = 'na'; H.steps.push('Gaseous mixture: flammable-gas / pressure-gas classes are not calculated here. Use the manual entries.'); return H; }
+    if (mix.state === 'solid') { H.status = 'na'; H.steps.push('Solid mixture: the flammable-liquid criteria (2.6) do not apply. Flammable solids (2.7) need test data – use the manual entries.'); return H; }
     const fp = num(mix.flashPoint), ibp = num(mix.ibp);
     if (!has(fp)) { H.status = 'nodata'; H.steps.push('No flash point entered. Flammable-liquid classification needs a closed-cup flash point of the mixture (2.6.4.1).'); return H; }
     H.steps.push(`Flash point ${fmt(fp)} °C${has(ibp) ? ', initial boiling point ' + fmt(ibp) + ' °C' : ''}.`);
@@ -459,7 +460,8 @@
         const target=corrI?'1':'2';
         S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
           ' % ('+(has(sclValue(i,corrI?'skinCorr':'skinIrrit'))?'SCL':'Table 3.2.4')+') → Skin '+(corrI?'Corr. 1':'Irrit. 2'));
-        if(corrI || !sCat) sCat=target;
+        // Keep a more specific Skin Corr. 1A/1B/1C sub-category already established by additivity.
+        if(corrI ? (!sCat || sCat === '2') : !sCat) sCat=target;
       } else S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
@@ -553,6 +555,8 @@
       H.steps.push(line + (ok ? ' → triggers' : ''));
       (ok ? trig : below).push({ i, cat });
     });
+    // Structured record of which ingredients reached their limit (used e.g. for EUH208).
+    Object.defineProperty(H, 'triggeredIngredients', { value: trig.map((t) => t.i), enumerable: false });
     if (!H.steps.length) { H.steps.push(def.none || 'No ingredient carries this classification.'); return H; }
     if (trig.length) {
       const best = def.order.find((c) => trig.some((t) => t.cat === c));
@@ -586,10 +590,12 @@
         const scl = num((i.scl || {})[f]);
         const lim = has(scl) && scl > 0 ? scl / 10 : el[c];
         if (ge(i.pct, lim)) {
-          const driver = H.status === 'classified' && H.steps.some((s) => s.startsWith(nm(i) + ' [') && s.includes('→ triggers'));
+          const driver = H.status === 'classified' && (H.triggeredIngredients || []).includes(i);
           named.push({ i, c, lim, driver });
         }
       });
+      ings.filter((i) => i[f] === '1' && !has(sclValue(i, f))).forEach((i) =>
+        H.notes.push(`${nm(i)}: ${lab} sensitiser recorded as Category 1 without sub-category or SCL. If the source classification is 1A, the limits are 0.1 % (classification) and 0.01 % (EUH208).`));
       if (!named.length) return;
       if (H.status !== 'classified') {
         named.forEach((n) => {
@@ -680,9 +686,14 @@
         const scl = num((i.scl || {})[f]); const useScl = has(scl) && scl > 0;
         if (c === '1') {
           const l1 = useScl ? scl : 10;
+          // Annex VI entries may give a banded SCL for the Category 2 range of a
+          // Category 1 substance (e.g. Cat 1: C ≥ 20 %; Cat 2: 5 % ≤ C < 20 %).
+          const band = sclValue(i, f + '2');
+          const l2 = has(band) ? band : 1;
+          if (has(band) && band > l1 + EPS) H.notes.push(`${nm(i)}: Category 2 band SCL ${fmt(band)} % is above the Category 1 limit ${fmt(l1)} % – check the Annex VI entry.`);
           if (ge(i.pct, l1)) { trig1.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % ≥ ${fmt(l1)} % → Category 1`); }
-          else if (ge(i.pct, 1)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % is ≥ 1 % but < ${fmt(l1)} % → Category 2`); }
-          else H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % < 1 % → no classification`);
+          else if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % is ≥ ${fmt(l2)} %${has(band) ? ' (Category 2 band SCL)' : ''} but < ${fmt(l1)} % → Category 2`); }
+          else H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % < ${fmt(l2)} %${has(band) ? ' (Category 2 band SCL)' : ''} → no classification`);
         } else {
           const l2 = useScl ? scl : 10;
           if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 2] ${fmt(i.pct)} % ≥ ${fmt(l2)} % → Category 2`); }
@@ -693,14 +704,18 @@
       if (trig1.length) { H.status = 'classified'; H.outcomes.push(out(tag + ' 1', [hs[0]], 'Danger', ['GHS08'])); }
       else if (trig2.length) { H.status = 'classified'; H.outcomes.push(out(tag + ' 2', [hs[1]], 'Warning', ['GHS08'])); }
       if (k === 'SE') {
-        const c3 = ings.filter((i) => i.stotSE === '3' && ge(i.pct, 1));
-        ings.filter((i) => i.stotSE === '3' && !ge(i.pct, 1)).forEach((i) => H.steps.push(`${nm(i)} [Cat. 3] ${fmt(i.pct)} % < 1 % (relevant-ingredient threshold 3.8.3.4.6) – not counted`));
+        // A substance can be STOT SE 1/2 (e.g. H370) AND STOT SE 3 (H335/H336).
+        // The Cat 3 effect flags therefore count independently of the stotSE field.
+        const isCat3 = (i) => i.stotSE === '3' || !!i.stotSEresp || !!i.stotSEnarc;
+        const unspecified = (i) => i.stotSE === '3' && !i.stotSEresp && !i.stotSEnarc;
+        const c3 = ings.filter((i) => isCat3(i) && ge(i.pct, 1));
+        ings.filter((i) => isCat3(i) && !ge(i.pct, 1)).forEach((i) => H.steps.push(`${nm(i)} [Cat. 3] ${fmt(i.pct)} % < 1 % (relevant-ingredient threshold 3.8.3.4.6) – not counted`));
         const eff = [['stotSEresp', 'respiratory tract irritation', 'H335'], ['stotSEnarc', 'narcotic effects (drowsiness/dizziness)', 'H336']];
         eff.forEach(([flag, lab, h]) => {
-          const members = c3.filter((i) => i[flag] || (!i.stotSEresp && !i.stotSEnarc));
+          const members = c3.filter((i) => i[flag] || unspecified(i));
           if (!members.length) return;
           const s = sum(members.map((i) => i.pct));
-          const unspec = members.filter((i) => !i.stotSEresp && !i.stotSEnarc);
+          const unspec = members.filter(unspecified);
           H.steps.push(`Cat. 3 – ${lab}: ` + members.map((i) => `${nm(i)} ${fmt(i.pct)} %`).join(' + ') + ` = ${fmt(s)} % ${ge(s, 20) ? '≥' : '<'} 20 % (additive, 3.8.3.4.5)`);
           if (unspec.length) H.notes.push(`${unspec.map(nm).join(', ')}: Cat. 3 without a stated effect is counted for both respiratory irritation and narcotic effects. Specify the effect.`);
           if (ge(s, 20)) { H.status = 'classified'; H.outcomes.push(out(`STOT SE 3 (${flag === 'stotSEresp' ? 'respiratory irritation' : 'narcotic effects'})`, [h], 'Warning', ['GHS07'])); }
@@ -716,6 +731,7 @@
 
   function aspiration(mix, ings) {
     const H = hz('asp', 'Aspiration hazard', 'Annex I 3.10.3.3.1 (cons. p.201); label Table 3.10.2 (p.201)');
+    if (mix.state === 'solid' && ings.some((i) => i.asp)) H.notes.push('Mixture recorded as solid: aspiration hazard applies to liquids – confirm the physical form before relying on this result.');
     const rel = ings.filter((i) => i.asp && ge(i.pct, 1));
     if (!rel.length) { H.steps.push('No Aspiration Cat. 1 ingredient at ≥ 1 % (relevant-ingredient threshold, 3.10.3.3.1.1).'); return H; }
     const s = sum(rel.map((i) => i.pct)), v = num(mix.viscosity40);
@@ -808,7 +824,8 @@
     list.push(thresholdHazard({
       id: 'edHH', name: 'Endocrine disruption – human health', ref: 'Annex I 3.11.3 · Table 3.11.2 (cons. pp.204–205); label p.206',
       get: (i) => i.edHH, order: ['1', '2'], catLabel: (c) => 'ED HH ' + c, gcl: (c) => ({ '1': 0.1, '2': 1.0 }[c]),
-      outcome: (c) => out('ED HH ' + c, [c === '1' ? 'EUH380' : 'EUH381'], null, [])
+      // Table 3.11.3 (Delegated Regulation (EU) 2023/707): Cat 1 Danger, Cat 2 Warning; no pictogram.
+      outcome: (c) => out('ED HH ' + c, [c === '1' ? 'EUH380' : 'EUH381'], c === '1' ? 'Danger' : 'Warning', [])
     }, ings, mix));
     list.push(thresholdHazard({
       id: 'edEnv', name: 'Endocrine disruption – environment', ref: 'Annex I 4.2.3 · Table 4.2.2 (cons. p.226); label Table 4.2.3 (p.227)',
@@ -1141,6 +1158,13 @@
         review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
     }
 
+    // Later UN GHS revisions mark P201/P202 and P301+P310 obsolete (P203, P301+P316).
+    // Their status in EU CLP depends on the Annex IV version that applies to the label.
+    const ghsSuperseded = { 'P202': 'P203', 'P301+P310': 'P301+P316' };
+    Object.keys(ghsSuperseded).filter((code) => active.has(code)).forEach((code) =>
+      review.push({severity:'review',code,
+        reason:code+' is marked obsolete in later UN GHS revisions (replacement '+ghsSuperseded[code]+'). Check which code and wording the CLP Annex IV version applicable to this label requires.'}));
+
     // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
     const explicitPairs=[['P103','P202','Annex IV Table 6.1: P103 may be omitted when P202 is used'],
                          ['P261','P260','Annex IV Table 6.2: P261 may be omitted where P260 is used']];
@@ -1404,7 +1428,9 @@
       if (i.reproDev) c.push('Development ' + i.reproDev);
       if (i.repro) c.push('Repr. ' + i.repro + ' (effect unspecified)');
       if (i.lact) c.push('Lact.');
-      if (i.stotSE) c.push('STOT SE ' + i.stotSE + (i.stotSE === '3' ? ` (${[i.stotSEresp && 'resp.', i.stotSEnarc && 'narc.'].filter(Boolean).join('/') || 'effect n/s'})` : ''));
+      const se3 = [i.stotSEresp && 'resp.', i.stotSEnarc && 'narc.'].filter(Boolean).join('/');
+      if (i.stotSE) c.push('STOT SE ' + i.stotSE + (i.stotSE === '3' ? ` (${se3 || 'effect n/s'})` : ''));
+      if (i.stotSE !== '3' && se3) c.push(`STOT SE 3 (${se3})`);
       if (i.stotRE) c.push('STOT RE ' + i.stotRE); if (i.asp) c.push('Asp. Tox. 1');
       if (i.aquaAcute) c.push('Aquatic Acute 1' + (i.mAcute ? ` (M=${i.mAcute})` : '')); if (i.aquaChronic) c.push('Aquatic Chronic ' + i.aquaChronic + (i.mChronic && i.aquaChronic === '1' ? ` (M=${i.mChronic})` : ''));
       if (i.aquaUnknown) c.push('aquatic data unavailable');

@@ -1,0 +1,9 @@
+{
+  "name": "clp-mixture-calculator",
+  "private": true,
+  "description": "CLP mixture classification calculator – verification suites",
+  "scripts": {
+    "test": "node verification/run_all.js"
+  },
+  "engines": { "node": ">=18" }
+}

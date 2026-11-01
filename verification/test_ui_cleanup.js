@@ -7,8 +7,8 @@ function check(name,fn){try{fn();passed++}catch(e){throw Error(name+": "+e.messa
 function section(a,b){const i=source.indexOf(a),j=source.indexOf(b,i);assert(i>=0&&j>i,a);return source.slice(i,j)}
 const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const makeEditor=()=>{
- const openState=new Map(),code=section("const SEL = ","\nconst HAZARD_PHYSICAL=");
- return {openState,...new Function("esc","detailPanels",code+"\nreturn {detailHTML};")(esc,openState)};
+ const openState=new Map(),code=section("const SEL = ","\nfunction hazardChip(");
+ return {openState,...new Function("esc","detailPanels","CLP",code+"\nreturn {detailHTML};")(esc,openState,CLP)};
 };
 function ing(id,override={}){
  const base=CLP.blankIngredient(),x={...base,...override,_id:id};
@@ -48,9 +48,11 @@ check("Optional labelling context and manual entries",()=>{
  assert.match(html,/<details class="card disclosure-card" id="p28settings">/);
  assert.match(html,/<details class="card disclosure-card" id="manualsettings">/);
 });
-check("Eight separate collapsible hazard groups",()=>{
+check("Hazard detail groups organised by physical / health / environmental",()=>{
  const h=makeEditor().detailHTML(ing(1)),groups=[...h.matchAll(/data-detail-section="([^"]+)"/g)].map(x=>x[1]);
- assert.deepEqual(groups,["acute","skin","cmr","stot","aquatic","newHazards","otherSCL","provenance"]);
+ assert.deepEqual(groups,["acute","skin","cmr","stot","edHH","aquatic","newHazards","otherSCL","provenance"]);
+ const cats=[...h.matchAll(/data-detail-category="([^"]+)"/g)].map(x=>x[1]);
+ assert.deepEqual(cats,["physical","health","environmental","shared"]);
  assert(!h.includes("<fieldset>"));
 });
 check("New ingredient shows compact empty hazard detail",()=>{
@@ -117,6 +119,13 @@ check("Manual input controls have accessible names",()=>{
  for(const key of ["label","h","signal","picto"])
   assert(html.includes('data-m="'+key+'" aria-label='),key);
 });
+check("Banded STOT Category 2 SCL inputs available",()=>{
+ const h=makeEditor().detailHTML(ing(9,{stotRE:"1",scl:{stotRE:"20",stotRE2:"5"}}));
+ assert.match(h,/data-p="scl.stotSE2"/);
+ assert.match(h,/data-p="scl.stotRE2"/);
+ assert.match(h,/data-detail-section="otherSCL" open/);
+});
+check("Solid physical state selectable",()=>assert.match(html,/<option value="solid">Solid<\/option>/));
 check("Embedded engine is unchanged",()=>{
  const i=html.indexOf("/* CLP mixture classification engine"),j=html.indexOf("\n</script>",i);
  assert.equal(html.slice(i,j).trimEnd(),fs.readFileSync("verification/engine.js","utf8").trimEnd());

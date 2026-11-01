@@ -12,7 +12,7 @@ const ui=new Function("CLP","esc","$","mix","hazardPanelsOpen",s+
  "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,changeIngredientHazard,applyIngredientHazards,groupForCode};")(C,esc,$,mix,hazardPanelsOpen);
 const make=(codes="")=>{const i=C.blankIngredient();i._id=1;C.applyHCodes(i,codes);mix.ingredients=[i];return i};
 let n=0;function test(name,fn){try{fn();n++}catch(e){throw Error(name+": "+e.message)}}
-test("Three separate search groups",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
+test("Three hazard groups still classify suggestions",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
 test("Autocomplete by H phrase",()=>assert(ui.searchHazards("physical","highly flammable liquid").some(x=>x.code==="H225")));
 test("Autocomplete by class",()=>assert(ui.searchHazards("health","Skin Corr. 1").some(x=>x.code==="H314")));
 test("Autocomplete by health phrase",()=>assert(ui.searchHazards("health","severe skin burns").some(x=>x.code==="H314")));
@@ -26,9 +26,16 @@ test("Search bounded to group and eight suggestions",()=>{
  assert.deepEqual(ui.searchHazards("health",""),[]);
 });
 test("Selected hazards excluded from suggestions",()=>assert(!ui.searchHazards("health","H314",["H314"]).some(x=>x.code==="H314")));
-test("Three hazard search groups retained inside collapsible editor",()=>{
+test("Unified search covers all three hazard groups",()=>{
+ assert(ui.searchHazards("all","H225").some(x=>x.code==="H225"));
+ assert(ui.searchHazards("all","severe skin burns").some(x=>x.code==="H314"));
+ assert(ui.searchHazards("all","EUH441").some(x=>x.code==="EUH441"));
+ assert(ui.searchHazards("all","a").length<=8);
+});
+test("Single unified hazard search inside collapsible editor",()=>{
  const h=ui.hazardEditorHTML(make("H225 H314 H410"));
- assert.equal((h.match(/class="hazard-picker"/g)||[]).length,3);
+ assert.equal((h.match(/class="hazard-picker"/g)||[]).length,1);
+ assert.match(h,/data-hazard-picker data-group="all"/);
  assert.match(h,/<details class="hazard-editor" data-hazard-panel/);
  assert.equal((h.match(/data-remove-hazard=/g)||[]).length,0,
    "Chips must be in table cell rather than duplicated inside editor");

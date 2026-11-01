@@ -188,8 +188,10 @@ t('Chronic 1: Warning H410', (() => { const o = aq(30, { aquaChronic: '1' }).out
 t('aquatic unknown statement', (() => { const u = ing(5, null, { aquaUnknown: true }); return run([u, water(95)]).label.supplemental.some((s) => /5 % of components with unknown hazards/.test(s)); })());
 
 /* ---------- 11. new classes ---------- */
-t('ED HH 1 at 0.1 -> EUH380; 0.099 none', (() => { const f = (p) => one('edHH', '1', p); const o = f(0.1).outcomes.find((x) => x.label === 'ED HH 1'); return o && o.h[0] === 'EUH380' && o.picto.length === 0 && o.signal === null && !has(f(0.099), 'ED HH 1'); })());
+t('ED HH 1 at 0.1 -> EUH380; 0.099 none', (() => { const f = (p) => one('edHH', '1', p); const o = f(0.1).outcomes.find((x) => x.label === 'ED HH 1'); return o && o.h[0] === 'EUH380' && o.picto.length === 0 && o.signal === 'Danger' && !has(f(0.099), 'ED HH 1'); })());
 t('ED HH 2 at 1.0 -> EUH381; 0.99 none', has(one('edHH', '2', 1), 'ED HH 2') && !has(one('edHH', '2', 0.99), 'ED HH 2'));
+t('ED HH 2 signal word Warning (Table 3.11.3)', one('edHH', '2', 1).outcomes.find((x) => x.label === 'ED HH 2').signal === 'Warning');
+t('ED HH only mixture has a label signal word', one('edHH', '1', 0.5).label.signal === 'Danger');
 t('ED ENV 1 Danger / 2 Warning', (() => { const a = one('edEnv', '1', 0.1).outcomes.find((x) => x.label === 'ED ENV 1'); const b = one('edEnv', '2', 1).outcomes.find((x) => x.label === 'ED ENV 2'); return a.signal === 'Danger' && b.signal === 'Warning'; })());
 t('PBT 0.1 yes / 0.099 no; Danger EUH440', (() => { const a = one('pbt', true, 0.1).outcomes.find((x) => x.label === 'PBT'); return a && a.h[0] === 'EUH440' && a.signal === 'Danger' && !has(one('pbt', true, 0.099), 'PBT'); })());
 t('PMT/vPvM/vPvB', has(one('pmt', true, 0.1), 'PMT') && has(one('vpvm', true, 0.1), 'vPvM') && has(one('vpvb', true, 0.1), 'vPvB'));
