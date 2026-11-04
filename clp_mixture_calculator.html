@@ -2273,7 +2273,18 @@ pre.rep{padding:14px}
       for(const r of rows){const contribution=r.pct/r.ate;denom+=contribution;section.steps.push(r.name+": "+fmt(r.pct)+"% / "+fmt(r.ate)+" "+rule.unit+" ("+r.source+") = "+fmt(contribution));}
       const numerator=unknown>10+EPS?100-unknown:100;
       if(!(denom>0&&numerator>0)){section.status="not-assessed";section.steps.push("Invalid numerator/denominator; review unknown concentrations and supplied data.");list.push(section);continue;}
-      const value=numerator/denom,c=category(key,value);
+      const value=numerator/denom;
+      let c=category(key,value);
+      // A.1.3.3(c): where all converted ingredient category estimates are
+      // in the same category, retain that category rather than allowing a
+      // conversion point on a category boundary to spuriously upgrade it.
+      const allSameConverted=rows.length>0&&rows.every(r=>
+        r.source.startsWith("Table A.1.2")&&r.category===rows[0].category);
+      if(allSameConverted&&c!==rows[0].category){
+        section.steps.push("A.1.3.3(c): all converted ingredient estimates are Category "+rows[0].category+
+          "; use that category rather than the formula-boundary result "+(c||"not classified")+".");
+        c=rows[0].category;
+      }
       section.status="screened";
       section.ate=value;section.unit=rule.unit;
       section.steps.push("ATE mixture = "+fmt(numerator)+" / "+fmt(denom)+" = "+fmt(value)+" "+rule.unit+".");
