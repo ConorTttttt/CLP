@@ -3143,7 +3143,7 @@ function calcExplanationHTML(h) {
  // Route summaries are shown separately. This selection is presentational only.
  const highlights=roles.filter(x=>x.role==="formula"||x.role==="decision")
    .filter(x=>!(groups.length&&/ATEmix\s*=/.test(x.line)));
- const ingredientLines=roles.filter(x=>x.role==="ingredients");
+ const ingredientLines=roles.filter(x=>x.role==="ingredients"&&!(groups.length&&calcRouteSummary(x.line)));
  const supporting=roles.filter(x=>x.role==="detail"||x.role==="warning");
  const leading=highlights.slice(0,h.id==="acute"?2:3);
  const remaining=highlights.slice(leading.length);
