@@ -2656,6 +2656,9 @@ function chooseIngredientHazard(input,code,category=""){
  changeIngredientHazard(ing,code,true);
  const spec=HAZARD_SUBCATEGORIES[code];
  if(spec&&spec.cats.includes(category))ing[spec.field]=category;
+ ingredientTabs.set(id,tabForHazard(code));
+ const section=sectionForHazard(code);
+ if(section){const state=new Set(detailPanels.get(id)||[]);state.add(section);detailPanels.set(id,state);}
  refreshRow(id);update();
  const replacement=document.querySelector(`tr[data-detrow="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
  if(replacement){
