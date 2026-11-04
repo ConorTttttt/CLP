@@ -81,6 +81,26 @@ details.h{border-top:1px solid var(--line);padding:5px 0}
 details.h>summary{cursor:pointer;font-weight:600;font-size:13.5px}
 details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .step{white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
+.calc-intro{font-size:12.5px;color:var(--mute);margin:6px 0 12px}
+.calc-panel{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:10px 12px;margin:9px 0}
+.calc-panel>summary{cursor:pointer;font-weight:650;font-size:13px}
+.calc-panel>summary .badge{float:right}
+.calc-kind{font-size:11px;color:var(--mute);font-weight:700;margin:9px 0 5px}
+.calc-outcomes{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.calc-outcome{display:inline-block;border-radius:6px;border:1px solid var(--line);background:var(--panel);padding:6px 9px;font-size:12px;font-weight:650}
+.calc-step-list{display:grid;gap:7px;margin-top:10px}
+.calc-step-block{border-left:3px solid var(--line);padding:7px 9px;background:var(--panel);border-radius:0 6px 6px 0}
+.calc-step-block[data-role="formula"]{border-color:var(--accent)}
+.calc-step-block[data-role="decision"]{border-color:var(--good)}
+.calc-step-block[data-role="warning"]{border-color:var(--bad)}
+.calc-step-label{display:block;font-size:11px;color:var(--mute);font-weight:700;margin-bottom:4px}
+.calc-step-block .step{padding:0;line-height:1.65}
+.calc-step-item+.calc-step-item{border-top:1px dashed var(--line);margin-top:5px;padding-top:5px}
+.calc-raw{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+.calc-raw>summary{font-size:12px;color:var(--mute);cursor:pointer}
+.calc-note{padding:5px 8px;margin:5px 0;border-left:2px solid var(--line);background:var(--panel);font-size:12px}
+@media(max-width:620px){.calc-panel{padding:9px 8px}.calc-panel>summary .badge{float:none}}
+
 .note{font-size:12.5px;color:var(--mute);margin:3px 0}
 details.ai{border:1px solid var(--ai);border-radius:10px;background:var(--panel);margin:0 0 14px}
 details.ai>summary{cursor:pointer;padding:10px 14px;font-weight:600;color:var(--ai)}
@@ -2626,6 +2646,50 @@ $("addMan").onclick = () => { mix.manual.push({ label: "", h: "", signal: "", pi
 
 /* ---------- results ---------- */
 const BOILER = /No ingredient carries|No ingredient classified|No Aspiration|No skin-corrosive|No eye-damaging/;
+
+/* Only restructure presentation: do not change the engine's classifications,
+   formulae, precision, inclusion decisions or regulatory citations. */
+function calcRole(h, line) {
+  const s=String(line).trim();
+  if (/^PROVISIONAL:|unknown data:|invalid numerator|invalid denominator|No usable aquatic data/i.test(s)) return "warning";
+  if (/^ATEmix\s*=|^Acute 1:|^Chronic [1-4]:|^SCL-aware|^Σ|^10 ×|Σ/.test(s)) return "formula";
+  if (/^→|→\s*(?:Skin|Eye|Aquatic|Category|not classified)|Below all|Below weighted|limit reached/i.test(s)) return "decision";
+  if (/^—\s*(?:Oral|Dermal|Inhalation|Vapour|Dust|Gas)|^Additive ingredients|^Non-additive/i.test(s)) return "ingredients";
+  return "detail";
+}
+function calcStepHTML(h,line) {
+  const s=String(line).trim(),role=calcRole(h,s);
+  const matches=/^(Acute 1|Chronic [1-4]):/.exec(s);
+  const label=role==="formula" ? (matches ? matches[1]+" — 25% classification threshold" : "Calculation and comparison")
+    : role==="ingredients" ? "Contributing ingredients" : role==="warning" ? "Data requiring review"
+    : role==="decision" ? "Classification decision" : "Supporting assessment";
+  const chunks=role==="ingredients" && s.includes("; ") ? s.split("; ") : [s];
+  return '<div class="calc-step-block" data-role="'+role+'"><span class="calc-step-label">'+esc(label)+'</span>'+
+    chunks.map(t=>'<div class="step calc-step-item">'+esc(t)+'</div>').join("")+'</div>';
+}
+function calcExplanationHTML(h) {
+  const kind=h.id==="aquatic" ? "Aquatic summation: weighted M-factors and 25% limits"
+    : h.id==="acute" ? "Acute toxicity: route-specific ingredient ATE and ATEmix"
+    : h.id==="skin" || h.id==="eye" ? "Skin/eye: additive concentrations, SCL/GCL and thresholds"
+    : h.id==="asp" ? "Aspiration: summation and viscosity" : "";
+  const outcome=(h.outcomes||[]).map(o=>'<span class="calc-outcome">'+esc(o.label)+
+    (o.h?.length ? ' · '+esc(o.h.join(", ")) : '')+
+    (Number.isFinite(o.ate) ? ' · ATEmix '+esc(CLP.fmt(o.ate)) : '')+'</span>').join("");
+  const state=h.status==="incomplete" ? "Incomplete — review required" : h.status==="classified" ? "Classified" : "Not classified";
+  return '<details class="calc-panel" data-calc-id="'+esc(h.id)+'"'+
+    ((h.status==="classified"||h.status==="incomplete")?' open':'')+'>'+
+    '<summary>'+esc(h.name)+' <span class="badge '+esc(h.status)+'">'+esc(state)+'</span></summary>'+
+    (kind?'<div class="calc-kind">'+esc(kind)+'</div>':'')+
+    (outcome?'<div class="calc-outcomes">'+outcome+'</div>':'<div class="calc-kind">'+esc(state)+(h.status==="incomplete"?' — not a final assessment':' — no triggered classification')+'</div>')+
+    '<div class="calc-step-list">'+(h.steps||[]).map(t=>calcStepHTML(h,t)).join("")+'</div>'+
+    (h.notes?.length?'<div class="calc-kind">Review notes and limitations</div>'+
+      h.notes.map(n=>'<div class="calc-note">'+esc(n)+'</div>').join(""):'')+
+    '<details class="calc-raw"><summary>Show original calculation trail and regulatory reference</summary>'+
+    '<div class="ref">'+esc(h.ref)+'</div>'+
+    (h.steps||[]).map(t=>'<div class="step">'+esc(t)+'</div>').join("")+
+    '</details></details>';
+}
+
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
@@ -2733,7 +2797,9 @@ function renderResult(r) {
   if (r.sds.length) L.push(`<div class="card" data-view="sds"><h2>SDS-on-request triggers</h2>${r.sds.map((s) => `<div class="note">${esc(s)}</div>`).join("")}</div>`);
   const shown = r.hazards.filter((h) => h.status !== "na" && (h.status !== "not" || h.steps.some((s) => !BOILER.test(s))));
   const hidden = r.hazards.filter((h) => !shown.includes(h) && h.status !== "na");
-  L.push(`<div class="card" data-view="calculation"><h2>Calculation trail</h2>${shown.map((h) => `<details class="h"${h.status === "classified" || h.status === "incomplete" ? " open" : ""}><summary>${esc(h.name)}<span class="badge ${h.status}">${{ classified: "classified", not: "not classified", incomplete: "incomplete", nodata: "no data" }[h.status] || h.status}</span></summary><div class="ref">${esc(h.ref)}</div>${h.steps.map((s) => `<div class="step">${esc(s)}</div>`).join("")}${h.notes.map((s) => `<div class="note">Note: ${esc(s)}</div>`).join("")}</details>`).join("") || '<div class="hint">Nothing to show yet.</div>'}
+  L.push(`<div class="card" data-view="calculation"><h2>Calculation breakdown</h2>
+    <div class="calc-intro">Ingredient contributions, summation formulae, thresholds and outcomes are grouped below. Open each hazard for the calculation. The unchanged engine calculation trail and regulatory reference are available under each result.</div>
+    ${shown.map(calcExplanationHTML).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
   L.push(`<div class="card" data-view="notes"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, full tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, partial Article 28 Annex I/IV P-statement catalogue and final regulatory review, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
   $("res").innerHTML = L.join("");
