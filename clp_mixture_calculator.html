@@ -2406,7 +2406,12 @@ function searchHazards(group,query,existing=[]){
  const q=String(query||"").trim().toLowerCase();
  if(!q)return [];
  const specified=hazardQueryCategory(query),selected=new Set(existing);
+ // An exact H-code search should not also expand codes that merely share its prefix
+ // (for example H350 must not silently include H350i).
+ const exact=HAZARD_MAP.has(String(query||"").trim()) ? String(query||"").trim() :
+   HAZARD_CHOICES.find(x=>x.code.toLowerCase()===q)?.code;
  const matching=HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group) &&
+   (!exact||x.code===exact) &&
    // Allow an already-selected H-code to be refined when searched directly.
    (!selected.has(x.code)||specified?.code===x.code||x.code.toLowerCase()===q))
    .filter(x=>specified ? specified.code===x.code :
