@@ -9,7 +9,7 @@ const $=id=>dom[id]||(dom[id]={innerHTML:""}),mix={ingredients:[]};
 const esc=x=>String(x??"").replace(/[&<>"']/g,k=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
 const hazardPanelsOpen=new Set();
 const ui=new Function("CLP","esc","$","mix","hazardPanelsOpen",s+
- "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,changeIngredientHazard,applyIngredientHazards,groupForCode,hazardChipLabel,hazardQueryCategory};")(C,esc,$,mix,hazardPanelsOpen);
+ "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,enteredHCodes,detailHCodes,clearDetailHazard,changeIngredientHazard,applyIngredientHazards,groupForCode,hazardChipLabel,hazardQueryCategory};")(C,esc,$,mix,hazardPanelsOpen);
 const make=(codes="")=>{const i=C.blankIngredient();i._id=1;C.applyHCodes(i,codes);mix.ingredients=[i];return i};
 let n=0;function test(name,fn){try{fn();n++}catch(e){throw Error(name+": "+e.message)}}
 test("Search supports H314 skin corrosion subcategories",()=>{
@@ -53,6 +53,45 @@ test("Entered SCL and STOT details appear on hazard chips",()=>{
  assert.match(result,/Skin Corr\. 1B · SCL 0\.5%/);
  assert.match(result,/STOT SE 1/);
  assert.match(result,/STOT RE 1 · SCL 20%/);
+});
+test("Details-only Skin Corr. 1C appears beside entered Eye Dam. 1",()=>{
+ const i=make("H318");i.skinCorr="1C";
+ const chips=ui.hazardRowChipsHTML(i);
+ assert.equal((chips.match(/data-remove-hazard=/g)||[]).length,2);
+ assert.match(chips,/data-remove-hazard="H318"/);
+ assert.match(chips,/data-remove-hazard="H314"/);
+ assert.match(chips,/H314<\/strong><span>Skin Corr\. 1C<\/span>/);
+ assert.match(chips,/data-hazard-origin="details"/);
+ assert.equal(ui.ingredientHCodes(i).length,2);
+});
+test("Details-only classifications from multiple sections appear as cards",()=>{
+ const i=make();
+ Object.assign(i,{skinCorr:"1A",eye:"1",skinSens:"1B",respSens:"1A",
+   stotSE:"1",stotSEresp:true,stotRE:"2",aquaAcute:true,aquaChronic:"2",
+   edHH:"1",pbt:true,asp:true});
+ i.acute.oral.cat="4";
+ const codes=ui.ingredientHCodes(i);
+ for(const code of ["H314","H318","H317","H334","H370","H335","H373","H400","H411","EUH380","EUH440","H304","H302"])
+   assert(codes.includes(code),code);
+ assert.equal(new Set(codes).size,codes.length,"No duplicate cards");
+});
+test("Details-only cards can clear their underlying field",()=>{
+ const i=make("H318");i.skinCorr="1C";
+ assert(ui.ingredientHCodes(i).includes("H314"));
+ ui.clearDetailHazard(i,"H314");
+ assert.equal(i.skinCorr,"");
+ assert.deepEqual(ui.ingredientHCodes(i),["H318"]);
+});
+test("Removal of STOT SE3 effect leaves STOT SE1 and other effect intact",()=>{
+ const i=make();i.stotSE="1";i.stotSEresp=true;i.stotSEnarc=true;
+ ui.clearDetailHazard(i,"H335");
+ assert.deepEqual(ui.detailHCodes(i).filter(x=>["H370","H335","H336"].includes(x)),["H370","H336"]);
+});
+test("Details-only reproductive combined statement is not duplicated",()=>{
+ const i=make();i.reproFert="1A";i.reproDev="2";
+ assert(ui.detailHCodes(i).includes("H360Fd"));
+ assert(!ui.detailHCodes(i).includes("H360F"));
+ assert(!ui.detailHCodes(i).includes("H361d"));
 });
 test("Three hazard groups still classify suggestions",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
 test("Autocomplete by H phrase",()=>assert(ui.searchHazards("physical","highly flammable liquid").some(x=>x.code==="H225")));
