@@ -59,4 +59,16 @@ test("No extra classified outcomes invented for blank hazard",()=>{
  assert.match(out,/Not classified/);
  assert.doesNotMatch(out,/Mixture classification/);
 });
+test("Filters offer classified, review and all states",()=>{
+ assert.match(html,/data-calc-filter="classified"/);
+ assert.match(html,/data-calc-filter="review"/);
+ assert.match(html,/data-calc-filter="all"/);
+});
+test("Expand/collapse controls are present without engine changes",()=>{
+ assert.match(html,/data-calc-toggle="open"/);
+ assert.match(html,/data-calc-toggle="close"/);
+ assert.match(app,/applyCalcFilter\(\)/);
+ const out=ui.calcExplanationHTML(acute);
+ assert.match(out,/data-status="classified"/);
+});
 console.log(count+" classification breakdown UI tests passed");
