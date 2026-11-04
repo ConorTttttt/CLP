@@ -2355,7 +2355,7 @@ function addWorkspace(copy=false){
  saveWorkspaceState();
  const independent=copy?JSON.parse(JSON.stringify(mix,(key,value)=>key==="_id"?undefined:value)):
    newBlankMixture();
- if(copy)independent.name=(independent.name.trim()||"Classification")+" (copy)";
+ if(copy)independent.name=(String(independent.name||"").trim()||"Classification")+" (copy)";
  const id=nextWorkspaceId();
  workspaceTabs.push({id,mixture:independent});
  activeWorkspaceId=id;
