@@ -1,3 +1,21 @@
+US OSHA HAZCOM 2024 — INITIAL SCREEN (NOT A FINAL US CLASSIFICATION)
+The Classification results panel now has a "Classification regulation" selector:
+  - European Union — CLP (existing full EU result viewer)
+  - United States — OSHA HazCom 2024 (initial screen)
+The formulation and ingredient data remain shared, but the US screening engine is
+independent from the EU CLP result engine. The initial US mode calculates only:
+  * Flammable Liquid Categories 1–4 (Category 4: combustible liquid, 60–93 C).
+  * Acute Toxicity (oral, dermal and inhalation forms) using Appendix A.1 ATE.
+All other required US physical and health hazards, HNOC, combustible dust,
+simple asphyxiants, and complete OSHA label/SDS elements are marked NOT ASSESSED.
+EU CLP aquatic/environmental classes do not become US OSHA classifications.
+US results are explicitly a partial screen, not a compliant label or SDS.
+No EU-specific SCLs or EU label rules are silently reused for US HazCom.
+HazCom 2024 mixture compliance date: 19 November 2027 (2026 OSHA extension);
+HazCom 2012 remains an alternative during the applicable transition period.
+Full scope, authoritative OSHA links and tests: docs/us_hazcom_2024_initial_mode.md
+Test with npm test; US-specific tests: node verification/test_us_hazcom2024.js
+
 CLP MIXTURE CLASSIFICATION CALCULATOR
 =====================================
 Open clp_mixture_calculator.html in any modern browser; keep the pictograms/ folder alongside it. Works offline, no AI or installation required.
