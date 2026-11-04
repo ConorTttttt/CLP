@@ -14,6 +14,22 @@ check("Tab navigation has four categories",()=>{
  for(const name of ['Health','Environmental','Physical','SCLs & evidence'])assert(app.includes('label:"'+name+'"'),name);
  for(const id of ['health','environmental','physical','regulatory'])assert(html.includes('ix-editor[data-tab="'+id+'"]'),id);
 });
+check("Hazard codes map to correct contextual tab and section",()=>{
+ const a=app.indexOf('const ING_TABS=['),b=app.indexOf('function renderIngs()',a);
+ assert(a>=0&&b>a);
+ const picker=app.slice(a,b);
+ const api=new Function('groupForCode',picker+
+  '\nreturn {tabForHazard,sectionForHazard};')(code=>
+   /^H2/.test(code)?'physical':/^H4|^EUH4/.test(code)?'environmental':'health');
+ assert.equal(api.tabForHazard('H314'),'health');
+ assert.equal(api.sectionForHazard('H314'),'skin');
+ assert.equal(api.sectionForHazard('H317'),'cmr');
+ assert.equal(api.sectionForHazard('H302'),'acute');
+ assert.equal(api.tabForHazard('H410'),'environmental');
+ assert.equal(api.sectionForHazard('H410'),'aquatic');
+ assert.equal(api.tabForHazard('H225'),'physical');
+ assert.equal(api.sectionForHazard('H225'),'');
+});
 check("Clicking hazard chip opens its context",()=>{
  assert.match(app,/data-edit-hazard=/);
  assert.match(app,/showIngredientEditor\(id,editChip\.dataset\.editHazard\)/);
