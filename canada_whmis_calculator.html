@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Canada WHMIS 2022 — Classification pilot</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;background:#f4f7fb;color:#152334}
+body{margin:0} main{max-width:1050px;margin:auto;padding:24px}h1{font-size:clamp(1.5rem,3vw,2.2rem);margin:5px 0}
+p{line-height:1.55}.muted{color:#52667d}.card{background:white;border:1px solid #d4dfe9;border-radius:12px;padding:18px;margin:14px 0}
+.tag{font-size:12px;font-weight:700;background:#eaf2fc;color:#163f73;border-radius:18px;padding:5px 9px;display:inline-block}
+.warning{border-left:4px solid #b36a0c;padding:11px;background:#fff6e5}.error{border-left:4px solid #b12b32}
+table{border-collapse:collapse;width:100%;min-width:700px}th,td{border-bottom:1px solid #e0e8f0;padding:8px;text-align:left}th{font-size:12px;text-transform:uppercase;color:#52667d}
+.scroller{overflow:auto}input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #bac9d7;border-radius:6px;font:inherit;min-width:60px}
+button{background:#164d8c;color:white;border:0;border-radius:7px;padding:11px 15px;font:inherit;cursor:pointer;margin:4px 6px 4px 0}
+button.secondary{background:#e8eef6;color:#183650}button:focus-visible,input:focus-visible{outline:3px solid #e5ad40}
+label{font-size:13px}details{margin-top:10px;border-top:1px solid #e2e9ee;padding-top:10px}summary{cursor:pointer;font-weight:700}
+.small{font-size:12px}.outcome{border-left:4px solid #215c96;padding:8px 12px;margin:10px 0;background:#eff6ff}
+</style></head><body><main>
+<span class="tag">CA · WHMIS 2022 · Early pilot</span><h1>Canadian hazard classification</h1>
+<p class="muted">Independent Canadian Hazardous Products Regulations (SOR/2015-17) calculations. This pilot covers oral/dermal acute toxicity ATE and HHNOC ingredient triggers only. It is <strong>not a complete WHMIS classification</strong>.</p>
+<div class="warning">Check whole-mixture evidence and bridging principles before accepting ingredient-based results. Absence of a result for an unimplemented hazard does not mean the product is unclassified.</div>
+<section class="card"><h2>Ingredient formulation</h2><p class="small muted">ATE values are mg/kg. For a substance with only an acute toxicity category, enter 1–4. Explicitly select “No acute hazard evidence” only when supported by data.</p>
+<div class="scroller"><table><thead><tr><th>Name</th><th>Concentration %</th><th>Oral ATE</th><th>Oral category</th><th>Oral no acute hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no acute hazard</th><th>HHNOC</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<button id="add">Add ingredient</button><button id="example" class="secondary">Load example</button><button id="calculate">Calculate WHMIS pilot</button>
+</section><section class="card" id="results" aria-live="polite"><h2>Results</h2><p>Add ingredients and select Calculate.</p></section>
+<section class="card"><h2>Regulatory source</h2><p>Hazardous Products Regulations, sections 2.2, 8.1.1–8.1.7 and 8.12.4. Read the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">official Canadian regulation</a>.</p></section>
+</main><script src="verification/whmis_engine.js"></script><script>
+(function(){
+const rows=document.getElementById("rows"),results=document.getElementById("results");
+const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function add(i={}){const tr=document.createElement("tr");tr.innerHTML='<td><input aria-label="Ingredient name" data-field="name"></td><td><input aria-label="Concentration percentage" type="number" min="0" max="100" step="any" data-field="pct"></td>'+
+["oral","dermal"].map(route=>'<td><input aria-label="'+route+' ATE" type="number" min="0" step="any" data-field="'+route+'ATE"></td><td><input aria-label="'+route+' category" type="number" min="1" max="4" step="1" data-field="'+route+'Cat"></td><td><input type="checkbox" aria-label="'+route+' no acute hazard" data-field="'+route+'Safe"></td>').join("")+
+'<td><input type="checkbox" aria-label="HHNOC classified ingredient" data-field="hhnoc"></td><td><button type="button" class="secondary" data-remove>Remove</button></td>';
+rows.appendChild(tr);for(const [k,v] of Object.entries(i)){const el=tr.querySelector('[data-field="'+k+'"]');if(el){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
+tr.querySelector("[data-remove]").addEventListener("click",()=>tr.remove());
+}
+function read(){return Array.from(rows.children).map(tr=>{
+const get=k=>tr.querySelector('[data-field="'+k+'"]');
+const acute={};for(const route of ["oral","dermal"]){
+const ate=get(route+"ATE").value,cat=get(route+"Cat").value;
+acute[route]=get(route+"Safe").checked?{notAcute:true}:ate!==""?{ate:Number(ate)}:cat!==""?{category:Number(cat)}:null;
+}
+return {name:get("name").value,pct:get("pct").value,acute,hhnoc:get("hhnoc").checked};
+});}
+function show(){const r=WHMIS.classify({ingredients:read()});let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
+if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
+html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
+for(const c of r.calculations){
+html+='<details open><summary>'+safe(c.label)+' — '+safe(c.status)+'</summary><p>'+safe(c.ref)+'</p>';
+if(c.ate!=null)html+='<strong>Mixture ATE: '+safe(c.ate.toPrecision(7))+' '+safe(c.unit)+'</strong>';
+html+='<div class="small">'+(c.steps||[]).map(s=>'<p>'+safe(s)+'</p>').join("")+'</div>';
+html+=(c.notes||[]).map(s=>'<p class="warning">'+safe(s)+'</p>').join("")+'</details>';
+}
+html+='<h3>Required expert review</h3><ul>'+r.review.map(s=>'<li>'+safe(s)+'</li>').join("")+'</ul><details><summary>Hazards not yet calculated</summary><ul>'+r.notAssessed.map(x=>'<li>'+safe(x)+'</li>').join("")+'</ul></details>';
+results.innerHTML=html;
+}
+document.getElementById("add").addEventListener("click",()=>add());
+document.getElementById("calculate").addEventListener("click",show);
+document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true});show()});
+add({name:"Ingredient 1",pct:100});
+})();
+</script></body></html>
