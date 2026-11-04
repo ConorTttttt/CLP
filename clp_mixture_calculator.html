@@ -173,6 +173,14 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 @media(prefers-color-scheme:dark){.insight-yes,.insight-tag.include{background:#173e2b;color:#b3ebca;border-color:#377c52}.insight-tag.review{background:#49351b;color:#ffda9a}}
 
 /* Classification breakdown — outcome-first, grouped evidence, progressive disclosure. */
+
+.calc-toolbar{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin:10px 0 13px}
+.calc-toolbar-group{display:flex;gap:6px;flex-wrap:wrap}
+.calc-toolbar button{border-radius:7px;border:1px solid var(--line);background:var(--panel);padding:7px 10px;color:var(--ink);font-weight:600;font-size:12px;cursor:pointer}
+.calc-toolbar button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.calc-toolbar button:focus-visible{outline:3px solid #8aafe4;outline-offset:2px}
+.calc-panel[hidden]{display:none}
+
 .calc-panel{padding:0;overflow:hidden;border-color:var(--line);background:var(--panel);box-shadow:0 2px 8px rgba(19,42,77,.035)}
 .calc-panel>summary{list-style:none;padding:13px 15px;display:flex;align-items:center;gap:11px;background:var(--panel);font-size:14px;flex-wrap:wrap}
 .calc-panel>summary::-webkit-details-marker{display:none}
@@ -3129,6 +3137,30 @@ function calcRouteCardHTML(group){
    (!group.math.length?'<div class="hint">No ATEmix value reported for this route.</div>':'')+
   '</details></div>';
 }
+// UI-only visibility controls. The original calculation is never filtered from
+// the report or modified; only collapsed panels and visibility change.
+let calcFilter="all";
+function calcToolbarHTML(){
+ return '<div class="calc-toolbar" role="group" aria-label="Calculation breakdown controls">'+
+  '<div class="calc-toolbar-group">'+
+   '<button type="button" data-calc-filter="all" aria-pressed="'+(calcFilter==="all")+'">All hazards</button>'+
+   '<button type="button" data-calc-filter="classified" aria-pressed="'+(calcFilter==="classified")+'">Classified only</button>'+
+   '<button type="button" data-calc-filter="review" aria-pressed="'+(calcFilter==="review")+'">Incomplete only</button>'+
+  '</div><div class="calc-toolbar-group">'+
+   '<button type="button" data-calc-toggle="open">Expand all</button>'+
+   '<button type="button" data-calc-toggle="close">Collapse all</button>'+
+  '</div></div>';
+}
+function applyCalcFilter(){
+ const root=$("res");
+ root.querySelectorAll?.(".calc-panel").forEach(panel=>{
+  panel.hidden=calcFilter!=="all" && (calcFilter==="classified"?
+    !["classified","incomplete"].includes(panel.dataset.status):
+    panel.dataset.status!=="incomplete");
+ });
+ root.querySelectorAll?.("[data-calc-filter]").forEach(b=>
+   b.setAttribute("aria-pressed",String(b.dataset.calcFilter===calcFilter)));
+}
 function calcExplanationHTML(h) {
  const kind=h.id==="aquatic" ? "M-factor summation and 25% limits"
    : h.id==="acute" ? "Route-specific ATE and mixture ATEmix"
@@ -3149,7 +3181,7 @@ function calcExplanationHTML(h) {
  const remaining=highlights.slice(leading.length);
  const notes=h.notes||[];
  const raw=(h.steps||[]).map(t=>'<div class="step">'+esc(t)+'</div>').join("");
- return '<details class="calc-panel" data-calc-id="'+esc(h.id)+'"'+
+ return '<details class="calc-panel" data-calc-id="'+esc(h.id)+'" data-status="'+esc(h.status)+'"'+
    (h.status==="classified"||h.status==="incomplete"?' open':'')+'>'+
   '<summary><span class="calc-heading"><strong>'+esc(h.name)+'</strong>'+
    (kind?'<small>'+esc(kind)+'</small>':'')+'</span><span class="badge '+esc(h.status)+'">'+esc(state)+'</span></summary>'+
@@ -3524,13 +3556,23 @@ function renderResult(r) {
   const hidden = r.hazards.filter((h) => !shown.includes(h) && h.status !== "na");
   L.push(`<div class="card" data-view="calculation"><h2>Calculation breakdown</h2>
     <div class="calc-intro"><strong>Result first:</strong> each hazard shows the mixture classification, key calculation and review notes. Open route cards or supporting steps for more detail; the original engine calculation trail and regulatory reference remain available unchanged.</div>
+    ${calcToolbarHTML()}
     ${shown.map(calcExplanationHTML).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
   L.push(ingredientInsightsHTML(r));
   L.push(`<div class="card" data-view="notes"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, full tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, partial Article 28 Annex I/IV P-statement catalogue and final regulatory review, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
   $("res").innerHTML = L.join("");
   applyViewerSettings();
+  applyCalcFilter();
 }
+$("res").addEventListener("click",event=>{
+ const filter=event.target.closest?.("button[data-calc-filter]");
+ if(filter){calcFilter=filter.dataset.calcFilter;applyCalcFilter();return;}
+ const toggle=event.target.closest?.("button[data-calc-toggle]");
+ if(toggle){$("res").querySelectorAll?.(".calc-panel:not([hidden])").forEach(panel=>{
+  panel.open=toggle.dataset.calcToggle==="open";
+ });}
+});
 let tm = null;
 function update() { save(); clearTimeout(tm); tm = setTimeout(compute, 60); }
 function compute() {
