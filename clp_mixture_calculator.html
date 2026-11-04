@@ -2973,7 +2973,7 @@ window.addEventListener("resize",()=>{
 $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
-$("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i);showIngredientEditor(i._id); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
+$("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input[data-p="name"]`); if (el) el.focus(); };
 $("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
