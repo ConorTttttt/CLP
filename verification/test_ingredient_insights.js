@@ -111,6 +111,11 @@ test("Skin Corr with lower SCL remains relevant below 1%",()=>{
  const x=ui.ingredientCutoffDetails(i).find(x=>x.id==="skin");
  assert.equal(x.status,"included");assert.equal(x.cut,0);
 });
+test("Zero concentration does not pass a sub-1% SCL relevance screen",()=>{
+ const i=ing(0,"H314",{skinCorr:"1A",scl:{skinCorr:"0.5"}});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.id==="skin");
+ assert.equal(x.status,"below");
+});
 test("Non-hazardous ingredient has no identified hazard rows",()=>{
  const x=ui.ingredientContributionModel(ing(20,""),{outcomes:[]});
  assert.equal(x.entries.length,0);assert.equal(x.count,0);
