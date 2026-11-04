@@ -4,9 +4,9 @@ const I=(name,pct,acute={},hhnoc=false)=>({name,pct,acute,hhnoc});
 const C=(ingredients)=>W.classify({ingredients});
 const result=(r,route)=>r.calculations.find(c=>c.route===route);
 let n=0;function test(title,fn){fn();n++;console.log("PASS "+title)}
-test("valid oral Category 4 at 100 mg/kg from 20% ATE20",()=>{
- const r=C([I("Toxic",20,{oral:20,dermal:{notAcute:true}}),I("Inert",80,{oral:{notAcute:true},dermal:{notAcute:true}})]);
- assert.equal(result(r,"oral").category,4);assert.equal(result(r,"oral").ate,100);
+test("valid oral Category 4 at 500 mg/kg from 20% ATE100",()=>{
+ const r=C([I("Toxic",20,{oral:100,dermal:{notAcute:true}}),I("Inert",80,{oral:{notAcute:true},dermal:{notAcute:true}})]);
+ assert.equal(result(r,"oral").category,4);assert.equal(result(r,"oral").ate,500);
 });
 test("unknown >10% changes numerator",()=>{
  const r=C([I("Known",20,{oral:200,dermal:{notAcute:true}}),I("Unknown",20,{dermal:{notAcute:true}}),I("Other",60,{oral:{notAcute:true},dermal:{notAcute:true}})]);
