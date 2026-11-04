@@ -3150,7 +3150,7 @@ function ingredientCutoffDetails(i){
  const pct=CLP.num(i.pct),valid=Number.isFinite(pct)&&pct>=0&&pct<=100,rows=[];
  const scl=(key)=>{const n=CLP.num(i.scl?.[key]);return Number.isFinite(n)&&n>0&&n<=100?n:null;};
  const add=(id,label,cut,source,extra="")=>{
-   const status=valid&&Number.isFinite(cut)?pct+1e-9>=cut?"included":"below":"review";
+   const status=valid&&Number.isFinite(cut)?(cut===0?pct>0:pct+1e-9>=cut)?"included":"below":"review";
    rows.push({id,label,cut,status,source,extra});
  };
  const limit=(key,defaultValue)=>scl(key)??defaultValue;
@@ -3233,7 +3233,7 @@ function ingredientContributionDetailsHTML(i,r){
    '<div class="contrib-entry"><div><b>'+esc(e.label)+'</b><div class="hint">'+esc(e.source)+'</div></div>'+
    '<div><span class="contrib-state '+e.status+'">'+
     (e.status==="below"?"Below cut-off":e.status==="included"?"At/above cut-off":"Review")+'</span>'+
-    (Number.isFinite(e.cut)?'<div class="contrib-math">'+esc(CLP.fmt(pct))+'% '+(e.status==="below"?"&lt;":"≥")+' '+esc(CLP.fmt(e.cut))+'%</div>':'')+'</div>'+
+    (Number.isFinite(e.cut)?'<div class="contrib-math">'+esc(CLP.fmt(pct))+'% '+(e.status==="below"?"&lt;":e.cut===0?"&gt;":"≥")+' '+(e.cut===0?"0 (any positive amount)":esc(CLP.fmt(e.cut))+"%")+'</div>':'')+'</div>'+
    '<div>'+(e.mixture.length?'Mixture: '+esc(e.mixture.join(", ")):'No matching mixture classification')+
     (e.extra?'<div class="hint">'+esc(e.extra)+'</div>':'')+'</div></div>').join(""):
    '<p class="hint">No entered ingredient hazard classifications to assess.</p>')+
