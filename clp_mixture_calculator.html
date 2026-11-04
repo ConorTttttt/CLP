@@ -2315,20 +2315,31 @@ function hazardQueryCategory(query){
 function hazardChipLabel(code,i){
  const base=HAZARD_MAP.get(code)?.classification||"Unmapped code";
  const spec=HAZARD_SUBCATEGORIES[code];
- if(spec&&i?.[spec.field]&&spec.cats.includes(String(i[spec.field])))
-   return spec.prefix+" "+i[spec.field];
- if(code==="H315"&&i?.skinCorr==="2")return "Skin Irrit. 2";
- if(code==="H318"&&i?.eye==="1")return "Eye Dam. 1";
- if(code==="H319"&&i?.eye==="2")return "Eye Irrit. 2";
- if(code==="H410"&&i?.aquaChronic==="1")return "Aquatic Chronic 1"+(i.mChronic?" · M="+i.mChronic:"");
- if(code==="H400"&&i?.aquaAcute)return "Aquatic Acute 1"+(i.mAcute?" · M="+i.mAcute:"");
- const acuteRoute=/^H30[012]$/.test(code)?"oral":/^H31[012]$/.test(code)?"dermal":/^H33[012]$/.test(code)?"inh":null;
- if(acuteRoute&&i?.acute?.[acuteRoute]){
-   const a=i.acute[acuteRoute],nom=String(a.cat||"");
-   const route=acuteRoute==="inh"?"inhalation":acuteRoute;
-   return "Acute Tox. "+(nom||base.replace(/^.*?(\d(?:\/\d)?).*$/,"$1"))+" "+route+(a.ate?" · ATE "+a.ate:"");
+ let label=base, sclKey="";
+ if(spec&&i?.[spec.field]&&spec.cats.includes(String(i[spec.field]))){
+   label=spec.prefix+" "+i[spec.field];
+   sclKey=spec.field;
+ } else if(code==="H315"&&i?.skinCorr==="2"){label="Skin Irrit. 2";sclKey="skinIrrit";}
+ else if(code==="H318"&&i?.eye==="1"){label="Eye Dam. 1";sclKey="eyeDam";}
+ else if(code==="H319"&&i?.eye==="2"){label="Eye Irrit. 2";sclKey="eyeIrrit";}
+ else if(code==="H410"&&i?.aquaChronic==="1")label="Aquatic Chronic 1"+(i.mChronic?" · M="+i.mChronic:"");
+ else if(code==="H400"&&i?.aquaAcute)label="Aquatic Acute 1"+(i.mAcute?" · M="+i.mAcute:"");
+ else if(code==="H370"||code==="H371"){label="STOT SE "+(i?.stotSE|| (code==="H370"?"1":"2"));sclKey="stotSE";}
+ else if(code==="H372"||code==="H373"){label="STOT RE "+(i?.stotRE|| (code==="H372"?"1":"2"));sclKey="stotRE";}
+ else {
+   const route=/^H30[012]$/.test(code)?"oral":/^H31[012]$/.test(code)?"dermal":/^H33[012]$/.test(code)?"inh":null;
+   if(route&&i?.acute?.[route]){
+     const a=i.acute[route];
+     const suffix=route==="inh"?"inhalation":route;
+     label="Acute Tox. "+(a.cat||base.replace(/^.*?(\d(?:\/\d)?).*$/,"$1"))+" "+suffix+
+       (a.ate?" · ATE "+a.ate:"");
+   }
  }
- return base;
+ // Show only an applicable, entered SCL: do not imply an SCL for endpoints
+ // that are not represented in the ingredient's detailed classification.
+ const limit=i?.scl?.[sclKey];
+ if(sclKey&&limit!==undefined&&limit!==null&&String(limit).trim()!=="")label+=" · SCL "+limit+"%";
+ return label;
 }
 function searchHazards(group,query,existing=[]){
  const q=String(query||"").trim().toLowerCase();
