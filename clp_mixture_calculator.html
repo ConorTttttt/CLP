@@ -2813,6 +2813,7 @@ $("ings").addEventListener("click", (e) => {
   const id=Number(disclosure.dataset.contributionToggle);
   ingredientBreakdownsOpen.has(id)?ingredientBreakdownsOpen.delete(id):ingredientBreakdownsOpen.add(id);
   renderIngs();if(last)renderIngredientInsightMarkers(last);
+  document.querySelector('tr[data-id="'+id+'"] button[data-contribution-toggle]')?.focus();
   return;
  }
  const editChip=e.target.closest("button[data-edit-hazard]");
