@@ -7,7 +7,7 @@ assert(start>=0&&end>start,"Ingredient screening functions missing");
 const code=app.slice(start,end),esc=x=>String(x??"").replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
 let mix={ingredients:[],state:"liquid"},codes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(x=>x.code);
 const fn=new Function("CLP","esc","ingredientHCodes","getMix",code.replace("const rows=mix.ingredients.map","const rows=getMix().ingredients.map").replace("mix.state===","getMix().state===")+
- "\nreturn {ingredientSection3Signals,hazardIngredientRelevant,ingredientInsightsHTML};");
+ "\nreturn {ingredientSection3Signals,hazardIngredientRelevant,ingredientInsightsHTML,ingredientCutoffDetails,ingredientContributionModel,ingredientContributionDetailsHTML};");
 const ui=fn(CLP,esc,codes,()=>mix);
 const ing=(pct,codes="",props={})=>{const i=CLP.blankIngredient();i.name=props.name||"Test";i.pct=String(pct);CLP.applyHCodes(i,codes);return Object.assign(i,props);};
 const screen=(i,classified=true,gas=false)=>ui.ingredientSection3Signals(i,classified,gas);
@@ -73,5 +73,65 @@ test("Insight panel separates SDS disclosure from mixture contributor flags",()=
  assert.match(text,/potential contributor/);
  assert.match(text,/Disclose — indicated/);
  assert.match(text,/data-view="ingredientsInsight"/);
+});
+
+test("Aquatic Chronic 1 M=10 below 0.01% is screened below cut-off",()=>{
+ const i=ing(0.005,"H410",{aquaChronic:"1",mChronic:"10"});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
+ assert.equal(x.cut,0.01);assert.equal(x.status,"below");
+});
+test("Aquatic Chronic 1 M=10 at 0.01% is included",()=>{
+ const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:"10"});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
+ assert.equal(x.status,"included");
+});
+test("Aquatic M-factor missing explicitly requests review",()=>{
+ const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:""});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
+ assert.equal(x.status,"review");
+ assert.match(x.extra,/M-factor missing/);
+});
+test("Acute 4 at 0.5% is below the engine's 1% cut-off",()=>{
+ const i=ing(0.5,"H302");
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label.startsWith("Acute toxicity — Oral"));
+ assert.equal(x.cut,1);assert.equal(x.status,"below");
+});
+test("ATE-provided ingredient requires derived category review",()=>{
+ const i=ing(2,"H302");i.acute.oral.ate="350";
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label.startsWith("Acute toxicity — Oral"));
+ assert.equal(x.status,"review");
+});
+test("STOT SE Category 3 below 1% is screened out",()=>{
+ const i=ing(0.5,"H335");
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="STOT SE Cat. 3 effects");
+ assert.equal(x.status,"below");
+});
+test("Skin Corr with lower SCL remains relevant below 1%",()=>{
+ const i=ing(0.3,"H314",{skinCorr:"1A",scl:{skinCorr:"0.5"}});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.id==="skin");
+ assert.equal(x.status,"included");assert.equal(x.cut,0);
+});
+test("Non-hazardous ingredient has no identified hazard rows",()=>{
+ const x=ui.ingredientContributionModel(ing(20,""),{outcomes:[]});
+ assert.equal(x.entries.length,0);assert.equal(x.count,0);
+});
+test("Matching mixture result counted even if below cut-off, with explicit flag",()=>{
+ const i=ing(0.005,"H410",{aquaChronic:"1",mChronic:"10"});
+ const r={outcomes:[{hazardId:"aquatic",label:"Aquatic Chronic 2"}]};
+ const x=ui.ingredientContributionModel(i,r);
+ assert.equal(x.count,1);assert.equal(x.below,1);
+ assert.match(ui.ingredientContributionDetailsHTML(i,r),/Below cut-off/);
+ assert.match(ui.ingredientContributionDetailsHTML(i,r),/Aquatic Chronic 2/);
+});
+test("Nonmatching hazards still appear in detail rows",()=>{
+ const i=ing(3,"H315");const r={outcomes:[{hazardId:"aquatic",label:"Aquatic Chronic 3"}]};
+ const x=ui.ingredientContributionModel(i,r);
+ assert.equal(x.count,0);
+ assert.match(ui.ingredientContributionDetailsHTML(i,r),/No matching mixture classification/);
+});
+test("Physical source hazard flags review instead of implying mixture contribution",()=>{
+ const i=ing(20,"H225");
+ const rows=ui.ingredientCutoffDetails(i).filter(x=>x.id==="physical");
+ assert(rows.length>=1);assert(rows.every(x=>x.status==="review"));
 });
 console.log(n+" ingredient contribution / Section 3 checks passed");
