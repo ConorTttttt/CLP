@@ -84,6 +84,21 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 
 /* Compact ingredient editor experiment: preserves existing CLP data and controls. */
 
+
+#ingredients-card .insight-drill{border:1px solid var(--line);text-align:left;white-space:normal;cursor:pointer}
+#ingredients-card .insight-drill:focus-visible{outline:3px solid #8cbaee;outline-offset:2px}
+#ingredients-card tr[data-contribution-row] td{padding:0 5px 12px!important;border:0}
+#ingredients-card .contrib-breakdown{padding:12px;background:var(--panel);border:1px solid #b4cce6;border-radius:10px}
+#ingredients-card .contrib-heading{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+#ingredients-card .contrib-heading small{color:var(--mute)}
+#ingredients-card .contrib-entry{padding:10px;margin:6px 0;border:1px solid var(--line);border-radius:7px;background:var(--bg);display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(105px,.7fr) minmax(145px,1fr);gap:10px;font-size:12px}
+#ingredients-card .contrib-state{padding:4px 7px;border-radius:6px;font-weight:700;font-size:11px;display:inline-block}
+#ingredients-card .contrib-state.included{background:#dff2e6;color:#205839}
+#ingredients-card .contrib-state.below{background:#fff0d9;color:#815200}
+#ingredients-card .contrib-state.review{background:#ebeafb;color:#524987}
+#ingredients-card .contrib-math{font:12px/1.6 ui-monospace,Consolas,monospace;margin-top:4px}
+@media(max-width:720px){#ingredients-card .contrib-entry{grid-template-columns:1fr}}
+
 /* Hazard entry remains available while ingredient details are collapsed. */
 #ingredients-card tr.ing td.ix-identity{min-width:230px}
 #ingredients-card .ix-quicksearch{margin-top:7px}
@@ -2151,7 +2166,7 @@ function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
-  mix = m; open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear();
+  mix = m; open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear();
 }
 
 /* ---------- mixture fields ---------- */
@@ -2769,6 +2784,7 @@ function renderIngs(){
    </td>
   </tr>
   ${open.has(i._id)?`<tr data-detrow="${i._id}"><td colspan="5" id="ingredient-editor-${i._id}">${ingredientWorkspaceHTML(i)}</td></tr>`:""}
+  ${ingredientBreakdownsOpen.has(i._id)?`<tr data-contribution-row="${i._id}"><td colspan="5" id="ingredient-contributions-${i._id}"><div data-contribution-detail></div></td></tr>`:""}
  `).join("");
 }
 function refreshRow(id){
@@ -2792,6 +2808,13 @@ function refreshSummaryOnly(id){
   ingredientHCodes(ing).length+" hazard(s)";
 }
 $("ings").addEventListener("click", (e) => {
+ const disclosure=e.target.closest("button[data-contribution-toggle]");
+ if(disclosure){
+  const id=Number(disclosure.dataset.contributionToggle);
+  ingredientBreakdownsOpen.has(id)?ingredientBreakdownsOpen.delete(id):ingredientBreakdownsOpen.add(id);
+  renderIngs();if(last)renderIngredientInsightMarkers(last);
+  return;
+ }
  const editChip=e.target.closest("button[data-edit-hazard]");
  if(editChip){
   const id=Number(editChip.closest("tr[data-id]")?.dataset.id);
@@ -2834,7 +2857,7 @@ $("ings").addEventListener("click", (e) => {
   }
   else if (b.dataset.act === "del") {
     mix.ingredients = mix.ingredients.filter((x) => x._id !== id);
-    open.delete(id); ingredientTabs.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
+    open.delete(id); ingredientTabs.delete(id); ingredientBreakdownsOpen.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
     renderIngs(); update();
   } else { open.has(id) ? open.delete(id) : open.add(id); renderIngs();if(last)renderIngredientInsightMarkers(last); }
 });
@@ -2974,7 +2997,7 @@ $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
 $("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input[data-p="name"]`); if (el) el.focus(); };
-$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
 function renderManual() {
@@ -3119,6 +3142,104 @@ function hazardIngredientRelevant(h,i) {
  if(id==="ozone")return !!i.ozone;
  return false;
 }
+
+/* UI-only cut-off screen. CLP decisions remain exclusively in CLP.classify().
+   Unknown cut-offs are shown as "Review", never silently excluded. */
+const ingredientBreakdownsOpen=new Set();
+function ingredientCutoffDetails(i){
+ const pct=CLP.num(i.pct),valid=Number.isFinite(pct)&&pct>=0&&pct<=100,rows=[];
+ const scl=(key)=>{const n=CLP.num(i.scl?.[key]);return Number.isFinite(n)&&n>0&&n<=100?n:null;};
+ const add=(id,label,cut,source,extra="")=>{
+   const status=valid&&Number.isFinite(cut)?pct+1e-9>=cut?"included":"below":"review";
+   rows.push({id,label,cut,status,source,extra});
+ };
+ const limit=(key,defaultValue)=>scl(key)??defaultValue;
+ for(const [route,title] of [["oral","Oral"],["dermal","Dermal"],["inh","Inhalation"]]){
+  const a=i.acute?.[route]||{},cat=String(a.cat||""),ate=CLP.num(a.ate);
+  if(!cat&&!(Number.isFinite(ate)&&ate>0))continue;
+  add("acute","Acute toxicity — "+title,
+   Number.isFinite(ate)&&ate>0?null:({"1":0.1,"2":0.1,"3":0.1,"4":1})[cat]??null,
+   "CLP Table 1.1; route-specific",
+   Number.isFinite(ate)&&ate>0?"ATE takes priority; derived category and cut-off need engine verification.":"");
+ }
+ if(i.skinCorr){
+  const kind=i.skinCorr==="2"?"skinIrrit":"skinCorr",own=scl(kind);
+  add("skin",i.skinCorr==="2"?"Skin Irrit. 2":"Skin Corr. "+i.skinCorr,
+   own!==null&&own<1?0:1,"CLP §3.2.3.3 relevance",
+   own!==null&&own<1?"Sub-1% SCL: any positive amount is retained for the weighted calculation. Lower effect levels may still warrant review.":"");
+ }
+ if(i.eye||i.skinCorr){
+  const own=scl(i.eye==="2"?"eyeIrrit":"eyeDam");
+  add("eye",i.eye==="1"?"Eye Dam. 1":i.eye==="2"?"Eye Irrit. 2":"Skin corrosion relevant to eye damage",
+   own!==null&&own<1?0:1,"CLP §3.3.3 relevance",
+   !i.eye?"Review the skin-corrosion/eye-damage pathway.":"");
+ }
+ const direct=(id,label,cat,generic,key=id)=>{
+  if(cat) add(id,label+" "+cat,limit(key,generic),"CLP category threshold / entered SCL");
+ };
+ direct("skinSens","Skin Sens.",i.skinSens,({"1":1,"1A":0.1,"1B":1})[i.skinSens]);
+ direct("respSens","Resp. Sens.",i.respSens,({"1":1,"1A":0.1,"1B":1})[i.respSens]);
+ direct("muta","Muta.",i.muta,i.muta==="2"?1:0.1);
+ direct("carc","Carc.",i.carc,i.carc==="2"?1:0.1);
+ for(const key of ["repro","reproFert","reproDev"]){
+  const cat=i[key];if(cat)direct("repro",key+" Repr.",cat,cat==="2"?3:0.3,key);
+ }
+ if(i.lact)add("lact","Lact. (H362)",limit("lact",0.3),"CLP §3.7.3");
+ for(const id of ["stotSE","stotRE"]){
+  const cat=i[id];
+  if(cat==="1"||cat==="2")add(id,id+" "+cat,
+   cat==="1"?limit(id+"2",1):limit(id,10),
+   "CLP §§3.8/3.9: lower threshold triggering Cat. 2; Cat. 1 requires separate assessment");
+ }
+ if(i.stotSE==="3"||i.stotSEresp||i.stotSEnarc)
+  add("stotSE","STOT SE Cat. 3 effects",1,"CLP §3.8.3.4.6 relevance");
+ if(i.asp)add("asp","Aspiration hazard",1,"CLP §3.10.3.3.1.1 relevance");
+ if(i.aquaAcute){
+  const m=CLP.num(i.mAcute),ok=Number.isSafeInteger(m)&&m>=1;
+  add("aquatic","Aquatic Acute 1",ok?0.1/m:null,"CLP §4.1.3.1: 0.1% / M",
+      ok?"M-factor "+m:"M-factor missing or invalid: verify before excluding.");
+ }
+ if(i.aquaChronic){
+  const cat=i.aquaChronic,m=CLP.num(i.mChronic),ok=Number.isSafeInteger(m)&&m>=1;
+  add("aquatic","Aquatic Chronic "+cat,cat==="1"?(ok?0.1/m:null):1,
+    "CLP §4.1.3.1: "+(cat==="1"?"0.1% / M":"1% relevance"),
+    cat==="1"?(ok?"M-factor "+m:"M-factor missing or invalid: verify before excluding."):"");
+ }
+ for(const [id,label,value,cut] of [
+  ["edHH","ED human health",i.edHH,i.edHH==="1"?0.1:1],
+  ["edEnv","ED environment",i.edEnv,i.edEnv==="1"?0.1:1],
+  ["pbt","PBT",i.pbt,0.1],["vpvb","vPvB",i.vpvb,0.1],
+  ["pmt","PMT",i.pmt,0.1],["vpvm","vPvM",i.vpvm,0.1],["ozone","Ozone",i.ozone,0.1]]){
+  if(value)add(id,label,limit(id,cut),"CLP Annex I hazard-class threshold");
+ }
+ ingredientHCodes(i).filter(c=>groupForCode(c)==="physical").forEach(c=>
+   add("physical",c+" — "+hazardChipLabel(c,i),null,
+       "Physical mixture hazard not calculated from this ingredient's H-code."));
+ return rows;
+}
+function ingredientContributionModel(i,r){
+ const entries=ingredientCutoffDetails(i);
+ const outcomes=(r.outcomes||[]).filter(x=>!/^manual/.test(x.hazardId));
+ const matches=outcomes.filter(o=>entries.some(e=>e.id===o.hazardId));
+ return {entries:entries.map(e=>({...e,mixture:outcomes.filter(o=>o.hazardId===e.id).map(o=>o.label)})),
+   count:matches.length,below:entries.filter(e=>e.status==="below").length};
+}
+function ingredientContributionDetailsHTML(i,r){
+ const model=ingredientContributionModel(i,r),pct=CLP.num(i.pct);
+ return '<div class="contrib-breakdown"><div class="contrib-heading"><b>'+esc(i.name||"Ingredient")+
+  ' — hazard contribution screen</b><small>'+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"Concentration missing")+'</small></div>'+
+  '<p class="hint">The badge counts matching mixture classifications, not numerical or decisive contributors. “At/above cut-off” means the ingredient passes an applicable screening or category threshold; it does not mean this ingredient alone caused the mixture classification. “Below cut-off” is not an SDS Section 3 exemption.</p>'+
+  (model.entries.length?model.entries.map(e=>
+   '<div class="contrib-entry"><div><b>'+esc(e.label)+'</b><div class="hint">'+esc(e.source)+'</div></div>'+
+   '<div><span class="contrib-state '+e.status+'">'+
+    (e.status==="below"?"Below cut-off":e.status==="included"?"At/above cut-off":"Review")+'</span>'+
+    (Number.isFinite(e.cut)?'<div class="contrib-math">'+esc(CLP.fmt(pct))+'% '+(e.status==="below"?"&lt;":"≥")+' '+esc(CLP.fmt(e.cut))+'%</div>':'')+'</div>'+
+   '<div>'+(e.mixture.length?'Mixture: '+esc(e.mixture.join(", ")):'No matching mixture classification')+
+    (e.extra?'<div class="hint">'+esc(e.extra)+'</div>':'')+'</div></div>').join(""):
+   '<p class="hint">No entered ingredient hazard classifications to assess.</p>')+
+ '<p class="hint" style="margin-top:10px">See Calculation breakdown for actual additive, aquatic, ATE and other mixture calculations. Some low-level effects or substance-specific evidence can require expert review even below generic cut-offs.</p></div>';
+}
+
 function ingredientInsightsHTML(r){
  const rows=mix.ingredients.map((i,n)=>({i,n,pct:CLP.num(i.pct)}));
  const derived=r.outcomes.filter(o=>!/^manual/.test(o.hazardId));
@@ -3160,20 +3281,24 @@ function ingredientInsightsHTML(r){
 }
 function renderIngredientInsightMarkers(r){
  const classified=r.outcomes.length>0,gas=mix.state==="gas";
- const calculated=(r.outcomes||[]).filter(o=>!/^manual/.test(o.hazardId));
  mix.ingredients.forEach(i=>{
-   const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
-   if(!element)return;
-   const matches=calculated.filter(o=>hazardIngredientRelevant({id:o.hazardId},i));
-   const section=ingredientSection3Signals(i,classified,gas);
-   element.innerHTML='<span class="insight-tag '+(matches.length?'contributor':'not-contributor')+'" title="'+
-     esc(matches.length?'Ingredient has a hazard relevant to '+matches.map(x=>x.label).join(', '):
-       'No input hazard matched the calculated mixture classifications')+'">'+
-     (matches.length?'Potential contributor · '+matches.length:'No contributor identified')+'</span>'+
-     '<span class="insight-tag '+esc(section.status)+'" title="'+esc(section.reasons.join('; ')||
-       section.review.join('; '))+'">'+(section.status==='include'?'SDS §3: disclose indicated':'SDS §3: review')+'</span>';
+  const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
+  if(!element)return;
+  const model=ingredientContributionModel(i,r);
+  const section=ingredientSection3Signals(i,classified,gas);
+  const shown=ingredientBreakdownsOpen.has(i._id);
+  element.innerHTML='<button type="button" class="insight-tag insight-drill '+(model.count?'contributor':'not-contributor')+
+    '" data-contribution-toggle="'+i._id+'" aria-expanded="'+shown+
+    '" aria-controls="ingredient-contributions-'+i._id+'" title="See matching classifications and ingredient cut-offs">'+
+    (model.count?'Relevant to '+model.count+' mixture hazard'+(model.count===1?'':'s'):'No matching mixture hazards')+
+    (model.below?' · '+model.below+' below cut-off':'')+' ▾</button>'+
+    '<span class="insight-tag '+esc(section.status)+'" title="'+esc(section.reasons.join('; ')||
+      section.review.join('; '))+'">'+(section.status==="include"?"SDS §3: disclose indicated":"SDS §3: review")+'</span>';
+  const detail=document.querySelector('tr[data-contribution-row="'+i._id+'"] [data-contribution-detail]');
+  if(detail)detail.innerHTML=ingredientContributionDetailsHTML(i,r);
  });
 }
+
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
@@ -3316,7 +3441,7 @@ function exampleMix() {
   const W = newIng({ name: "Water", pct: "30" });
   return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
-$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- save / load / report ---------- */
 function download(name, text, type) { const b = new Blob([text], { type: type || "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
