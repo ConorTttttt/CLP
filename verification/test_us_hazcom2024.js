@@ -37,6 +37,14 @@ test("Oral Category 3 ATE input is independently calculated",()=>{
   assert.equal(oral.outcomes[0].category,3);assert.equal(oral.outcomes[0].ate,250);
   assert.ok(oral.steps.some(s=>/Table A.1.2/.test(s)));
 });
+test("Undiluted converted Cat 2 stays Cat 2 under A.1.3.3(c)",()=>{
+  const r=classify({ingredients:[ingredient(100,"oral",2,"")]});
+  assert.equal(r.sections.find(s=>s.id==="acute-oral").outcomes[0].category,2);
+});
+test("Diluted Category 2 ingredient is not promoted by A.1.3.3(c)",()=>{
+  const r=classify({ingredients:[ingredient(1,"oral",2,""),ingredient(99,null,null,null)]});
+  assert.equal(r.sections.find(s=>s.id==="acute-oral").outcomes[0].category,4);
+});
 test("Acute toxicity at 10% unknown uses full 100 numerator",()=>{
   const u=ingredient(10,null,null,null);u.acute.oral.unknown=true;
   const r=classify({ingredients:[ingredient(25,"oral",3,""),u,ingredient(65,null,null,null)]});
