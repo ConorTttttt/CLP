@@ -12,6 +12,28 @@ const ui=new Function("CLP","esc","$","mix","hazardPanelsOpen",s+
  "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,enteredHCodes,detailHCodes,clearDetailHazard,changeIngredientHazard,applyIngredientHazards,groupForCode,hazardChipLabel,hazardQueryCategory};")(C,esc,$,mix,hazardPanelsOpen);
 const make=(codes="")=>{const i=C.blankIngredient();i._id=1;C.applyHCodes(i,codes);mix.ingredients=[i];return i};
 let n=0;function test(name,fn){try{fn();n++}catch(e){throw Error(name+": "+e.message)}}
+test("Typing H314 immediately lists every skin corrosion subcategory",()=>{
+ const choices=ui.searchHazards("all","H314");
+ assert.deepEqual(choices.map(x=>x.category),["1","1A","1B","1C"]);
+ assert(choices.every(x=>x.code==="H314"));
+ assert.deepEqual(choices.map(x=>x.classification),
+   ["Skin Corr. 1","Skin Corr. 1A","Skin Corr. 1B","Skin Corr. 1C"]);
+});
+test("Typing other applicable H-codes lists available categories",()=>{
+ assert.deepEqual(ui.searchHazards("all","H317").map(x=>x.category),["1","1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H334").map(x=>x.category),["1","1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H350").map(x=>x.category),["1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H318").map(x=>x.code),["H318"]);
+});
+test("Class-name search shows subcategories without a qualified code",()=>{
+ const choices=ui.searchHazards("all","Skin Corr");
+ assert(choices.some(x=>x.code==="H314"&&x.category==="1C"));
+ assert(choices.some(x=>x.code==="H314"&&x.category==="1A"));
+});
+test("Autocomplete still caps choices at eight entries",()=>{
+ assert(ui.searchHazards("all","h").length<=8);
+ assert(ui.searchHazards("all","skin").length<=8);
+});
 test("Search supports H314 skin corrosion subcategories",()=>{
  for(const cat of ["1A","1B","1C"]){
   const items=ui.searchHazards("all","h314 "+cat);
@@ -23,7 +45,7 @@ test("Search supports H314 skin corrosion subcategories",()=>{
 test("Refine already selected H314 by typing subcategory",()=>{
  const h=ui.searchHazards("all","H314 1C",["H314"]);
  assert.equal(h[0]?.category,"1C");
- assert.deepEqual(ui.searchHazards("all","H314",["H314"]),[]);
+ assert.deepEqual(ui.searchHazards("all","H314",["H314"]).map(x=>x.category),["1","1A","1B","1C"]);
 });
 test("Category search validates supported code/category combinations",()=>{
  assert.equal(ui.searchHazards("all","H317 1A")[0]?.category,"1A");
@@ -106,7 +128,10 @@ test("Search bounded to group and eight suggestions",()=>{
  assert(ui.searchHazards("health","a").length<=8);
  assert.deepEqual(ui.searchHazards("health",""),[]);
 });
-test("Selected hazards excluded from suggestions",()=>assert(!ui.searchHazards("health","H314",["H314"]).some(x=>x.code==="H314")));
+test("Selected hazards can be refined by selecting another subcategory",()=>{
+ const choices=ui.searchHazards("health","H314",["H314"]);
+ assert.deepEqual(choices.map(x=>x.category),["1","1A","1B","1C"]);
+});
 test("Unified search covers all three hazard groups",()=>{
  assert(ui.searchHazards("all","H225").some(x=>x.code==="H225"));
  assert(ui.searchHazards("all","severe skin burns").some(x=>x.code==="H314"));
