@@ -2289,7 +2289,68 @@ const HAZARD_CHOICES=[
  ...Object.entries(HAZARD_ENVIRONMENTAL).map(([code,classification])=>({code,classification,text:CLP.HTEXT[code]||"Verify wording",group:"environmental"}))
 ];
 const HAZARD_MAP=new Map(HAZARD_CHOICES.map(item=>[item.code,item]));
-const ingredientHCodes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(item=>item.code);
+const enteredHCodes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(item=>item.code);
+// A classification entered under Details must appear in the same row as an
+// explicitly entered H-code; classification and statement code remain distinct.
+function detailHCodes(i){
+ const codes=[],add=(yes,code)=>{if(yes)codes.push(code);};
+ const acuteMap={oral:["H300","H300","H301","H302"],dermal:["H310","H310","H311","H312"],inh:["H330","H330","H331","H332"]};
+ for(const route of ["oral","dermal","inh"]){
+   const category=String(i.acute?.[route]?.cat||"");
+   if(["1","2","3","4"].includes(category))codes.push(acuteMap[route][Number(category)-1]);
+ }
+ add(["1","1A","1B","1C"].includes(i.skinCorr),"H314");
+ add(i.skinCorr==="2","H315");
+ add(i.eye==="1","H318");add(i.eye==="2","H319");
+ add(!!i.skinSens,"H317");add(!!i.respSens,"H334");
+ add(["1A","1B"].includes(i.muta),"H340");add(i.muta==="2","H341");
+ add(["1A","1B"].includes(i.carc),i.carcRoute==="inhalation"?"H350i":"H350");
+ add(i.carc==="2","H351");
+ const strong=c=>c==="1A"||c==="1B", f=i.reproFert,d=i.reproDev;
+ if(strong(f)&&strong(d))codes.push("H360FD");
+ else if(strong(f)&&d==="2")codes.push("H360Fd");
+ else if(f==="2"&&strong(d))codes.push("H360Df");
+ else if(f==="2"&&d==="2")codes.push("H361fd");
+ else{add(strong(f),"H360F");add(strong(d),"H360D");add(f==="2","H361f");add(d==="2","H361d");}
+ add(strong(i.repro),"H360");add(i.repro==="2","H361");
+ add(!!i.lact,"H362");
+ add(i.stotSE==="1","H370");add(i.stotSE==="2","H371");
+ add(!!i.stotSEresp,"H335");add(!!i.stotSEnarc,"H336");
+ add(i.stotRE==="1","H372");add(i.stotRE==="2","H373");
+ add(!!i.asp,"H304");
+ add(!!i.aquaAcute,"H400");
+ const aquatic={1:"H410",2:"H411",3:"H412",4:"H413"};
+ add(!!aquatic[i.aquaChronic],aquatic[i.aquaChronic]);
+ add(i.edHH==="1","EUH380");add(i.edHH==="2","EUH381");
+ add(i.edEnv==="1","EUH430");add(i.edEnv==="2","EUH431");
+ add(!!i.pbt,"EUH440");add(!!i.vpvb,"EUH441");
+ add(!!i.pmt,"EUH450");add(!!i.vpvm,"EUH451");
+ add(!!i.ozone,"H420");
+ return [...new Set(codes)];
+}
+const ingredientHCodes=i=>[...new Set([...enteredHCodes(i),...detailHCodes(i)])];
+function clearDetailHazard(i,code){
+ const field={
+ H314:"skinCorr",H315:"skinCorr",H318:"eye",H319:"eye",
+ H317:"skinSens",H334:"respSens",H340:"muta",H341:"muta",
+ H350:"carc",H350i:"carc",H351:"carc",H360:"repro",H361:"repro",
+ H362:"lact",H370:"stotSE",H371:"stotSE",H372:"stotRE",H373:"stotRE",
+ H335:"stotSEresp",H336:"stotSEnarc",H304:"asp",H400:"aquaAcute",
+ H410:"aquaChronic",H411:"aquaChronic",H412:"aquaChronic",H413:"aquaChronic",
+ H420:"ozone",EUH380:"edHH",EUH381:"edHH",EUH430:"edEnv",EUH431:"edEnv",
+ EUH440:"pbt",EUH441:"vpvb",EUH450:"pmt",EUH451:"vpvm"
+ }[code];
+ const route=/^H30[012]$/.test(code)?"oral":/^H31[012]$/.test(code)?"dermal":/^H33[012]$/.test(code)?"inh":null;
+ if(route){i.acute[route].cat="";return;}
+ if(["H360FD","H360Fd","H360Df","H361fd"].includes(code)){
+   i.reproFert="";i.reproDev="";return;
+ }
+ if(code==="H360F"||code==="H361f"){i.reproFert="";return;}
+ if(code==="H360D"||code==="H361d"){i.reproDev="";return;}
+ if(!field)return;
+ i[field]=typeof i[field]==="boolean"?false:"";
+ if(field==="carc")i.carcRoute="";
+}
 function groupForCode(code){
  return HAZARD_MAP.get(code)?.group||(/^H2/.test(code)?"physical":/^H4|^EUH4/.test(code)?"environmental":"health");
 }
@@ -2359,7 +2420,9 @@ function searchHazards(group,query,existing=[]){
 }
 function hazardChip(code,i){
  const entry=HAZARD_MAP.get(code),label=hazardChipLabel(code,i);
- return `<span class="hazard-chip" title="${esc(entry?.text||'Check source evidence')}">
+ const detailsOnly=!enteredHCodes(i).includes(code);
+ return `<span class="hazard-chip" data-hazard-origin="${detailsOnly?"details":"entered"}"
+   title="${esc((detailsOnly?"From ingredient Details":"Entered H/EUH code")+": "+(entry?.text||'Check source evidence'))}">
    <strong>${esc(code)}</strong><span>${esc(label)}</span>
    <button type="button" data-remove-hazard="${esc(code)}" title="Remove ${esc(code)}"
      aria-label="Remove ${esc(code)}: ${esc(label)}">×</button>
@@ -2574,6 +2637,8 @@ function refreshSummaryOnly(id) {
  if(section)section.innerHTML=summaryChips(ing);
  const row=document.querySelector(`tr[data-id="${id}"] [data-hazard-row-chips]`);
  if(row)row.innerHTML=hazardRowChipsHTML(ing);
+ const count=document.querySelector(`tr[data-sum="${id}"] [data-hazard-selected-count]`);
+ if(count)count.textContent=String(ingredientHCodes(ing).length);
 }
 
 $("ings").addEventListener("click", (e) => {
@@ -2704,7 +2769,9 @@ $("ings").addEventListener("click",event=>{
    const ing=mix.ingredients.find(i=>i._id===id);
    if(!ing)return;
    const removedCode=remove.dataset.removeHazard;
+   const wasEntered=enteredHCodes(ing).includes(removedCode);
    changeIngredientHazard(ing,removedCode,false);
+   if(!wasEntered)clearDetailHazard(ing,removedCode);
    refreshRow(id);update();
    // The chip was removed from the DOM: restore keyboard focus to the next
    // remaining chip, or the Add/edit button when there are no more chips.
