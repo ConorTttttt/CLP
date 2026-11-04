@@ -33,7 +33,7 @@ test("Calculation output remains escaped",()=>{
 });
 test("Classified hazard expanded initially and raw trail retained",()=>{
  const out=ui.calcExplanationHTML(acute);
- assert.match(out,/data-calc-id="acute" open/);
+ assert.match(out,/data-calc-id="acute"[^>]* open/);
  assert.match(out,/Original calculation trail and regulatory reference/);
  assert.match(out,/calc-result-caption/);
 });
@@ -51,7 +51,7 @@ test("Review notes displayed clearly",()=>{
 test("Not-classified hazards remain collapsible",()=>{
  const skin=r.hazards.find(h=>h.id==="skin");
  const out=ui.calcExplanationHTML(skin);
- if(skin.status==="not")assert(!/data-calc-id="skin" open/.test(out));
+ if(skin.status==="not")assert(!/data-calc-id="skin"[^>]* open/.test(out));
  assert.match(out,/Original calculation trail and regulatory reference/);
 });
 test("No extra classified outcomes invented for blank hazard",()=>{
