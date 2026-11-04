@@ -13,7 +13,8 @@ function setup(saved={}){
  const elements={};const $=id=>elements[id]||(elements[id]={innerHTML:'',textContent:'',hidden:false,events:{},addEventListener(k,f){this.events[k]=f}});
  const document={nodes:[],querySelectorAll(){this.nodes=[...$('res').innerHTML.matchAll(/data-view="([^"]+)"/g)].map(m=>({dataset:{view:m[1]},hidden:false}));return this.nodes}};
  const esc=x=>String(x||'');
- const ui=new Function('
+ const ui=new Function('$','document','localStorage','esc','CLP','mix','ingredientHCodes',code+
+   '\nreturn {renderResult,setViewerPreferences,viewerSettings,VIEWER_OPTIONS};')($,document,localStorage,esc,{fmt:String,num:Number},{ingredients:[],state:'liquid'},()=>[]);
  return {ui,store,$,document};
 }
 function example(){
