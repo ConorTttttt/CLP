@@ -81,6 +81,21 @@ details.h{border-top:1px solid var(--line);padding:5px 0}
 details.h>summary{cursor:pointer;font-weight:600;font-size:13.5px}
 details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .step{white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
+.insight-hazard{border:1px solid var(--line);border-radius:8px;margin:7px 0;padding:9px 11px;background:var(--panel)}
+.insight-hazard>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.insight-chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.insight-pill{font-size:12px;border-radius:7px;padding:5px 8px;border:1px solid var(--line)}
+.insight-yes{background:#e8f6ee;border-color:#85c9a2;color:#195a35}
+.insight-no{background:var(--bg);color:var(--mute)}
+.insight-table-wrap{overflow-x:auto;margin-top:10px}
+.insight-table{width:100%;border-collapse:collapse;font-size:12px;min-width:630px}
+.insight-table th,.insight-table td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}
+.insight-table th{background:var(--panel);font-weight:700}
+.insight-tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:5px 7px}
+.insight-tag.include{background:#e8f6ee;color:#195a35}
+.insight-tag.review{background:#fff2d9;color:#805100}
+.insight-tag.no-trigger{background:var(--panel);color:var(--mute)}
+@media(prefers-color-scheme:dark){.insight-yes,.insight-tag.include{background:#173e2b;color:#b3ebca;border-color:#377c52}.insight-tag.review{background:#49351b;color:#ffda9a}}
 .calc-intro{font-size:12.5px;color:var(--mute);margin:6px 0 12px}
 .calc-panel{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:10px 12px;margin:9px 0}
 .calc-panel>summary{cursor:pointer;font-weight:650;font-size:13px}
@@ -1999,6 +2014,7 @@ const VIEWER_OPTIONS = Object.freeze([
   { key:"article28", label:"Article 28 — P decisions", group:"Result sections" },
   { key:"sds", label:"SDS-on-request triggers", group:"Result sections" },
   { key:"calculation", label:"Calculation trail", group:"Result sections" },
+  { key:"ingredientsInsight", label:"Ingredient contributions and SDS Section 3", group:"Result sections" },
   { key:"notes", label:"Notes & limitations", group:"Result sections" },
   { key:"report", label:"Plain-text report panel", group:"Result sections" },
   { key:"labelSignal", label:"Signal word", group:"Inside label elements" },
@@ -2214,6 +2230,14 @@ function detailHTML(i) {
   </div></details>
   </section>
   <section class="detail-category" data-detail-category="shared">
+    <h4>SDS Section 3 supplementary criteria</h4>
+    <div class="hint">Only tick a criterion when verified from a substance-level source. These flags influence the Section 3 screening preview; they do not change CLP mixture classification. If an ingredient is itself a mixture/raw material, assess its individual constituent substances before finalising Section 3.</div>
+    <div class="g g3" style="margin:8px 0 12px">
+      <div>${CHK("sdsUnionOEL", i.sdsUnionOEL, "EU workplace exposure limit", "EU-level OEL; a national-only limit may require additional jurisdictional review.")}</div>
+      <div>${CHK("sdsSVHC", i.sdsSVHC, "Candidate List substance (Article 59)")}</div>
+      <div>${CHK("sdsPBT", i.sdsPBT, "REACH Annex XIII PBT/vPvB")}</div>
+      <div>${CHK("sdsED", i.sdsED, "ED under EU 2017/2100 or 2018/605", "This criterion is distinct from CLP ED hazard categories.")}</div>
+    </div>
     <h4>Shared limits &amp; source evidence</h4>
   <details class="detail-group" data-detail-section="otherSCL"${sectionOpen("otherSCL")}><summary>Specific concentration limits for this ingredient (Annex VI / Inventory) &mdash; blank = generic limit</summary><div class="detail-group-body">
     <div class="g g4">${sclF("skinSens", "Skin sens.")}${sclF("respSens", "Resp. sens.")}${sclF("muta", "Muta.")}${sclF("carc", "Carc.")}${sclF("repro", "Repr. common")}${sclF("reproFert", "Repr. fertility")}${sclF("reproDev", "Repr. development")}${sclF("lact", "Lact.")}${sclF("stotSE", "STOT SE")}${sclF("stotSE2", "STOT SE Cat 2 band (Cat 1 subst.)")}${sclF("stotRE", "STOT RE")}${sclF("stotRE2", "STOT RE Cat 2 band (Cat 1 subst.)")}${sclF("edHH", "ED HH")}${sclF("edEnv", "ED ENV")}</div>
@@ -2870,6 +2894,129 @@ function calcExplanationHTML(h) {
     '</details></details>';
 }
 
+
+/* Transparent screening for REACH Annex II §3.2. Do not treat source materials
+   as pure substances unless that has independently been verified.
+   Returns explanations and candidate hazard links, never a legal SDS approval. */
+function ingredientSection3Signals(i, mixtureClassified, gas) {
+ const pct=CLP.num(i.pct),present=Number.isFinite(pct)&&pct>0;
+ const reasons=[],review=[],bands=[];
+ const add=(label,limit,source)=>{if(limit===null||!Number.isFinite(limit)||limit<0)return;
+   bands.push({label,limit,source});
+   if(present&&pct+1e-9>=limit)reasons.push(label+" ("+CLP.fmt(pct)+"% ≥ "+CLP.fmt(limit)+"%; "+source+")");
+ };
+ const scl=(key)=>{const n=CLP.num(i.scl?.[key]);return Number.isFinite(n)&&n>0&&n<=100?n:null;};
+ const reduce=(base,key,ratio=1)=>{const n=scl(key);return n===null?base:Math.min(base,n*ratio);};
+ const sensitiser=(cat,key)=>cat==="1A"?0.01:reduce(0.1,key,0.1);
+ const chronic=String(i.aquaChronic||"");
+ const acute=i.acute||{};
+ const cats=["oral","dermal","inh"].map(r=>String(acute[r]?.cat||"")).filter(Boolean);
+ const hazardous=ingredientHCodes(i).some(c=>/^H3|^H4|^EUH3|^EUH4/.test(c));
+ const special=!!(i.sdsSVHC||i.sdsPBT||i.sdsED);
+ if(!Number.isFinite(pct)||pct<0||pct>100){review.push("Enter a valid constituent concentration.");return {status:"review",reasons,review,bands};}
+ if(mixtureClassified){
+  for(const c of cats)add("Acute toxicity Cat. "+c,c==="4"?1:0.1,"REACH Annex II Table 1.1");
+  if(i.skinCorr)add("Skin corrosion/irritation",reduce(1,i.skinCorr==="2"?"skinIrrit":"skinCorr"),"Table 1.1 / entered SCL");
+  if(i.eye)add("Serious eye damage/irritation",reduce(1,i.eye==="1"?"eyeDam":"eyeIrrit"),"Table 1.1 / entered SCL");
+  if(i.skinSens)add("Skin sensitiser",sensitiser(i.skinSens,"skinSens"),"Table 1.1 / one tenth of SCL");
+  if(i.respSens)add("Respiratory sensitiser",sensitiser(i.respSens,"respSens"),"Table 1.1 / one tenth of SCL");
+  if(i.muta)add("Germ cell mutagen",reduce(i.muta==="2"?1:0.1,"muta"),"Table 1.1 / entered SCL");
+  if(i.carc)add("Carcinogen",reduce(0.1,"carc"),"Table 1.1 / entered SCL");
+  if(i.repro||i.reproFert||i.reproDev||i.lact)add("Reproductive toxicity / lactation",Math.min(
+    ...["repro","reproFert","reproDev","lact"].filter(k=>i[k]).map(k=>reduce(0.1,k))),"Table 1.1 / entered SCL");
+  if(i.stotSE)add("STOT single exposure",reduce(1,"stotSE"),"Table 1.1 / entered SCL");
+  if(i.stotRE)add("STOT repeated exposure",reduce(1,"stotRE"),"Table 1.1 / entered SCL");
+  if(i.asp)add("Aspiration hazard",1,"Annex II §3.2.1(a)(ii)");
+  if(i.aquaAcute){
+    const m=CLP.num(i.mAcute);const cut=Number.isFinite(m)&&m>=1?0.1/m:0.1;
+    add("Aquatic Acute 1",cut,"Table 1.1 / M-factor cut-off");
+    if(!Number.isFinite(m)||m<1)review.push("Verify the Aquatic Acute 1 M-factor.");
+  }
+  if(chronic)add("Aquatic Chronic "+chronic,chronic==="1"?0.1/((CLP.num(i.mChronic)>=1)?CLP.num(i.mChronic):1):1,"Table 1.1 / M-factor cut-off");
+  if(chronic==="1"&&!(CLP.num(i.mChronic)>=1))review.push("Verify the Aquatic Chronic 1 M-factor.");
+  if(i.ozone)add("Ozone layer",0.1,"Table 1.1");
+  if(i.sdsUnionOEL&&present)reasons.push("EU workplace exposure limit (§3.2.1(b))");
+  if(i.sdsSVHC||i.sdsPBT||i.sdsED)add("REACH PBT/vPvB, Article 59 or identified ED",0.1,"§3.2.1(c)");
+ }else{
+  const general=gas?0.2:1;
+  if(hazardous)add("Health/environmental hazard",general,"§3.2.2(a)");
+  if(i.sdsUnionOEL)add("EU workplace exposure limit",general,"§3.2.2(a)");
+  if(special)add("PBT/vPvB, Article 59 or identified ED",0.1,"§3.2.2(b)");
+  if(i.skinSens)add("Skin sensitiser",sensitiser(i.skinSens,"skinSens"),"§3.2.2(c–e)");
+  if(i.respSens)add("Respiratory sensitiser",sensitiser(i.respSens,"respSens"),"§3.2.2(c–e)");
+  if(i.carc==="2")add("Carcinogen Cat. 2",0.1,"§3.2.2(c)");
+  if(i.repro||i.reproFert||i.reproDev||i.lact)add("Reproductive toxicity / lactation",0.1,"§3.2.2(f)");
+ }
+ // This tool cannot establish that absent metadata means a substance is
+ // free from Union OEL, Candidate List, Annex XIII or non-CLP ED status.
+ if(!reasons.length&&present)review.push("No mandatory trigger identified from entered information; check EU OEL, Article 59, PBT/vPvB, endocrine-disruptor status and supplier composition.");
+ if(!i.name?.trim()||!i.cas?.trim())review.push("Check substance identity and REACH registration/EC numbers as applicable.");
+ return {status:reasons.length?"include":review.length?"review":"no-trigger",reasons,review,bands};
+}
+function hazardIngredientRelevant(h,i) {
+ const id=h.id,p=CLP.num(i.pct);
+ if(!Number.isFinite(p)||p<=0)return false;
+ if(id==="acute")return ["oral","dermal","inh"].some(r=>i.acute?.[r]?.cat||CLP.num(i.acute?.[r]?.ate)>0);
+ if(id==="skin")return !!i.skinCorr;
+ if(id==="eye")return !!(i.eye||i.skinCorr);
+ if(id==="skinSens")return !!i.skinSens;
+ if(id==="respSens")return !!i.respSens;
+ if(id==="muta")return !!i.muta;
+ if(id==="carc")return !!i.carc;
+ if(id==="repro")return !!(i.repro||i.reproFert||i.reproDev||i.lact);
+ if(id==="lact")return !!i.lact;
+ if(id==="stotSE")return !!(i.stotSE||i.stotSEresp||i.stotSEnarc);
+ if(id==="stotRE")return !!i.stotRE;
+ if(id==="asp")return !!i.asp&&p>=1;
+ if(id==="aquatic")return !!(i.aquaAcute||i.aquaChronic);
+ if(id==="edHH")return !!i.edHH;
+ if(id==="edEnv")return !!i.edEnv;
+ if(id==="pbt")return !!i.pbt;
+ if(id==="vpvb")return !!i.vpvb;
+ if(id==="pmt")return !!i.pmt;
+ if(id==="vpvm")return !!i.vpvm;
+ if(id==="ozone")return !!i.ozone;
+ return false;
+}
+function ingredientInsightsHTML(r){
+ const rows=mix.ingredients.map((i,n)=>({i,n,pct:CLP.num(i.pct)}));
+ const derived=r.outcomes.filter(o=>!/^manual/.test(o.hazardId));
+ const grouped=derived.map(o=>{
+   const h=r.hazards.find(h=>h.id===o.hazardId);
+   const candidates=rows.filter(({i})=>h&&hazardIngredientRelevant(h,i));
+   const absent=rows.filter(({i})=>!h||!hazardIngredientRelevant(h,i));
+   return '<details class="insight-hazard"><summary><b>'+esc(o.label)+'</b> <span class="hint">'+candidates.length+
+     ' potential contributor(s) · '+absent.length+' not identified</span></summary>'+
+     '<div class="insight-chips">'+rows.map(({i,n,pct})=>{
+       const relevant=h&&hazardIngredientRelevant(h,i);
+       return '<span class="insight-pill '+(relevant?'insight-yes':'insight-no')+'">'+
+         (relevant?'● ':'○ ')+esc(i.name||"Ingredient "+(n+1))+
+         ' · '+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"% missing")+
+         (relevant?' · relevant input':' · not identified')+'</span>';
+     }).join("")+'</div><div class="hint">Potential contributor means the relevant ingredient hazard is recorded, not that the ingredient alone crosses a classification limit. The engine calculation trail determines the actual mixture outcome.</div></details>';
+ });
+ const classified=r.outcomes.length>0,gas=mix.state==="gas";
+ const section=rows.map(({i,n,pct})=>({...ingredientSection3Signals(i,classified,gas),i,n,pct}));
+ const order={include:0,review:1,"no-trigger":2};
+ section.sort((a,b)=>order[a.status]-order[b.status]||b.pct-a.pct);
+ const summary=(status)=>section.filter(x=>x.status===status).length;
+ return '<div class="card" data-view="ingredientsInsight"><h2>Ingredient contribution and SDS Section 3 screening</h2>'+
+ '<div class="hint">Two different questions: which ingredient hazard inputs are relevant to each calculated mixture classification, and which constituent substances must be declared in SDS Section 3. Not all Section 3 ingredients drive the mixture classification.</div>'+
+ '<h3 style="margin:14px 0 8px">1. Mixture classification — ingredient relevance</h3>'+
+ (grouped.join("")||'<div class="hint">No ingredient-based mixture classifications yet. This does not mean that the ingredients have no hazards.</div>')+
+ (r.outcomes.some(o=>/^manual/.test(o.hazardId))?'<div class="note">Manual/test-based mixture classifications cannot be allocated to individual ingredients from this calculator.</div>':'')+
+ '<h3 style="margin:17px 0 8px">2. REACH SDS Section 3.2 — substance screening</h3>'+
+ '<div class="hint">Based on '+(classified?'classified mixture (§3.2.1)':'unclassified mixture (§3.2.2)')+
+ ' and entered concentrations. '+summary("include")+' triggered · '+summary("review")+' need review. Screening is provisional: raw materials that are themselves mixtures require substance-level breakdown; other exposure limits, SCLs, M-factors and regulatory status may change these decisions.</div>'+
+ '<div class="insight-table-wrap"><table class="insight-table"><thead><tr><th>Ingredient / raw material</th><th>Concentration</th><th>Section 3 screen</th><th>Reason / outstanding checks</th></tr></thead><tbody>'+
+ section.map(x=>'<tr><td><b>'+esc(x.i.name||"Ingredient "+(x.n+1))+'</b><br><small>'+esc(x.i.cas||"Identity not entered")+'</small></td>'+
+ '<td>'+esc(Number.isFinite(x.pct)?CLP.fmt(x.pct)+"%":"Not entered")+'</td>'+
+ '<td><span class="insight-tag '+esc(x.status)+'">'+(x.status==="include"?"Disclose — indicated":x.status==="review"?"Review":"No trigger found")+'</span></td>'+
+ '<td>'+x.reasons.map(s=>'<div>✓ '+esc(s)+'</div>').join("")+
+ x.review.map(s=>'<div class="hint">⚠ '+esc(s)+'</div>').join("")+'</td></tr>').join("")+
+ '</tbody></table></div>'+
+ '<div class="note" style="margin-top:10px">Not a finished SDS Section 3 determination. Verify constituent identities, EU-level OELs, Candidate List/Annex XIII/ED status, substance-specific limits, registered nanoforms and applicable regulatory updates. CLP ED classifications do not automatically prove the distinct ED criteria under REACH Annex II. See REACH Annex II §§3.2.1–3.2.4, as amended by Regulation (EU) 2020/878.</div></div>';
+}
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
@@ -2981,6 +3128,7 @@ function renderResult(r) {
     <div class="calc-intro">Ingredient contributions, summation formulae, thresholds and outcomes are grouped below. Open each hazard for the calculation. The unchanged engine calculation trail and regulatory reference are available under each result.</div>
     ${shown.map(calcExplanationHTML).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
+  L.push(ingredientInsightsHTML(r));
   L.push(`<div class="card" data-view="notes"><h2>Notes &amp; limits</h2>${r.notes.map((n) => `<div class="note">${esc(n)}</div>`).join("")}<div class="note">Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, full tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, unverified Article 26(2) severity for manual classifications, partial Article 28 Annex I/IV P-statement catalogue and final regulatory review, and additional Article 27 case-specific redundancy decisions. Four explicit Annex III Part 1 H/EUH omissions are applied.</div></div>`);
   $("res").innerHTML = L.join("");
   applyViewerSettings();
