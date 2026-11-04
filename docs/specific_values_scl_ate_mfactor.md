@@ -78,3 +78,8 @@ Category 1 limit in the `STOT SE` / `STOT RE` SCL field and the lower bound of t
 Category 2 range in `STOT SE Cat 2 band` / `STOT RE Cat 2 band` (`scl.stotSE2`,
 `scl.stotRE2`). Without a band value the generic Table 3.8.3 / 3.9.4 lower limit of
 1 % applies. A band value above the Category 1 limit is flagged for review.
+The calculation trail identifies whether the applied Category 1 and Category 2
+thresholds are entered SCLs or generic limits. A Category 2 band value entered
+on a Category 2 STOT ingredient does not apply to that classification and is
+explicitly flagged as ignored; use the ordinary Category 2 SCL field if a
+verified substance-specific limit applies.
