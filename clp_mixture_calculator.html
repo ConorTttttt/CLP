@@ -81,6 +81,45 @@ details.h{border-top:1px solid var(--line);padding:5px 0}
 details.h>summary{cursor:pointer;font-weight:600;font-size:13.5px}
 details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .step{white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
+
+/* Compact ingredient editor experiment: preserves existing CLP data and controls. */
+#ingredients-card{--ix-accent:#285fa7;--ix-tint:#edf4fd;--ix-border:#d6e2f0}
+#ingredients-card tr.ing td{border-top:1px solid var(--ix-border);border-bottom:1px solid var(--ix-border);background:var(--panel);padding:9px 7px;vertical-align:top}
+#ingredients-card tr.ing td:first-child{border-left:4px solid var(--ix-accent);border-radius:9px 0 0 9px}
+#ingredients-card tr.ing td:last-child{border-right:1px solid var(--ix-border);border-radius:0 9px 9px 0}
+#ingredients-card tr.ing[data-expanded="true"] td{background:var(--ix-tint)}
+#ingredients-card tr.ing .ingredient-name{font-weight:650}
+#ingredients-card .ingredient-workspace{margin:0 0 15px;border:1px solid #b6cbeb;border-radius:11px;background:var(--panel);padding:13px;box-shadow:0 5px 18px rgba(24,59,91,.06)}
+#ingredients-card .ix-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:2px 3px 12px;border-bottom:1px solid var(--line)}
+#ingredients-card .ix-header strong{font-size:15px}
+#ingredients-card .ix-header small{color:var(--mute);display:block;margin-top:4px}
+#ingredients-card .ix-tabs{display:flex;gap:7px;flex-wrap:wrap;padding:13px 2px 10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+#ingredients-card .ix-tab{border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--mute);padding:8px 14px;font-weight:650;cursor:pointer}
+#ingredients-card .ix-tab[aria-selected="true"]{background:var(--ix-accent);color:#fff;border-color:var(--ix-accent)}
+#ingredients-card .ix-tab:focus-visible,#ingredients-card .hazard-chip-edit:focus-visible{outline:3px solid #86b7ff;outline-offset:2px}
+#ingredients-card .ix-search{border-bottom:1px solid var(--line);padding:5px 2px 12px}
+#ingredients-card .ix-search .hazard-editor{margin:0;padding:0;border:0}
+#ingredients-card .ix-search .hazard-editor>summary{display:none}
+#ingredients-card .ix-search .hazard-source-note,#ingredients-card .ix-search .hazard-resolution{display:none}
+#ingredients-card .ix-search .hazard-editor-body{padding:0}
+#ingredients-card .ix-editor .detail{padding:0;border:0;background:transparent}
+#ingredients-card .ix-editor .detail-toolbar{display:none}
+#ingredients-card .ix-editor .detail-category{background:transparent;border:0;padding:0;margin:0}
+#ingredients-card .ix-editor .detail-category h4{color:var(--ix-accent);font-size:13px;margin:8px 0 12px}
+#ingredients-card .ix-editor[data-tab="health"] .detail-category:not([data-detail-category="health"]),
+#ingredients-card .ix-editor[data-tab="environmental"] .detail-category:not([data-detail-category="environmental"]),
+#ingredients-card .ix-editor[data-tab="physical"] .detail-category:not([data-detail-category="physical"]),
+#ingredients-card .ix-editor[data-tab="regulatory"] .detail-category:not([data-detail-category="shared"]){display:none}
+#ingredients-card .ix-editor .detail-group{margin:9px 0;border:1px solid var(--ix-border);border-radius:9px;background:var(--panel)}
+#ingredients-card .ix-editor .detail-group>summary{background:var(--bg);padding:11px 13px;border-radius:8px}
+#ingredients-card .ix-editor .detail-group[open]>summary{background:var(--ix-tint);color:#244e84}
+#ingredients-card .hazard-chip-edit{border:0;background:transparent;color:inherit;padding:0 3px;cursor:pointer;font:inherit;text-align:left}
+#ingredients-card .hazard-chip-edit:hover{text-decoration:underline}
+#ingredients-card .hazard-chip{background:#edf4fd;border-color:#b8cfea;color:#244e84}
+#ingredients-card tr[data-detrow] td,#ingredients-card tr[data-sum] td{border:0;padding:0 5px}
+#ingredients-card .ingredient-hazards-cell .hazard-edit-toggle{display:none}
+@media(max-width:640px){#ingredients-card .ingredient-workspace{padding:8px}#ingredients-card .ix-tab{flex:1 1 auto;text-align:center;padding:8px}}
+
 .insight-hazard{border:1px solid var(--line);border-radius:8px;margin:7px 0;padding:9px 11px;background:var(--panel)}
 .insight-hazard>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .insight-chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
@@ -2080,6 +2119,7 @@ renderViewerControls();
 
 let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
+const ingredientTabs = new Map(); // UI-only active category per ingredient
 const hazardPanelsOpen = new Set(); // per-ingredient hazards disclosure, UI-only
 const detailPanels = new Map(); // open subsection keys per ingredient, UI only
 let uid = 1;
@@ -2095,7 +2135,7 @@ function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
-  mix = m; open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear();
+  mix = m; open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear();
 }
 
 /* ---------- mixture fields ---------- */
@@ -2463,7 +2503,8 @@ function hazardChip(code,i){
  const detailsOnly=!enteredHCodes(i).includes(code);
  return `<span class="hazard-chip" data-hazard-origin="${detailsOnly?"details":"entered"}"
    title="${esc((detailsOnly?"From ingredient Details":"Entered H/EUH code")+": "+(entry?.text||'Check source evidence'))}">
-   <strong>${esc(code)}</strong><span>${esc(label)}</span>
+   <button type="button" class="hazard-chip-edit" data-edit-hazard="${esc(code)}"
+     title="Edit this classification" aria-label="Edit ${esc(code)} ${esc(label)}"><strong>${esc(code)}</strong><span>${esc(label)}</span></button>
    <button type="button" data-remove-hazard="${esc(code)}" title="Remove ${esc(code)}"
      aria-label="Remove ${esc(code)}: ${esc(label)}">×</button>
  </span>`;
@@ -2632,20 +2673,69 @@ function rememberHazardPanelStates(){
     if(panel.open)hazardPanelsOpen.add(id);else hazardPanelsOpen.delete(id);
   });
 }
-function renderIngs() {
-  const tb = $("ings");
-  rememberHazardPanelStates();
-  if (!mix.ingredients.length) { tb.innerHTML = '<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Start with <b>+ Add ingredient</b>, or use <b>Load example</b> to explore.</td></tr>'; return; }
-  tb.innerHTML = mix.ingredients.map((i) => `
-  <tr class="ing" data-id="${i._id}">
-    <td><input data-p="name" value="${esc(i.name)}" placeholder="Ingredient name" aria-label="Ingredient name"></td>
-    <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
-    <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
-    <td class="ingredient-hazards-cell">${hazardRowControlsHTML(i)}<div class="ingredient-insight-flags" data-ingredient-insight="${i._id}"></div></td>
-    <td style="white-space:nowrap"><button class="small" data-act="det">${open.has(i._id) ? "Hide" : "Details"}</button> <button class="x small" data-act="del" title="Remove" aria-label="Remove ingredient">✕</button></td>
+
+const ING_TABS=[
+ {id:"health",label:"Health",hint:"Toxicity, skin/eye, CMR and STOT"},
+ {id:"environmental",label:"Environmental",hint:"Aquatic and environmental hazard classes"},
+ {id:"physical",label:"Physical",hint:"Ingredient physical hazard classifications"},
+ {id:"regulatory",label:"SCLs & evidence",hint:"Specific limits, source evidence and SDS triggers"}
+];
+function tabForHazard(code){const group=groupForCode(code);return group==="environmental"?"environmental":group==="physical"?"physical":"health";}
+function sectionForHazard(code){
+ if(/^H30[012]$|^H31[012]$|^H33[012]$/.test(code))return "acute";
+ if(["H314","H315","H318","H319"].includes(code))return "skin";
+ if(["H317","H334","H340","H341","H350","H350i","H351","H362"].includes(code)||/^H36[01]/.test(code))return "cmr";
+ if(["H370","H371","H372","H373","H335","H336","H304"].includes(code))return "stot";
+ if(["EUH380","EUH381"].includes(code))return "edHH";
+ if(["H400","H410","H411","H412","H413"].includes(code))return "aquatic";
+ if(groupForCode(code)==="environmental")return "newHazards";
+ return "";
+}
+function ingredientWorkspaceHTML(i){
+ const tab=ingredientTabs.get(i._id)||"health",count=ingredientHCodes(i).length;
+ return '<div class="ingredient-workspace" data-ingredient-workspace="'+i._id+'">'+
+  '<header class="ix-header"><div><strong>'+esc(i.name||"Unnamed ingredient")+'</strong>'+
+  '<small>'+esc(i.cas||"No CAS/EC")+' · '+esc(i.pct||"0")+'% · '+count+' hazard'+(count===1?'':'s')+'</small></div>'+
+  '<button type="button" class="small" data-close-ingredient="'+i._id+'">Close editor ✕</button></header>'+
+  '<div class="ix-search">'+hazardEditorHTML(i)+'</div>'+
+  '<nav class="ix-tabs" aria-label="Classification editing categories">'+ING_TABS.map(t=>
+    '<button class="ix-tab" type="button" data-ingredient-tab="'+t.id+'" aria-selected="'+(tab===t.id)+'" title="'+esc(t.hint)+'">'+esc(t.label)+'</button>').join("")+'</nav>'+
+  '<div class="ix-editor" data-tab="'+tab+'">'+detailHTML(i)+'</div></div>';
+}
+function showIngredientEditor(id,code=""){
+ const i=mix.ingredients.find(i=>i._id===id);if(!i)return;
+ open.clear();open.add(id);hazardPanelsOpen.add(id);
+ if(code){
+  ingredientTabs.set(id,tabForHazard(code));
+  const section=sectionForHazard(code);
+  if(section){const state=new Set(detailPanels.get(id)||[]);state.add(section);detailPanels.set(id,state);}
+ }else if(!ingredientTabs.has(id))ingredientTabs.set(id,"health");
+ renderIngs();
+ if(last)renderIngredientInsightMarkers(last);
+ const target=code&&sectionForHazard(code)?
+   document.querySelector('tr[data-detrow="'+id+'"] [data-detail-section="'+sectionForHazard(code)+'"]'):
+   document.querySelector('tr[data-detrow="'+id+'"] .ingredient-workspace');
+ target?.scrollIntoView?.({block:"nearest",behavior:"smooth"});
+}
+
+function renderIngs(){
+ const tb=$("ings");if(!mix.ingredients.length){
+  tb.innerHTML='<tr><td colspan="5" class="hint" style="padding:22px 10px;text-align:center">No ingredients added. Use + Add ingredient or Load example.</td></tr>';
+  return;
+ }
+ tb.innerHTML=mix.ingredients.map((i,n)=>`
+  <tr class="ing" data-id="${i._id}" data-expanded="${open.has(i._id)}">
+   <td><input class="ingredient-name" data-p="name" value="${esc(i.name)}" placeholder="Ingredient ${n+1}" aria-label="Ingredient name"></td>
+   <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
+   <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
+   <td class="ingredient-hazards-cell"><div class="hazard-row-chips" data-hazard-row-chips>${hazardRowChipsHTML(i)}</div><div class="ingredient-insight-flags" data-ingredient-insight="${i._id}"></div></td>
+   <td style="white-space:nowrap">
+    <button class="small ${open.has(i._id)?"primary":""}" data-act="det" aria-controls="ingredient-editor-${i._id}" aria-expanded="${open.has(i._id)}">${open.has(i._id)?"Close":"Edit"}</button>
+    <button class="x small" data-act="del" title="Remove ingredient" aria-label="Remove ingredient">✕</button>
+   </td>
   </tr>
-  <tr data-sum="${i._id}"><td colspan="5" style="padding-top:0">${hazardEditorHTML(i)}</td></tr>
-  ${open.has(i._id) ? `<tr data-detrow="${i._id}"><td colspan="5">${detailHTML(i)}</td></tr>` : ""}`).join("");
+  ${open.has(i._id)?`<tr data-detrow="${i._id}"><td colspan="5" id="ingredient-editor-${i._id}">${ingredientWorkspaceHTML(i)}</td></tr>`:""}
+ `).join("");
 }
 function refreshRow(id) {
   const i = mix.ingredients.find((x) => x._id === id); if (!i) return;
