@@ -83,6 +83,22 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .step{white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
 
 /* Compact ingredient editor experiment: preserves existing CLP data and controls. */
+
+/* Hazard entry remains available while ingredient details are collapsed. */
+#ingredients-card tr.ing td.ix-identity{min-width:230px}
+#ingredients-card .ix-quicksearch{margin-top:7px}
+#ingredients-card .ix-quicksearch .hazard-search-wrap{margin-top:0}
+#ingredients-card .ix-quicksearch input[data-hazard-query]{
+ font-size:12px;padding:8px 10px;min-height:34px;width:100%;
+ border:1px solid #aac5e7;border-radius:7px;background:var(--bg);
+}
+#ingredients-card .ix-quicksearch input[data-hazard-query]:focus{
+ border-color:var(--ix-accent);box-shadow:0 0 0 2px rgba(40,95,167,.12);
+}
+#ingredients-card .ix-advanced{padding:8px 2px 0;margin-bottom:2px}
+#ingredients-card .ix-advanced .hazard-advanced{margin:0;border-top:0}
+#ingredients-card .ix-advanced .hazard-advanced>summary{font-size:11px}
+
 #ingredients-card{--ix-accent:#285fa7;--ix-tint:#edf4fd;--ix-border:#d6e2f0}
 #ingredients-card tr.ing td{border-top:1px solid var(--ix-border);border-bottom:1px solid var(--ix-border);background:var(--panel);padding:9px 7px;vertical-align:top}
 #ingredients-card tr.ing td:first-child{border-left:4px solid var(--ix-accent);border-radius:9px 0 0 9px}
@@ -415,7 +431,7 @@ pre.rep{padding:14px}
         <button class="small" id="clr">Clear</button>
       </div>
     </div>
-    <div class="hint" style="margin-bottom:6px"><b>Compact view:</b> Scan each ingredient’s concentration, classifications and review flags without opening its controls. Select <b>Edit</b> to open one ingredient’s workspace, use the category tabs to find detailed fields, or click a <b>hazard chip</b> to jump directly to its classification. The H/EUH search and Advanced code entry are inside the editor. Values remain live and are saved using the same formulation format.</div>
+    <div class="hint" style="margin-bottom:6px"><b>Quick entry:</b> Search and add H/EUH statements directly below each ingredient name (for example, type <code>H314</code> to choose 1, 1A, 1B or 1C). The search stays available while details are closed, so you can add several hazards without extra clicks. Select <b>Edit</b> for the Health, Environmental, Physical and SCL/evidence tabs, or click a <b>hazard chip</b> to jump to its classification. Advanced code entry remains inside the editor. Values remain live and are saved using the same formulation format.</div>
     <div class="hint ingredient-tip">On smaller screens, scroll the ingredient table horizontally to access all columns.</div>
     <div class="ingredient-scroll" role="region" tabindex="0" aria-label="Ingredient table; scroll horizontally to access all fields">
     <table>
@@ -2660,7 +2676,7 @@ function chooseIngredientHazard(input,code,category=""){
  const section=sectionForHazard(code);
  if(section){const state=new Set(detailPanels.get(id)||[]);state.add(section);detailPanels.set(id,state);}
  refreshRow(id);update();
- const replacement=document.querySelector(`tr[data-detrow="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
+ const replacement=document.querySelector(`tr[data-id="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
  if(replacement){
    replacement.value="";
    closeHazardSuggestions(replacement);
@@ -2694,13 +2710,28 @@ function sectionForHazard(code){
  if(groupForCode(code)==="environmental")return "newHazards";
  return "";
 }
+function ingredientQuickSearchHTML(i){
+ const listId="quick-hazard-options-"+i._id;
+ return '<div class="ix-quicksearch" data-hazard-picker data-group="all">'+
+  '<div class="hazard-search-wrap">'+
+  '<input type="text" data-hazard-query data-group="all" role="combobox" autocomplete="off" '+
+  'aria-autocomplete="list" aria-expanded="false" aria-controls="'+listId+'" '+
+  'aria-label="Add hazard to '+esc(i.name||"ingredient")+'" '+
+  'placeholder="+ Add H-code / hazard...">'+
+  '<div id="'+listId+'" class="hazard-suggestions" role="listbox" hidden></div>'+
+  '</div></div>';
+}
 function ingredientWorkspaceHTML(i){
  const tab=ingredientTabs.get(i._id)||"health",count=ingredientHCodes(i).length;
  return '<div class="ingredient-workspace" data-ingredient-workspace="'+i._id+'">'+
   '<header class="ix-header"><div><strong>'+esc(i.name||"Unnamed ingredient")+'</strong>'+
   '<small>'+esc(i.cas||"No CAS/EC")+' · '+esc(i.pct||"0")+'% · '+count+' hazard'+(count===1?'':'s')+'</small></div>'+
   '<button type="button" class="small" data-close-ingredient="'+i._id+'">Close editor ✕</button></header>'+
-  '<div class="ix-search">'+hazardEditorHTML(i)+'</div>'+
+  '<div class="ix-advanced" data-id="'+i._id+'"><details class="hazard-advanced">'+
+   '<summary>Advanced: paste or edit H/EUH codes</summary>'+
+   '<div class="hint">Apply code changes on leaving the field; verify detailed categories and values.</div>'+
+   '<input data-p="hcodes" aria-label="Advanced H and EUH codes" value="'+esc(i.hcodes)+'" placeholder="H302 H315 H410">'+
+   '</details></div>'+
   '<nav class="ix-tabs" aria-label="Classification editing categories">'+ING_TABS.map(t=>
     '<button class="ix-tab" type="button" data-ingredient-tab="'+t.id+'" aria-selected="'+(tab===t.id)+'" title="'+esc(t.hint)+'">'+esc(t.label)+'</button>').join("")+'</nav>'+
   '<div class="ix-editor" data-tab="'+tab+'">'+detailHTML(i)+'</div></div>';
@@ -2728,7 +2759,7 @@ function renderIngs(){
  }
  tb.innerHTML=mix.ingredients.map((i,n)=>`
   <tr class="ing" data-id="${i._id}" data-expanded="${open.has(i._id)}">
-   <td><input class="ingredient-name" data-p="name" value="${esc(i.name)}" placeholder="Ingredient ${n+1}" aria-label="Ingredient name"></td>
+   <td class="ix-identity"><input class="ingredient-name" data-p="name" value="${esc(i.name)}" placeholder="Ingredient ${n+1}" aria-label="Ingredient name">${ingredientQuickSearchHTML(i)}</td>
    <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
    <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
    <td class="ingredient-hazards-cell"><div class="hazard-row-chips" data-hazard-row-chips>${hazardRowChipsHTML(i)}</div><div class="ingredient-insight-flags" data-ingredient-insight="${i._id}"></div></td>
