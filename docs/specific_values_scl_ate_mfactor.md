@@ -69,3 +69,17 @@ At PR creation: 221 + 56 + 49 + 50 + 71 + 10 = **457 checks passed**, with the o
 - [CLP Annex I 4.1 aquatic hazards](https://reachlex.eu/en/clp/annex-i-part-4-environmental-hazards-1/).
 
 **Regulatory check required before use:** Confirm the current jurisdiction and consolidated text, and all SCLs/ATEs/M-factors from primary evidence. Historic formulations should be reviewed after importing the updated calculator because incomplete aquatic data can change what is reported as provisional.
+
+## Banded STOT SCLs (November 2026)
+
+Some Annex VI entries give two ranges for a Category 1 STOT substance, for example
+`STOT RE 1; H372: C ≥ 20 %` and `STOT RE 2; H373: 5 % ≤ C < 20 %`. Enter the
+Category 1 limit in the `STOT SE` / `STOT RE` SCL field and the lower bound of the
+Category 2 range in `STOT SE Cat 2 band` / `STOT RE Cat 2 band` (`scl.stotSE2`,
+`scl.stotRE2`). Without a band value the generic Table 3.8.3 / 3.9.4 lower limit of
+1 % applies. A band value above the Category 1 limit is flagged for review.
+The calculation trail identifies whether the applied Category 1 and Category 2
+thresholds are entered SCLs or generic limits. A Category 2 band value entered
+on a Category 2 STOT ingredient does not apply to that classification and is
+explicitly flagged as ignored; use the ordinary Category 2 SCL field if a
+verified substance-specific limit applies.

@@ -30,9 +30,11 @@ limitations are available via its disclosure.
 For a typical workflow:
 1. Enter the mixture details and ingredient rows.
 2. Open Details on a row, then expand only the hazard groups you need.
-   Available groups: Acute toxicity / ATE; Skin and eye / SCL; Sensitisation
-   and CMR; STOT and aspiration; Aquatic / M-factors; New hazard classes;
-   Other SCLs; Value source evidence. Entered classifications automatically
+   Groups are arranged under Physical, Health, Environmental and Shared:
+   Acute toxicity / ATE; Skin and eye / SCL; Sensitisation, CMR and lactation;
+   Target organ / aspiration; Endocrine disruption (human health); Aquatic /
+   M-factors; Environmental ED, PBT, PMT and ozone; Other SCLs; Value source
+   evidence. Entered classifications automatically
    expand the corresponding groups when opening the ingredient details.
 3. Use Expand all / Collapse all to inspect or reduce that ingredient's fields.
    Expanded selections are remembered while you edit the current formulation.
@@ -50,8 +52,8 @@ Colours, typography and responsive spacing were refined; no classification,
 Article 26/27/28 or report calculation rules were changed by this UI commit.
 
 SEARCHABLE INGREDIENT HAZARDS
-The ingredient editor has three separate H/EUH search pickers: Physical, Health
-and Environmental. Start typing an H-code (H225 / EUH440), a classification
+The ingredient editor has one unified H/EUH search box covering physical,
+health and environmental hazards. Start typing an H-code (H225 / EUH440), a classification
 (e.g. "Skin Corr. 1B", "Flam. Liq. 2") or part of its hazard statement
 (e.g. "severe skin burns"). Choose a suggestion with the mouse or Arrow keys
 and Enter. Selected codes appear as labelled, removable chips directly
@@ -73,7 +75,7 @@ ingredient row, initially closed to reduce scrolling. Expand it using the
 "+ Add / edit hazards" button in the ingredient row or its "Hazards" summary.
 The disclosure remembers whether it is open while the formulation is edited,
 including after adding or removing hazards. The selected chips stay visible
-in the row, not duplicated inside the three search groups. Open/closed state
+in the row, not duplicated inside the search panel. Open/closed state
 is a local UI preference, not part of the regulatory calculation or exported
 formulation.
 
@@ -118,7 +120,9 @@ even when every optional results section is hidden.
 The Viewer Settings panel does not appear in printed results.
 
 HOW TO USE
-1. Enter mixture data (flash point, IBP, viscosity at 40 C, pH where known).
+1. Enter mixture data: physical state (liquid, solid or gas), flash point, IBP,
+   viscosity at 40 C, pH where known. Flammable-liquid criteria are not applied
+   to solids or gases.
 2. Add ingredients: name, %, and the ingredient's H/EUH codes (from Annex VI, the C&L Inventory or the SDS).
 3. Use Details to set what codes cannot say: Skin Corr. 1A/1B/1C, Acute Tox. 1 vs 2, ATE values,
    M-factors, SCLs, "additivity not applicable" (acids, bases, surfactants...).
@@ -155,7 +159,10 @@ formulations after loading. Quick-pick changes only reproductive fields and leav
 reviewed category fields intact.
 
 VERIFICATION
-Run from repository root:
+Run every suite from the repository root with:
+  npm test
+(or node verification/run_all.js). The same command runs automatically on each
+push and pull request through .github/workflows/tests.yml. Individual suites:
   node verification/test_engine.js
   node verification/test_specific_values.js
   node verification/test_article26.js
@@ -164,7 +171,8 @@ Run from repository root:
   node verification/test_viewer_settings.js
   node verification/test_ui_cleanup.js
   node verification/test_hazard_picker.js
-The original engine suite currently has 221 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
+  node verification/test_review_fixes.js
+The original engine suite currently has 223 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
 development but no reproducible headless test script is currently included.
@@ -242,6 +250,29 @@ Article 28 form. Add/exclude P codes manually with a documented justification.
 Unmapped hazards, unresolved supplier wording and case-specific selection are flagged.
 The output is NEVER described as final/approved. Full Annex IV is still to be incorporated.
 Regulatory reference: docs/article_28_precautionary_statement_selection.md
+
+REVIEW CORRECTIONS (NOVEMBER 2026)
+- ED HH now carries its signal word: Category 1 "Danger", Category 2 "Warning"
+  (Table 3.11.3, Delegated Regulation (EU) 2023/707). Previously none was set.
+- STOT SE 3 (H335/H336) is kept when the same ingredient is also STOT SE 1/2
+  (e.g. H370 + H335). The Cat 3 effect tick-boxes now count independently.
+- Banded STOT SCLs: "STOT SE/RE Cat 2 band" fields under Other SCLs set the lower
+  limit of the Category 2 range for a Category 1 substance (e.g. Annex VI
+  "STOT RE 1: C >= 20 %; STOT RE 2: 5 % <= C < 20 %"). Blank = generic 1 %.
+- H317/H334 read as Category 1 now prompt for 1A/1B or an SCL, and the result
+  notes any unspecified Category 1 sensitiser (1A limits: 0.1 % / EUH208 0.01 %).
+- EUH208 "driver" detection uses structured data instead of text matching.
+- New "Solid" physical state; flammable-liquid criteria are skipped for solids.
+- If a non-additive corrosive ingredient independently triggers Table 3.2.4,
+  the output is Skin Corr. 1 (no subcategory). Any additive 1A/1B/1C result
+  remains visible in the calculation trail and a subcategory-review note is added.
+- STOT SE/RE calculation steps identify whether each threshold comes from
+  an entered SCL, an entered Category 2 band, or a generic limit; band entries
+  on Category 2 substances are flagged as ignored.
+- P202 and P301+P310 remain listed in EU CLP Annex IV. Differences in later
+  UN GHS editions (P203 and P301+P316) are informational only and do not
+  invalidate the EU statements.
+Regression tests: node verification/test_review_fixes.js
 
 SCL / ATE / M-FACTOR RELIABILITY IMPROVEMENTS
 Skin/eye ingredient Details now contain separate SCL fields for Skin Corr.,
