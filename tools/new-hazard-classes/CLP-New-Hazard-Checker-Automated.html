@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#10243c" />
+  <meta name="description" content="Evidence-aware screening for new EU CLP hazard classes under Delegated Regulation (EU) 2023/707." />
+  <title>CLP Compass | New Hazard Classes</title>
+  <style>
+:root{font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#18304b;background:#f4f7fb;font-synthesis:none}*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:#1c6589}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #56b7d1;outline-offset:2px}.app-shell{min-height:100vh}.topbar{background:#112640;color:white;display:flex;justify-content:space-between;align-items:center;padding:15px 34px;border-bottom:1px solid #29425c}.brand{display:flex;align-items:center;gap:12px}.brand-mark{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;background:#247a8d;color:#d5fcff;font-size:27px}.brand-name{font-size:19px;font-weight:800;letter-spacing:-.6px}.brand-name span{font-weight:400;color:#9edbe7}.brand-subtitle{font-weight:700;font-size:9px;letter-spacing:2.3px;color:#b6cbdc;margin-top:2px}.header-right{display:flex;gap:9px}.edition{font-size:11px;border:1px solid #426078;border-radius:20px;padding:7px 12px;color:#d9e9f6}.edition.secondary{color:#a8c9d7}.layout{display:grid;grid-template-columns:246px minmax(0,1fr);min-height:calc(100vh - 70px)}.sidebar{background:#eaf0f6;border-right:1px solid #dae4ed;padding:27px 13px;display:flex;flex-direction:column;gap:6px}.sidebar-title{font-size:10px;letter-spacing:1.7px;font-weight:800;color:#768da2;margin:6px 14px 10px}.sidebar-title.space{margin-top:25px}.nav-link{border:0;background:transparent;text-align:left;color:#536c83;padding:12px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;font-weight:650;font-size:13px}.nav-link.active{background:#fff;color:#125c75;box-shadow:0 3px 12px #1b41651a}.nav-link:hover{background:#fff}.nav-icon{font-size:19px;width:22px;text-align:center}.sidebar-note{margin:auto 8px 0;border-top:1px solid #cfdae5;padding:22px 7px;color:#577087;font-size:12px}.sidebar-note p{font-weight:650;line-height:1.5}.sidebar-note small{line-height:1.6;display:block}.note-kicker{font-size:10px;letter-spacing:1px;font-weight:800;color:#1d8792}.main{padding:38px clamp(22px,3.3vw,54px) 50px;max-width:1600px;width:100%;margin:0 auto}.view{display:none}.view.active{display:block}.heading-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:23px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:2px;color:#18869a;margin-bottom:8px}.heading-row h1{font-size:clamp(26px,2.3vw,34px);letter-spacing:-1.5px;margin:0 0 7px;color:#10283e;line-height:1.2}.intro{margin:0;color:#657d91;font-size:14px;max-width:690px;line-height:1.65}.rule-pill{flex-shrink:0;background:#dceef2;color:#276a7c;border:1px solid #c9e4e8;font-size:11px;padding:8px 13px;border-radius:20px;font-weight:700}.summary-band{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #dde7ef;border-radius:12px;background:white;margin-bottom:19px;overflow:hidden}.metric{padding:19px 22px;border-right:1px solid #e7eef5}.metric:last-child{border:0}.metric span{display:block;font-size:11px;color:#74899d;letter-spacing:.3px;margin-bottom:7px}.metric strong{font-size:24px;color:#18384e}.metric strong.word{font-size:15px;letter-spacing:-.2px}.panel{background:white;border:1px solid #dce7ef;border-radius:13px;padding:23px;margin-bottom:19px;box-shadow:0 3px 14px #1b3a5610}.panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:19px}.panel h2,.results-top h2{font-size:17px;letter-spacing:-.5px;color:#18344b;margin:0 0 4px}.panel-heading p{font-size:12px;margin:0;color:#7a8d9d;line-height:1.55}.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px 16px}.field{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:750;color:#526a80}.field.wide{grid-column:span 2}.field input,.field select,.field textarea,.inline-field input,.inline-field select{width:100%;border:1px solid #d5e1e8;border-radius:7px;background:#fbfdff;color:#21394e;min-height:39px;padding:9px 10px;outline:none;font-size:12px}.field input:focus,.field select:focus,.field textarea:focus,.inline-field input:focus,.inline-field select:focus{border-color:#4f9eaf;box-shadow:0 0 0 3px #4f9eaf18}.field textarea{resize:vertical}.info-inline{margin-top:17px;background:#f0f7fa;padding:11px 13px;border-left:3px solid #5a9cb0;border-radius:7px;font-size:12px;color:#3f647d;line-height:1.6}.ingredient-panel{padding-bottom:13px}.ingredient-heading{align-items:center}.btn{border-radius:8px;border:1px solid #d4e2e9;background:white;color:#285169;padding:10px 13px;font-size:12px;font-weight:750;white-space:nowrap;display:inline-flex;gap:8px;align-items:center;justify-content:center;text-decoration:none}.btn.primary{background:#176e83;border-color:#176e83;color:white}.btn.primary:hover{background:#12556a}.btn.secondary:hover{background:#eef7fa}.btn.subtle{border:none;color:#7b5260;background:transparent}.table-scroll{overflow:auto;max-width:100%}.ingredients{width:100%;min-width:980px;border-collapse:collapse}.ingredients th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;text-align:left;white-space:nowrap;color:#71879b;background:#f4f8fb;padding:12px 9px;border-bottom:1px solid #dae5ed}.ingredients td{padding:12px 8px;border-bottom:1px solid #e9eff4;vertical-align:middle}.ingredients .c-name{min-width:170px}.ingredients .c-pct{min-width:90px}.ingredients .c-src{min-width:175px}.ingredients tr:last-child td{border-bottom:0}.inline-field{display:flex;flex-direction:column;gap:5px}.inline-field input,.inline-field select{min-width:100px;font-size:11px;padding:8px 7px;height:35px;min-height:35px}.inline-field input[type=number]{min-width:75px;max-width:100px}.name-stack input:nth-child(2){margin-top:4px}.name-stack input{width:100%}.remove-row{border:0;color:#899dad;background:transparent;font-size:20px;padding:5px}.remove-row:hover{color:#bd4d65}.table-footer{display:flex;justify-content:space-between;padding:15px 4px 0;color:#738a9d;font-size:11px;font-weight:650}.results-top{display:flex;justify-content:space-between;align-items:center;margin:29px 0 13px}.status-badge{border-radius:22px;font-size:11px;font-weight:800;padding:8px 12px}.status-review{background:#fff1d9;color:#9a6718}.status-hit{background:#fce5e6;color:#a44347}.status-clear{background:#e1f5ed;color:#267453}.status-error{background:#f7d9df;color:#a12b48}.results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.result-card{border:1px solid #dce7ef;background:white;border-radius:12px;padding:18px;min-height:155px}.result-title{display:flex;align-items:center;justify-content:space-between;gap:8px}.result-title h3{margin:0;font-size:14px;color:#1a364a}.result-card small{font-size:10px;color:#8ba0b1}.result-type{font-size:11px;font-weight:750;margin:11px 0 8px}.result-type.hit{color:#ab3d47}.result-type.review{color:#a56c1d}.result-type.clear{color:#2e8165}.result-main{display:flex;gap:7px;flex-wrap:wrap}.euh-chip{background:#eaf3f7;border:1px solid #d2e9ef;border-radius:6px;font-size:12px;font-weight:800;color:#136b81;padding:5px 7px}.result-explanation{color:#617a8c;font-size:11px;line-height:1.6;margin:10px 0 0}.result-evidence{font-size:11px;color:#5a7083;padding-top:10px;border-top:1px solid #eaf0f3;margin-top:10px}.messages{display:grid;gap:7px;margin-bottom:12px}.message{padding:10px 14px;font-size:12px;border-radius:7px;line-height:1.5}.message.error{background:#fff0f1;border:1px solid #efcdd2;color:#914552}.message.warning{background:#fff6e6;border:1px solid #f4dfb7;color:#8d6a30}.sds-box:empty{display:none}.sds-box{background:#edf5ff;border:1px solid #d3e4f6;color:#3a5f82;border-radius:10px;margin-top:14px;padding:15px 18px;font-size:12px;line-height:1.6}.sds-box h3{font-size:13px;margin:0 0 6px}.sds-box p{margin:0}.outcome-warning{border-left:3px solid #b6a3d6;background:#f6f3fb;border-radius:7px;padding:17px 19px;color:#564c72;margin-top:17px}.outcome-warning strong{font-size:12px}.outcome-warning p{margin:6px 0 0;font-size:12px;line-height:1.7}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.file-button{cursor:pointer}.criteria-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}.criteria-group{background:#f7fafc;border:1px solid #e1eaf0;border-radius:9px;padding:18px}.criteria-group h3{margin:0 0 15px;font-size:13px;color:#24526a}.criteria-row{display:grid;grid-template-columns:1fr 155px;gap:8px;align-items:center;margin-bottom:12px}.criteria-row:last-child{margin-bottom:0}.criteria-row label{font-size:12px;color:#516b81;line-height:1.5}.criteria-row select,.flag select{width:100%;border-radius:7px;border:1px solid #d6e3eb;padding:9px;font-size:12px;color:#345167;background:white}.flag-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.flag{background:#f7fafc;border:1px solid #e1eaf0;border-radius:8px;padding:13px}.flag label{display:block;font-size:12px;font-weight:750;margin-bottom:8px}.flag span{display:block;font-size:10px;font-weight:500;color:#7990a2;margin-top:4px}.hint,.small-foot{font-size:11px;color:#71899b;margin-top:14px;line-height:1.7}.reference-table{border-collapse:collapse;width:100%;min-width:650px}.reference-table th{background:#f0f6fa;font-size:11px;text-align:left;color:#55738a}.reference-table th,.reference-table td{border-bottom:1px solid #e4ecf2;padding:13px;font-size:12px}.deadline-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.deadline{background:#f3f8fb;padding:18px;border-radius:9px;display:flex;flex-direction:column;gap:5px}.deadline span{font-size:10px;letter-spacing:1px;font-weight:850;color:#20839a}.deadline strong{font-size:16px;color:#183e57;margin-top:10px}.deadline small{color:#6a8497}.source-list{padding:0;list-style:none;margin:0}.source-list li{display:flex;flex-direction:column;padding:14px 0;border-top:1px solid #e8eff5;gap:4px}.source-list li:first-child{border:0;padding-top:0}.source-list a{font-size:13px;font-weight:750}.source-list span{font-size:12px;color:#6e8598}.toast{position:fixed;bottom:24px;right:24px;max-width:min(360px,90vw);padding:14px 19px;border-radius:9px;background:#173b50;color:white;box-shadow:0 12px 35px #0b2b4c40;opacity:0;pointer-events:none;transition:opacity .2s;font-size:12px}.toast.show{opacity:1}@media(max-width:1100px){.layout{grid-template-columns:200px minmax(0,1fr)}.main{padding:30px 20px}.sidebar{padding-inline:8px}.heading-row .rule-pill{display:none}.form-grid{grid-template-columns:1fr 1fr}.form-grid .wide{grid-column:span 2}}@media(max-width:760px){.topbar{padding:13px 16px}.header-right .secondary{display:none}.layout{display:block}.sidebar{position:sticky;top:0;z-index:5;display:flex;flex-direction:row;overflow-x:auto;padding:8px;background:#eaf0f6;border-bottom:1px solid #dae4ed;border-right:0;gap:7px}.sidebar-title,.sidebar-note{display:none}.nav-link{white-space:nowrap;font-size:12px;padding:9px 11px}.nav-icon{font-size:15px;width:15px}.main{padding:26px 15px}.heading-row{margin-bottom:16px}.summary-band{grid-template-columns:repeat(2,1fr)}.metric:nth-child(2){border-right:0}.metric:nth-child(-n+2){border-bottom:1px solid #e7eef5}.panel{padding:18px 15px}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:span 1}.results-grid,.criteria-grid,.deadline-grid{grid-template-columns:1fr}.flag-grid{grid-template-columns:1fr 1fr}.criteria-row{grid-template-columns:1fr 125px}.ingredient-heading{flex-wrap:wrap}.results-top{gap:12px}.result-card{min-height:0}}@media print{body{background:white}.topbar,.sidebar,.actions,.file-button,.remove-row,#add-ingredient{display:none!important}.layout{display:block}.main{padding:0}.view{display:none!important}.view.active{display:block!important}.panel,.result-card{box-shadow:none;break-inside:avoid}.table-scroll{overflow:visible}.ingredients{min-width:0;font-size:9px}.ingredients th,.ingredients td{padding:5px 2px}.ingredients select,.ingredients input{border:0;padding:0;font-size:9px;min-width:0;background:white}.status-badge{print-color-adjust:exact}.outcome-warning{break-inside:avoid}}
+
+/* Guided workflows / evidence audit */
+.heading-actions{display:flex;gap:8px;flex-wrap:wrap}.library-summary{font-size:13px;color:#385571;line-height:1.75}.library-entry{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #e7eef4}.library-entry small{color:#6f8599}.guidance-note{background:#f2f7fb;border-left:3px solid #4589ac;border-radius:6px;padding:13px 15px;font-size:13px;line-height:1.6;color:#38536d;margin-bottom:17px}.decision-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.decision-card{border:1px solid #dce7f0;border-radius:11px;padding:17px;background:#fff}.decision-card h3{font-size:14px;margin:0 0 6px}.decision-card .decision-description{font-size:12px;line-height:1.55;color:#637e93;margin:0 0 15px}.decision-card .field{display:block;margin:0 0 10px}.decision-card .field textarea{min-height:70px}.decision-check{font-size:12px;color:#a06319;line-height:1.65;margin:10px 0}.verify-row{display:flex;gap:8px;align-items:flex-start;margin:10px 0;font-size:12px;line-height:1.55;color:#425f79}.verify-row input{margin-top:4px;accent-color:#2c718d}.review-counts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.review-count{border-radius:7px;border:1px solid #d9e7ef;padding:8px 12px;background:#f7fafc;font-size:12px;font-weight:700;color:#315269}.review-step{padding:12px 0;border-bottom:1px solid #e3eaf1;display:flex;gap:10px;align-items:flex-start}.review-step:last-child{border:0}.review-step strong{font-size:13px;color:#263f56}.review-step small{display:block;color:#7e91a1;margin:3px 0 4px}.review-step p{margin:0;font-size:12px;color:#59768c;line-height:1.5}.step-icon{width:22px;height:22px;min-width:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;background:#fff2dc;color:#9a681e}.step-icon.blocker{background:#ffe7e2;color:#a84339}.step-icon.verify{background:#e5f1fc;color:#285b93}.audit-chip{display:inline-block;background:#e5f4e7;color:#257039;font-size:10px;font-weight:750;border-radius:5px;padding:2px 5px;margin-top:4px}.auto-button{font-size:11px;border:1px solid #cddfeb;border-radius:5px;padding:3px 6px;background:#eef5fa;cursor:pointer;color:#24617c}.auto-button:focus-visible{outline:2px solid #2899c2}.queue-empty{background:#f4faf4;border:1px solid #d8e8d8;padding:14px;border-radius:8px;font-size:13px;color:#355b42}.queue-empty strong{display:block;margin-bottom:4px}.soft-warning{color:#8d641b;font-size:11px}.decision-card select,.decision-card input,.decision-card textarea{width:100%;min-width:0}.decision-card label.field{font-weight:600}.decision-card .field select,.decision-card .field input,.decision-card .field textarea{margin-top:5px}
+@media(max-width:870px){.decision-cards{grid-template-columns:1fr}}
+@media print{.heading-actions,.auto-button,#save-decisions{display:none!important}}
+
+.numeric-results{padding-top:16px}.numeric-flags{display:flex;gap:8px;flex-wrap:wrap}.numeric-flag{padding:6px 8px;font-size:11px;font-weight:700;border-radius:7px}.numeric-met{background:#e3f3e8;color:#286d40}.numeric-unchecked{background:#e9eff4;color:#718497}.numeric-message{font-size:12px;color:#486378;margin:12px 0 4px;line-height:1.6}.numeric-warning{font-size:12px;color:#945f1c;margin:6px 0;line-height:1.55}
+
+.row-buttons{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+
+</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span><div><div class="brand-name">CLP <span>Compass</span></div><div class="brand-subtitle">NEW HAZARD CLASSES · EU</div></div></div>
+      <div class="header-right"><span class="edition">2023/707</span><span class="edition secondary">Ruleset · 04 Nov 2026</span></div>
+    </header>
+    <div class="layout">
+      <nav class="sidebar" aria-label="Main navigation">
+        <div class="sidebar-title">ASSESSMENT TOOLS</div>
+        <button class="nav-link active" data-view="mixture"><span class="nav-icon">▦</span><span>Mixture calculator</span></button>
+        <button class="nav-link" data-view="substance"><span class="nav-icon">◇</span><span>Substance screening</span></button>
+        <div class="sidebar-title space">REFERENCE</div>
+        <button class="nav-link" data-view="reference"><span class="nav-icon">▤</span><span>Rules &amp; sources</span></button>
+        <div class="sidebar-note"><div class="note-kicker">REGULATORY SCOPE</div><p>Endocrine disruption, PBT / vPvB and PMT / vPvM.</p><small>This is an evidence-led screening tool, not a substitute for regulatory sign-off.</small></div>
+      </nav>
+      <main class="main" id="main">
+        <section id="view-mixture" class="view active" aria-labelledby="mix-heading">
+          <div class="heading-row"><div><div class="eyebrow">WORKSPACE / MIXTURE ASSESSMENT</div><h1 id="mix-heading">Mixture classification</h1><p class="intro">Check component-level classification thresholds and identify evidence gaps before finalising a CLP decision.</p></div><span class="rule-pill">CLP Annex I · Parts 3 &amp; 4</span></div>
+          <div class="summary-band"><div class="metric"><span>Hazard groups</span><strong>04</strong></div><div class="metric"><span>EUH outcomes</span><strong>08</strong></div><div class="metric"><span>Assessment method</span><strong class="word">Ingredient-based</strong></div><div class="metric"><span>Basis</span><strong class="word">% w/w</strong></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Product information</h2><p>Identify the material and its applicable transitional position.</p></div></div>
+            <div class="form-grid"><label class="field wide">Mixture / product name<input id="mixture-name" type="text" placeholder="e.g. Formulation 042" autocomplete="off" /></label><label class="field">Physical form<select id="mixture-phase"><option value="liquid">Liquid</option><option value="solid">Solid</option><option value="gas">Gas · not supported in this version</option></select></label><label class="field">Assessment date<input id="mixture-date" type="date" /></label><label class="field wide">Was this particular stock already on the EU market before 1 May 2026?<select id="mixture-older"><option value="unknown">Unknown / not established</option><option value="no">No — new stock</option><option value="yes">Yes — qualifying existing supply-chain stock</option></select></label></div><div id="mixture-compliance" class="info-inline"></div>
+          </div>
+          <div class="panel ingredient-panel"><div class="panel-heading ingredient-heading"><div><h2>Composition &amp; ingredient classifications</h2><p>Add all components. Classifications must be established from reliable evidence; “Not assessed” is not “Not classified”.</p></div><div class="heading-actions"><button id="auto-library" class="btn secondary">↻ Apply reviewed library</button><button id="add-ingredient" class="btn primary">+ Add ingredient</button></div></div>
+            <div class="table-scroll"><table class="ingredients"><thead><tr><th class="c-name">Ingredient / CAS</th><th class="c-pct">% w/w</th><th>ED human</th><th>ED environment</th><th>PBT / vPvB</th><th>PMT / vPvM</th><th class="c-src">Evidence reference</th><th aria-label="Remove"></th></tr></thead><tbody id="ingredient-rows"></tbody></table></div>
+            <div class="table-footer"><span id="component-count">0 ingredients</span><span id="concentration-total">Total: 0% / 100%</span></div>
+          </div>
+          <div class="panel"><div class="panel-heading"><div><h2>Reviewed substance library</h2><p>Reuse independently reviewed decisions by an exact, validated CAS / EC identifier match. New or unreviewed information is never silently treated as classified or not classified.</p></div></div>
+            <div id="library-summary" class="library-summary"></div>
+            <div class="actions"><button class="btn secondary" id="export-library">↓ Export reviewed library</button><label class="btn secondary file-button">↑ Import reviewed library<input id="import-library" type="file" accept=".json,application/json" hidden /></label></div>
+          </div>
+          <div class="results-top"><div><div class="eyebrow">LIVE ANALYSIS</div><h2>Classification results</h2></div><div id="overall-status" class="status-badge status-review">Awaiting data</div></div>
+          <div id="validation-messages" class="messages"></div>
+          <div id="results-grid" class="results-grid"></div>
+          <div id="sds-box" class="sds-box"></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Guided expert checks — endocrine-disruption mixture evidence</h2><p>Ingredient-based positive triggers cannot be removed using these choices. Record whether whole-mixture studies or relevant similar-mixture evidence must also be assessed.</p></div></div>
+            <div class="form-grid"><label class="field">Relevant whole-mixture ED studies?<select id="mix-whole"><option value="unknown">Not checked</option><option value="no">None identified after review</option><option value="yes">Yes — expert interpretation required</option></select></label>
+            <label class="field">Relevant tested similar mixtures / bridging?<select id="mix-bridging"><option value="unknown">Not checked</option><option value="no">None identified after review</option><option value="yes">Yes — expert interpretation required</option></select></label>
+            <label class="field wide">Expert evaluation / rationale<textarea id="mix-ed-notes" rows="2" placeholder="Studies checked, applicability of Annex I 1.1.3 bridging principles, interpretation and any additional conclusions"></textarea></label>
+            <label class="field">Responsible mixture reviewer<input id="mix-ed-reviewer" placeholder="Name / initials" /></label></div>
+          </div>
+          <div class="panel"><div class="panel-heading"><div><h2>Required actions before regulatory sign-off</h2><p>Automatically generated from the evidence gaps, identification checks, classification sources and ED routes. Resolve blockers before treating the assessment as complete.</p></div></div>
+            <div id="review-counts" class="review-counts"></div><div id="review-queue" class="review-queue"></div>
+          </div>
+          <div class="outcome-warning"><strong>What this calculation does not decide</strong><p>Whole-mixture data and bridging principles may affect endocrine-disruption classification. PBT/vPvB and PMT/vPvM substance criteria require scientific evidence assessment. This output only tests the generic ingredient-trigger rules for solid and liquid mixtures. Do not use it alone to certify an absence of hazard.</p></div>
+          <div class="actions"><button class="btn secondary" id="export-json">↓ Export assessment JSON</button><label class="btn secondary file-button">↑ Import assessment JSON<input id="import-json" type="file" accept=".json,application/json" hidden /></label><button class="btn secondary" id="print-report">Print / PDF</button><button class="btn subtle" id="reset-mixture">Clear assessment</button></div>
+        </section>
+        <section id="view-substance" class="view" aria-labelledby="substance-heading">
+          <div class="heading-row"><div><div class="eyebrow">WORKSPACE / SUBSTANCE ASSESSMENT</div><h1 id="substance-heading">Substance evidence screening</h1><p class="intro">Organise the evidence needed to assess the new hazard classes. A scientific weight-of-evidence review is required for final classification.</p></div><span class="rule-pill">Evidence triage · not a legal determination</span></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Substance dossier</h2><p>Record the substance identity and reference used for each scientific conclusion.</p></div></div><div class="form-grid"><label class="field wide">Substance name<input id="sub-name" type="text" placeholder="Substance name" /></label><label class="field">CAS number<input id="sub-cas" type="text" placeholder="CAS number, if available" /></label><label class="field">Assessment date<input id="sub-date" type="date" /></label><label class="field wide">Was this particular stock already on the EU market before 1 May 2025?<select id="sub-older"><option value="unknown">Unknown / not established</option><option value="no">No — new stock</option><option value="yes">Yes — qualifying existing supply-chain stock</option></select></label><label class="field">Regulatory reviewer<input id="sub-reviewer" type="text" placeholder="Name / initials" /></label><label class="field wide">Scientific evidence / Annex VI / dossier references<textarea id="sub-sources" rows="2" placeholder="Citations, study IDs, database access dates, reviewer notes"></textarea></label></div><div id="sub-compliance" class="info-inline"></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Endocrine-disruption evidence</h2><p>Mark whether each core criterion is supported by the evidence. Identifying the applicable category requires expert evaluation.</p></div></div><div class="criteria-grid"><div class="criteria-group"><h3>Human health · Annex I §3.11</h3><div id="edhh-criteria"></div></div><div class="criteria-group"><h3>Environment · Annex I §4.2</h3><div id="edenv-criteria"></div></div></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Persistence, bioaccumulation, mobility &amp; toxicity</h2><p>Use independently justified scientific determinations under Annex I §§4.3–4.4. These are not simple numeric guesses.</p></div></div><div class="flag-grid" id="property-flags"></div><div class="hint">A “Yes” flag must be supported by the applicable legal criterion and reliable studies. vP can support P, vB can support B, and vM can support M in this preliminary logic.</div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Automatic numerical criteria screening</h2><p>Enter trustworthy experimental measurements. The software checks the precise CLP inequality limits for P/vP, B/vB, M/vM and one aquatic T route. Positive results are provisional evidence indications, not expert-approved conclusions.</p></div></div>
+            <div class="form-grid" id="numeric-inputs"></div><div id="numeric-results" class="numeric-results"></div>
+            <div class="hint">For ionisable substances, the lowest log Koc across pH 4–9 is required. PBT/PMT toxicity can also be established through other CLP endpoints not represented by the numerical toxicity field. A “no numerical trigger” result never establishes non-classification.</div>
+          </div>
+          <div class="results-top"><div><div class="eyebrow">SCIENTIFIC TRIAGE</div><h2>Substance screening outcome</h2></div><span class="status-badge status-review">Expert review required</span></div><div id="sub-results" class="results-grid"></div>
+          <div class="panel" id="decisions-panel"><div class="panel-heading"><div><h2>Guided regulatory decisions</h2><p>Finish only the hazard groups for which sufficient evidence is available. Every decision needs an Annex VI check, regulatory basis, source, scientific rationale and explicit reviewer sign-off.</p></div></div>
+            <div class="guidance-note"><strong>Decision order:</strong> (1) Verify the applicable Annex VI entry and substance identity. (2) Examine and weigh the relevant studies and other reliable evidence. (3) Determine each hazard-class outcome, including a justified “not classified” where supported. (4) Sign off and save to the local library. If information is insufficient, leave “Unresolved”.</div>
+            <div id="decision-cards" class="decision-cards"></div>
+            <div class="actions"><button id="save-decisions" class="btn primary">✓ Save reviewed decisions to library</button><a class="btn secondary" href="https://chem.echa.europa.eu/" target="_blank" rel="noopener noreferrer">Open ECHA CHEM ↗</a></div>
+            <div id="decision-check" class="decision-check"></div>
+          </div>
+          <div class="outcome-warning"><strong>Substance classification requires more than three yes/no answers</strong><p>For endocrine disruption, evidence strength, adverse-effect relevance and the biologically plausible link determine the final category. For PBT, vPvB, PMT and vPvM, apply all legal criteria, additional evidence and weight-of-evidence provisions. Always check harmonised Annex VI classifications and assess the remaining hazards.</p></div>
+          <div class="actions"><button id="export-substance" class="btn secondary">↓ Export evidence dossier JSON</button><button id="print-substance" class="btn secondary">Print / PDF</button><button id="reset-substance" class="btn subtle">Clear screening</button></div>
+        </section>
+        <section id="view-reference" class="view" aria-labelledby="ref-heading">
+          <div class="heading-row"><div><div class="eyebrow">REGULATORY REFERENCE</div><h1 id="ref-heading">Rules and legal sources</h1><p class="intro">An auditable summary of the rule set, thresholds, application dates and known exclusions.</p></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Generic mixture concentration limits</h2><p>Applies to individual classified components; concentrations are not added together under these specific rules.</p></div></div><div class="table-scroll"><table class="reference-table"><thead><tr><th>Component classification</th><th>Trigger limit</th><th>EUH outcome</th><th>CLP Annex I</th></tr></thead><tbody><tr><td>ED for human health · Category 1</td><td>≥ 0.1%</td><td>EUH380</td><td>3.11.3.1</td></tr><tr><td>ED for human health · Category 2</td><td>≥ 1%</td><td>EUH381</td><td>3.11.3.1</td></tr><tr><td>ED for environment · Category 1</td><td>≥ 0.1%</td><td>EUH430</td><td>4.2.3.1</td></tr><tr><td>ED for environment · Category 2</td><td>≥ 1%</td><td>EUH431</td><td>4.2.3.1</td></tr><tr><td>PBT / vPvB</td><td>≥ 0.1%</td><td>EUH440 / EUH441</td><td>4.3.3.1</td></tr><tr><td>PMT / vPvM</td><td>≥ 0.1%</td><td>EUH450 / EUH451</td><td>4.4.3.1</td></tr></tbody></table></div><p class="small-foot">The ED limits are % w/w for solids/liquids and % v/v for gases. PBT/vPvB and PMT/vPvM mixture thresholds are % w/w. This version excludes gas calculations.</p></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Application and transitional dates</h2><p>Qualifying older supply-chain stock may benefit from transitional arrangements.</p></div></div><div class="deadline-grid"><div class="deadline"><span>SUBSTANCES</span><strong>1 May 2025</strong><small>Newly placed on EU market</small><strong>1 Nov 2026</strong><small>End of qualifying older-stock transition</small></div><div class="deadline"><span>MIXTURES</span><strong>1 May 2026</strong><small>Newly placed on EU market</small><strong>1 May 2028</strong><small>End of qualifying older-stock transition</small></div></div></div>
+          <div class="panel"><div class="panel-heading"><div><h2>Primary sources</h2><p>Always verify current consolidated legislation and the applicable amendments before a final regulatory decision.</p></div></div><ul class="source-list"><li><a href="https://eur-lex.europa.eu/eli/reg_del/2023/707/oj/eng" target="_blank" rel="noopener">Commission Delegated Regulation (EU) 2023/707 — official legal text</a><span>Sets the new CLP hazard-class criteria and mixture rules.</span></li><li><a href="https://echa.europa.eu/en/new-hazard-classes-2023" target="_blank" rel="noopener">ECHA — New hazard classes 2023</a><span>Overview, EUH codes and application timetable.</span></li><li><a href="https://echa.europa.eu/-/guidance-on-clp-application-criteria-panel" target="_blank" rel="noopener">ECHA — Guidance on the Application of the CLP Criteria</a><span>Scientific evaluation, evidence considerations and classification principles.</span></li><li><a href="https://echa.europa.eu/information-on-chemicals/annex-vi-to-clp" target="_blank" rel="noopener">ECHA — Annex VI harmonised classifications</a><span>Check legally binding classifications against the Official Journal and applicable ATP.</span></li><li><a href="https://echa.europa.eu/regulations/clp/cl-inventory" target="_blank" rel="noopener">ECHA — Classification &amp; Labelling Inventory</a><span>Industry notifications are not necessarily verified by ECHA.</span></li></ul></div>
+          <div class="outcome-warning"><strong>Documented limitations of this version</strong><p>No live ECHA data retrieval or automatic verification of regulatory claims; a locally reviewed substance library is supported. No automatic scientific weight-of-evidence determination, gas-mixture calculation, whole-mixture endocrine evidence adjudication, bridging-rule adjudication or final label optimisation. “No ingredient trigger” does not equal a formal conclusion of “not classified”.</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+/**
+ * CLP new hazard classes screening rules, Commission Delegated Regulation (EU) 2023/707.
+ * Version: 2026-11-04. Ingredient-based mixture criteria only; not a formal classification.
+ * ED: CLP Annex I §§3.11.3.1, 4.2.3.1; PBT/vPvB §4.3.3.1; PMT/vPvM §4.4.3.1.
+ */
+const RULESET = Object.freeze({id:'eu-clp-2023-707', version:'2026-11-04', jurisdiction:'EU', percentBasis:'w/w', scope:'solid-liquid-mixtures'});
+const CATEGORIES = Object.freeze({
+  edhh: [{value:'1', code:'EUH380', label:'ED human health · Cat. 1', limit:0.1, section:'3.11.3.1'}, {value:'2', code:'EUH381', label:'ED human health · Cat. 2', limit:1, section:'3.11.3.1'}],
+  edenv: [{value:'1', code:'EUH430', label:'ED environment · Cat. 1', limit:0.1, section:'4.2.3.1'}, {value:'2', code:'EUH431', label:'ED environment · Cat. 2', limit:1, section:'4.2.3.1'}],
+  pbt: [{value:'vPvB', code:'EUH441', label:'vPvB', limit:0.1, section:'4.3.3.1'}, {value:'PBT', code:'EUH440', label:'PBT', limit:0.1, section:'4.3.3.1'}],
+  pmt: [{value:'vPvM', code:'EUH451', label:'vPvM', limit:0.1, section:'4.4.3.1'}, {value:'PMT', code:'EUH450', label:'PMT', limit:0.1, section:'4.4.3.1'}],
+});
+const GROUPS = Object.freeze([
+  {key:'edhh', title:'Endocrine disruption · human health', section:'3.11', candidates:['1','2']},
+  {key:'edenv', title:'Endocrine disruption · environment', section:'4.2', candidates:['1','2']},
+  {key:'pbt', title:'PBT / vPvB', section:'4.3', candidates:['PBT','vPvB','PBT+vPvB']},
+  {key:'pmt', title:'PMT / vPvM', section:'4.4', candidates:['PMT','vPvM','PMT+vPvM']},
+]);
+const LIMITS = Object.freeze({edhh:{'1':0.1,'2':1},edenv:{'1':0.1,'2':1},pbt:{PBT:0.1,vPvB:0.1,'PBT+vPvB':0.1},pmt:{PMT:0.1,vPvM:0.1,'PMT+vPvM':0.1}});
+const EPS=1e-9;
+function isValidPercent(x){return typeof x==='number' && Number.isFinite(x) && x>=0 && x<=100;}
+const standardStatuses = ['unknown','none'];
+function validateMixture(input){
+  const errors=[], warnings=[];
+  if(input.phase==='gas') errors.push('Gas mixture calculation is not implemented. ED thresholds use % v/v for gases, while PBT/PMT require % w/w.');
+  if(!Array.isArray(input.components)||input.components.length===0) errors.push('Add at least one ingredient.');
+  let sum=0; const ids=new Set();
+  for(const [i,c] of (input.components||[]).entries()){
+    if(!isValidPercent(c.concentration))errors.push(`Ingredient ${i+1}: concentration must be between 0 and 100% w/w.`);
+    else sum+=c.concentration;
+    if(!String(c.name||'').trim())errors.push(`Ingredient ${i+1}: enter an ingredient name.`);
+    if(c.id && ids.has(c.id))warnings.push(`Duplicate internal ingredient identifier in row ${i+1}.`);
+    ids.add(c.id);
+    for(const g of GROUPS){
+      const val = c[g.key]??'unknown';
+      if(![...standardStatuses, ...g.candidates].includes(val)) errors.push(`Ingredient ${i+1}: invalid ${g.key} classification value.`);
+    }
+    if(!String(c.source||'').trim()) warnings.push(`Ingredient ${i+1}: no evidence or classification reference recorded.`);
+  }
+  if(sum>100+EPS) errors.push(`Ingredient concentrations total ${formatPercent(sum)}%, exceeding 100%.`);
+  else if(sum<100-EPS)warnings.push(`Only ${formatPercent(sum)}% of the formulation is entered. Unlisted components may affect the outcome.`);
+  return {errors,warnings,total:sum,complete:Math.abs(sum-100)<EPS};
+}
+function formatPercent(n){return (Math.round(n*10000)/10000).toLocaleString('en-GB',{maximumFractionDigits:4});}
+function evaluateMixture(input){
+  const validation=validateMixture(input);
+  if(validation.errors.length)return {validation,groups:[], sdsRequest:[], overall:'invalid'};
+  const groups=GROUPS.map(g=>{
+    const hits=[], missing=[], reviewed=[], categoryItems=[];
+    for(const c of input.components){
+      const value=c[g.key]??'unknown';
+      if(value==='unknown'){missing.push({name:c.name,concentration:c.concentration});continue;}
+      if(value==='none'){reviewed.push(c.name);continue;}
+      const lim=LIMITS[g.key][value];
+      if(c.concentration>=lim){
+        for(const category of value.split('+'))hits.push({name:c.name,concentration:c.concentration, value:category, threshold:lim, source:c.source||''});
+      } else categoryItems.push({name:c.name,concentration:c.concentration,value,threshold:lim});
+    }
+    let chosen=null;
+    const byValue=v=>hits.find(h=>h.value===v);
+    // Within a given hazard-class group, prefer Category 1 / more severe over Category 2.
+    if(g.key==='edhh'||g.key==='edenv')chosen=byValue('1')?'1':byValue('2')?'2':null;
+    else chosen=hits.length?hits.map(h=>h.value):null;
+    const hasUnknown=missing.length>0 || !validation.complete;
+    const result=hits.length ? 'triggered' : hasUnknown ? 'review' : 'not_triggered';
+    const categories=Array.isArray(chosen)?chosen.filter((v,i,a)=>a.indexOf(v)===i):chosen?[chosen]:[];
+    const statements=categories.map(v=>CATEGORIES[g.key].find(c=>c.value===v)).filter(Boolean);
+    const upgradePossible=!!((g.key==='edhh'||g.key==='edenv')&&chosen==='2'&&missing.some(c=>c.concentration>=0.1));
+    return {...g, result, hits, missing, belowLimit:categoryItems, categories, statements, upgradePossible, complete:!hasUnknown};
+  });
+  const sdsRequest=[];
+  for(const group of ['edhh','edenv']){
+    for(const c of input.components){
+      if(c[group]==='2' && c.concentration>=0.1) sdsRequest.push({group,ingredient:c.name,concentration:c.concentration,reason:'Category 2 ED ingredient at or above 0.1%; SDS available on request',section:group==='edhh'?'3.11.3.1, Table 3.11.2 Note 1':'4.2.3.1, Table 4.2.2 Note 1'});
+    }
+  }
+  const overall=groups.some(g=>g.result==='triggered')?'triggered':groups.some(g=>g.result==='review')?'review':'not_triggered';
+  return {validation,groups,sdsRequest,overall,ruleVersion:RULESET.version};
+}
+
+/** Screening is evidence triage; it never establishes formal substance classification. */
+function screenSubstance(evidence){
+  const ed=(prefix)=>{
+    const x=[evidence[`${prefix}Activity`],evidence[`${prefix}Adverse`],evidence[`${prefix}Link`]];
+    if(x.every(v=>v==='yes'))return {status:'candidate',message:'All three core evidence elements indicated. Expert weight-of-evidence assessment is required to distinguish Category 1 from Category 2.'};
+    if(x.includes('no'))return {status:'review',message:'At least one core evidence element is marked not demonstrated. Review all relevant evidence before concluding no classification.'};
+    return {status:'unknown',message:'Insufficient information to establish or exclude endocrine-disrupting properties.'};
+  };
+  const yes=key=>evidence[key]==='yes';
+  const p=yes('persistent')||yes('veryPersistent');
+  const b=yes('bioaccumulative')||yes('veryBioaccumulative');
+  const m=yes('mobile')||yes('veryMobile');
+  const t=yes('toxic');
+  const pbt=[];if(yes('veryPersistent')&&yes('veryBioaccumulative'))pbt.push('vPvB');if(p&&b&&t)pbt.push('PBT');
+  const pmt=[];if(yes('veryPersistent')&&yes('veryMobile'))pmt.push('vPvM');if(p&&m&&t)pmt.push('PMT');
+  const f=(arr,detail)=>arr.length?{status:'candidate',candidates:arr,message:`Potential ${arr.join(' and ')} criteria indicated by the entered expert evidence flags. Confirm using the full CLP criteria, study reliability and weight of evidence.`}:{status:'unknown',candidates:[],message:`${detail} not established by these flags. This does not prove that the substance is not classified.`};
+  return {edhh:ed('hh'),edenv:ed('env'),pbt:f(pbt,'PBT/vPvB'),pmt:f(pmt,'PMT/vPvM'),notice:'Screening only; candidate classes are not verified substance classifications.'};
+}
+
+/** Exemption applies to existing stock already in the EU supply chain, not all future batches of an established product. */
+function complianceStatus(type,asOf,olderStock){
+  const substance=type==='substance';
+  const start=substance?'2025-05-01':'2026-05-01';
+  const end=substance?'2026-11-01':'2028-05-01';
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(asOf)||Number.isNaN(Date.parse(`${asOf}T00:00:00Z`)))return {status:'unknown',text:'Enter a valid assessment date.'};
+  if(asOf<start)return {status:'not_yet',text:`The new hazard classes were not yet mandatory for ${type}s on this date.`};
+  if(asOf>=end)return {status:'required',text:`New-hazard-class obligations apply. The transitional period for qualifying older ${type} stock has ended.`};
+  if(olderStock==='yes')return {status:'transition',text:`Qualifying stock already placed on the EU market before ${start} may use the transition until ${end}. Confirm stock identity and eligibility.`};
+  if(olderStock==='unknown')return {status:'review',text:`Check whether this particular stock was already in the EU supply chain before ${start}; otherwise the new rules apply.`};
+  return {status:'required',text:`New-hazard-class obligations apply to ${type}s placed on the market from ${start}.`};
+}
+
+/** Guided regulatory decisions and *local* reusable evidence records.
+ * These functions never fetch legal data or claim that user supplied claims are harmonised classifications.
+ */
+const choices=Object.fromEntries(GROUPS.map(g=>[g.key,['none',...g.candidates]]));
+function normaliseIdentifier(input){return String(input||'').trim().toUpperCase().replace(/\s+/g,'');}
+function validCAS(id){
+  const s=normaliseIdentifier(id);
+  if(!/^\d{2,7}-\d{2}-\d$/.test(s))return false;
+  const digits=s.replace(/-/g,'');let checksum=0;
+  for(let i=digits.length-2,weight=1;i>=0;i--,weight++)checksum+=Number(digits[i])*weight;
+  return checksum%10===Number(digits.at(-1));
+}
+function validEC(id){return /^\d{3}-\d{3}-\d$/.test(normaliseIdentifier(id));}
+function validChemicalIdentifier(id){return validCAS(id)||validEC(id);}
+function reviewedDecision(decision){
+  return !!decision && choices[decision.group]?.includes(decision.classification) &&
+    ['annex_vi','expert_review'].includes(decision.basis) &&
+    !!String(decision.source||'').trim() && !!String(decision.reason||'').trim() &&
+    decision.annexChecked===true && decision.reviewed===true;
+}
+function registryAssessment(substance){
+  const issues=[];
+  if(!String(substance.name||'').trim())issues.push('Enter a substance name.');
+  if(!validChemicalIdentifier(substance.cas))issues.push('Enter a valid CAS number with check digit, or an EC number (XXX-XXX-X).');
+  if(!String(substance.reviewer||'').trim())issues.push('Enter the reviewer responsible for the regulatory decisions.');
+  const approved={};
+  for(const g of GROUPS){
+    const d={...(substance.decisions?.[g.key]||{}),group:g.key};
+    if(reviewedDecision(d))approved[g.key]={classification:d.classification,basis:d.basis,source:d.source.trim(),reason:d.reason.trim(),annexChecked:true,reviewed:true};
+  }
+  if(!Object.keys(approved).length)issues.push('Complete and sign off at least one hazard-group decision before saving to the reviewed library.');
+  return {issues, approved, unreviewed:GROUPS.filter(g=>!approved[g.key]).map(g=>g.title)};
+}
+function makeRegistryRecord(substance,reviewDate=new Date().toISOString()){
+  const result=registryAssessment(substance);
+  if(result.issues.length)return {ok:false,...result};
+  return {ok:true, record:{id:normaliseIdentifier(substance.cas),name:substance.name.trim(),identifier:normaliseIdentifier(substance.cas),reviewer:substance.reviewer.trim(),reviewedAt:reviewDate,ruleVersion:RULESET.version,groups:result.approved},unreviewed:result.unreviewed};
+}
+function applyReviewedLibrary(components,library){
+  const updated=components.map(c=>({...c,provenance:{...(c.provenance||{})}}));
+  const applied=[],conflicts=[],unmatched=[];
+  for(const c of updated){
+    const id=normaliseIdentifier(c.cas);
+    if(!validChemicalIdentifier(id)){unmatched.push(`${c.name||'Unnamed ingredient'}: valid CAS / EC identifier required`);continue;}
+    const matches=(library||[]).filter(r=>r.identifier===id);
+    if(matches.length!==1){unmatched.push(`${c.name||id}: ${matches.length?'multiple reviewed records':'no reviewed record'}`);continue;}
+    const record=matches[0];
+    for(const g of GROUPS){
+      const decision=record.groups?.[g.key];
+      if(!decision)continue;
+      if(!reviewedDecision({...decision,group:g.key}))continue;
+      const existing=c[g.key]||'unknown';
+      if(existing!=='unknown' && existing!==decision.classification){conflicts.push(`${c.name||id} / ${g.title}: entered ${existing} conflicts with reviewed ${decision.classification}; not overwritten.`);continue;}
+      c[g.key]=decision.classification;
+      c.provenance[g.key]={recordId:record.id,reviewer:record.reviewer,reviewedAt:record.reviewedAt,source:decision.source};
+      applied.push(`${c.name||id} / ${g.title}`);
+    }
+    if(applied.some(x=>x.startsWith(`${c.name||id} / `)) && !c.source) c.source=`Reviewed library: ${record.identifier} (${record.reviewedAt.slice(0,10)})`;
+  }
+  return {components:updated,applied,conflicts,unmatched};
+}
+function createMixtureReviewQueue(mixture,library=[]){
+  const result=evaluateMixture(mixture),items=[];
+  if(result.validation.errors.length)items.push({priority:'blocker',title:'Correct composition errors',detail:result.validation.errors.join(' '),section:'Annex I mixture rules'});
+  if(!result.validation.complete)items.push({priority:'blocker',title:'Complete formulation',detail:`Entered total: ${result.validation.total.toFixed(4)}%. Assess missing components before concluding no classification.`,section:'Composition'});
+  for(const c of mixture.components||[]){
+    const id=String(c.cas||'').trim();
+    if(!validChemicalIdentifier(id))items.push({priority:'review',title:`Verify identifier: ${c.name||'unnamed ingredient'}`,detail:'Enter a valid CAS or EC identifier and check substance identity, including relevant substance form/constituents.',section:'Identity'});
+    for(const g of GROUPS){
+      if((c[g.key]||'unknown')==='unknown')items.push({priority:'review',title:`Assess ${c.name||'ingredient'} — ${g.title}`,detail:'Check the applicable Annex VI entry first; then assess the available evidence. Do not interpret missing data as a negative assessment.',section:`Annex I §${g.section}`});
+      else if(!c.provenance?.[g.key])items.push({priority:'verify',title:`Verify manual decision: ${c.name||'ingredient'} — ${g.title}`,detail:'This ingredient classification was entered manually and is not linked to an approved local evidence record. Confirm the source and current applicability.',section:`Annex I §${g.section}`});
+      else {
+        const r=(library||[]).find(record=>record.identifier===normaliseIdentifier(c.cas));
+        const p=c.provenance[g.key];
+        if(!r||r.id!==p.recordId||r.reviewedAt!==p.reviewedAt||r.ruleVersion!==RULESET.version||r.groups?.[g.key]?.classification!==c[g.key])
+          items.push({priority:'blocker',title:`Refresh outdated evidence: ${c.name||'ingredient'} — ${g.title}`,detail:'The linked reviewed record is unavailable, superseded, or no longer matches this classification. Reapply or investigate the library record; the previous provenance cannot be relied upon.',section:`Annex I §${g.section}`});
+      }
+    }
+  }
+  for(const [key,label,section] of [['whole','whole-mixture endocrine studies','3.11.3.2 / 4.2.3.2'],['bridging','relevant similar-mixture evidence / bridging','3.11.3.3 / 4.2.3.3']]){
+    const r=mixture.edReview?.[key]||'unknown';
+    if(r==='unknown')items.push({priority:'review',title:`Check ${label}`,detail:'Record whether relevant evidence exists. These routes may establish additional ED hazard; do not use them automatically to negate an ingredient-based trigger.',section:`Annex I §§${section}`});
+    if(r==='yes' && !(mixture.edReview?.expertNotes||'').trim())items.push({priority:'blocker',title:`Expert assessment required: ${label}`,detail:'Relevant evidence has been identified. Document its evaluation and any impact on the classification.',section:`Annex I §§${section}`});
+  }
+  if(!String(mixture.edReview?.reviewer||'').trim())items.push({priority:'review',title:'Record the mixture assessment reviewer',detail:'Record who reviewed the whole-mixture and bridging considerations. This is not automated approval.',section:'Audit trail'});
+  return {items,counts:{blocker:items.filter(x=>x.priority==='blocker').length,review:items.filter(x=>x.priority==='review').length,verify:items.filter(x=>x.priority==='verify').length},ruleVersion:RULESET.version};
+}
+
+/** Pure numeric checks for specific CLP 2023/707 criteria. Not a substance classification.
+ * All measured values must be evaluated for applicability, quality, biological relevance,
+ * relevant constituents/transformation products and complete weight-of-evidence.
+ */
+const METRICS=Object.freeze([
+ {key:'marineWater',label:'Marine water degradation half-life',unit:'days',p:60,vp:60,section:'4.3.2.1.1(a), 4.3.2.2.1(a)'},
+ {key:'freshWater',label:'Fresh / estuarine water half-life',unit:'days',p:40,vp:60,section:'4.3.2.1.1(b), 4.3.2.2.1(a)'},
+ {key:'marineSediment',label:'Marine sediment half-life',unit:'days',p:180,vp:180,section:'4.3.2.1.1(c), 4.3.2.2.1(b)'},
+ {key:'freshSediment',label:'Fresh / estuarine sediment half-life',unit:'days',p:120,vp:180,section:'4.3.2.1.1(d), 4.3.2.2.1(b)'},
+ {key:'soil',label:'Soil degradation half-life',unit:'days',p:120,vp:180,section:'4.3.2.1.1(e), 4.3.2.2.1(c)'},
+ {key:'bcf',label:'Aquatic species bioconcentration factor (BCF)',unit:'L/kg',b:2000,vb:5000,section:'4.3.2.1.2, 4.3.2.2.2'},
+ {key:'logKoc',label:'log Koc (lowest pH 4–9 if ionisable)',unit:'log10',m:3,vm:2,section:'4.4.2.1.2, 4.4.2.2.2'},
+ {key:'chronicEc',label:'Aquatic long-term NOEC or ECx',unit:'mg/L',t:0.01,section:'4.3.2.1.3(a), 4.4.2.1.3(a)'}
+]);
+function evaluateNumericEvidence(evidence={}){
+  const flags={P:[],vP:[],B:[],vB:[],M:[],vM:[],T:[]},invalid=[],uncertain=[];
+  for(const metric of METRICS){
+    const input=evidence[metric.key];
+    if(input==null || input==='')continue;
+    const value=Number(input);
+    if(!Number.isFinite(value)||(metric.key==='logKoc'?false:value<0)){invalid.push(`${metric.label}: enter a valid numeric result.`);continue;}
+    if(metric.p!==undefined && value>metric.p)flags.P.push(`${metric.label}: ${value} > ${metric.p} days`);
+    if(metric.vp!==undefined && value>metric.vp)flags.vP.push(`${metric.label}: ${value} > ${metric.vp} days`);
+    if(metric.b!==undefined && value>metric.b)flags.B.push(`BCF ${value} > ${metric.b}`);
+    if(metric.vb!==undefined && value>metric.vb)flags.vB.push(`BCF ${value} > ${metric.vb}`);
+    if(metric.t!==undefined && value<metric.t)flags.T.push(`Long-term aquatic NOEC/ECx ${value} < ${metric.t} mg/L`);
+    if(metric.m!==undefined){
+      const context=evidence.ionisable;
+      const suitable=context==='no'||context==='yes'&&evidence.phCoverage==='yes';
+      if(value<metric.m){
+        const target=suitable?flags.M:uncertain;
+        target.push(`log Koc ${value} < ${metric.m}: ${suitable?'M numerical indication':'ionisation / pH applicability review needed'}`);
+      }
+      if(value<metric.vm){
+        const target=suitable?flags.vM:uncertain;
+        target.push(`log Koc ${value} < ${metric.vm}: ${suitable?'vM numerical indication':'ionisation / pH applicability review needed'}`);
+      }
+    }
+  }
+  const supported=Object.fromEntries(Object.entries(flags).map(([k,v])=>[k,v.length>0]));
+  const provisional=[];
+  if(supported.P&&supported.B&&supported.T)provisional.push('PBT');
+  if(supported.vP&&supported.vB)provisional.push('vPvB');
+  if(supported.P&&supported.M&&supported.T)provisional.push('PMT');
+  if(supported.vP&&supported.vM)provisional.push('vPvM');
+  return {flags,supported,provisional,invalid,uncertain,notice:'Numeric comparisons only: absence of a trigger does not mean the criterion is not met. Expert weight-of-evidence and study verification are mandatory.'};
+}
+
+const KEY='clp-new-hazards-v2';
+const OLD_KEY='clp-new-hazards-v1';
+const $=sel=>document.querySelector(sel);
+const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const asLocalDate=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const newIngredient=()=>({id:`i-${Date.now()}-${Math.random().toString(16).slice(2,8)}`,name:'',cas:'',concentration:null,edhh:'unknown',edenv:'unknown',pbt:'unknown',pmt:'unknown',source:'',provenance:{}});
+const defaults=()=>({mixture:{name:'',phase:'liquid',date:asLocalDate(),older:'unknown',components:[newIngredient()],edReview:{whole:'unknown',bridging:'unknown',expertNotes:'',reviewer:''}},substance:{name:'',cas:'',date:asLocalDate(),older:'unknown',sources:'',reviewer:'',evidence:{},numeric:{},decisions:{}},library:[],audit:[]});
+function load(){try{const raw=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(OLD_KEY));if(!raw || !raw.mixture || !raw.substance || !Array.isArray(raw.mixture.components))return defaults();const d=defaults();return {...d,...raw,library:Array.isArray(raw.library)?raw.library:[],audit:Array.isArray(raw.audit)?raw.audit:[],mixture:{...d.mixture,...raw.mixture,edReview:{...d.mixture.edReview,...raw.mixture.edReview}},substance:{...d.substance,...raw.substance,numeric:{...d.substance.numeric,...raw.substance.numeric},decisions:{...d.substance.decisions,...raw.substance.decisions}}};}catch{return defaults();}}
+let state=load();
+const logAction=(type,detail)=>{state.audit.push({date:new Date().toISOString(),type,detail});if(state.audit.length>300)state.audit=state.audit.slice(-300)};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch{toast('Browser storage unavailable. Export a JSON copy to retain your work.')}};
+let toastTimer;
+function toast(message){const t=$('#toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),4500)}
+const option=(v,label,selected)=>`<option value="${escapeHTML(v)}" ${selected===v?'selected':''}>${escapeHTML(label)}</option>`;
+const classSelect=(group,val)=>{
+  const options={
+    edhh:[['unknown','Not assessed'],['none','Not classified · reviewed'],['1','Category 1'],['2','Category 2']],
+    edenv:[['unknown','Not assessed'],['none','Not classified · reviewed'],['1','Category 1'],['2','Category 2']],
+    pbt:[['unknown','Not assessed'],['none','Not classified · reviewed'],['PBT','PBT'],['vPvB','vPvB'],['PBT+vPvB','PBT + vPvB']],
+    pmt:[['unknown','Not assessed'],['none','Not classified · reviewed'],['PMT','PMT'],['vPvM','vPvM'],['PMT+vPvM','PMT + vPvM']],
+  };return options[group].map(([value,label])=>option(value,label,val)).join('');
+};
+function drawComponents(){
+  $('#ingredient-rows').innerHTML=state.mixture.components.map((c,i)=>`<tr>
+    <td><div class="name-stack inline-field"><input aria-label="Ingredient ${i+1} name" data-idx="${i}" data-field="name" value="${escapeHTML(c.name)}" placeholder="Ingredient name" /><input aria-label="Ingredient ${i+1} CAS" data-idx="${i}" data-field="cas" value="${escapeHTML(c.cas)}" placeholder="CAS / EC number" /><div class="row-buttons"><button type="button" class="auto-button" data-auto="${i}">↻ Match reviewed record</button><button type="button" class="auto-button" data-assess="${i}">◇ Guided assessment</button></div>${Object.keys(c.provenance||{}).length?`<span class="audit-chip">${Object.keys(c.provenance).length} reviewed groups linked</span>`:''}</div></td>
+    <td><div class="inline-field"><input type="number" min="0" max="100" step="any" aria-label="Ingredient ${i+1} concentration" data-idx="${i}" data-field="concentration" value="${c.concentration==null?'':escapeHTML(c.concentration)}" placeholder="0.0000" /></div></td>
+    ${GROUPS.map(g=>`<td><div class="inline-field"><select aria-label="Ingredient ${i+1}, ${escapeHTML(g.title)}" data-idx="${i}" data-field="${g.key}">${classSelect(g.key,c[g.key]||'unknown')}</select></div></td>`).join('')}
+    <td><div class="inline-field"><input aria-label="Ingredient ${i+1} evidence reference" data-idx="${i}" data-field="source" value="${escapeHTML(c.source)}" placeholder="SDS / dossier / legal source" /></div></td>
+    <td><button class="remove-row" data-remove="${i}" title="Remove ingredient ${i+1}" aria-label="Remove ingredient ${i+1}">×</button></td>
+  </tr>`).join('');
+}
+const labelStatus=(status)=>({triggered:'Threshold met',review:'Needs review',not_triggered:'No ingredient trigger',invalid:'Input error'})[status]||'Needs review';
+function drawMixtureResults(){
+  const a=evaluateMixture(state.mixture),c=$('#overall-status');
+  c.className=`status-badge ${a.overall==='invalid'?'status-error':a.overall==='triggered'?'status-hit':a.overall==='not_triggered'?'status-clear':'status-review'}`;
+  c.textContent= a.overall==='invalid'?'Input errors':a.overall==='triggered'?'One or more thresholds met':a.overall==='not_triggered'?'No ingredient threshold met':'Review required';
+  $('#component-count').textContent=`${state.mixture.components.length} ingredient${state.mixture.components.length===1?'':'s'}`;
+  $('#concentration-total').textContent=`Total: ${formatPercent(a.validation.total)}% / 100%`;
+  $('#mixture-compliance').textContent=complianceStatus('mixture',state.mixture.date,state.mixture.older).text;
+  $('#validation-messages').innerHTML=[...a.validation.errors.map(message=>({message,type:'error'})),...a.validation.warnings.map(message=>({message,type:'warning'}))].map(({message,type})=>`<div class="message ${type}">${escapeHTML(message)}</div>`).join('');
+  if(a.overall==='invalid'){
+    $('#results-grid').innerHTML=`<div class="result-card" style="grid-column:1/-1"><h3>Correct the ingredient inputs</h3><p class="result-explanation">The calculation is paused because at least one required field or concentration is invalid.</p></div>`;
+    $('#sds-box').innerHTML='';drawReviewQueue();return;
+  }
+  $('#results-grid').innerHTML=a.groups.map(g=>{
+    const kind=g.result==='triggered'?'hit':g.result==='review'?'review':'clear';
+    const text=g.result==='triggered'?'At least one individual ingredient reaches the classification threshold.':g.result==='review'?'A missing classification or incomplete formulation prevents a reliable negative screening outcome.':'No entered ingredient meets this group’s generic concentration limit.';
+    const triggered=g.hits.length?`<div class="result-evidence"><strong>Triggering:</strong> ${g.hits.map(h=>`${escapeHTML(h.name)} (${formatPercent(h.concentration)}% · ${escapeHTML(h.value)})`).join('; ')}</div>`:'';
+    const gap=g.missing.length?`<div class="result-evidence"><strong>Unassessed:</strong> ${g.missing.map(x=>escapeHTML(x.name)).join(', ')}</div>`:'';
+    const upgrade=g.upgradePossible?`<p class="result-explanation"><strong>Potential higher category:</strong> An unassessed ingredient could meet Category 1. The Category 2 result cannot be treated as the final endpoint classification.</p>`:'';
+    const both=g.categories.includes('PBT')&&g.categories.includes('vPvB')?`<p class="result-explanation">Where EUH441 applies, EUH440 may be omitted in the final labelling assessment.</p>`:g.categories.includes('PMT')&&g.categories.includes('vPvM')?`<p class="result-explanation">Where EUH451 applies, EUH450 may be omitted in the final labelling assessment.</p>`:'';
+    return `<article class="result-card"><div class="result-title"><h3>${escapeHTML(g.title)}</h3><small>§ ${escapeHTML(g.section)}</small></div><div class="result-type ${kind}">${labelStatus(g.result)}</div><div class="result-main">${g.statements.map(s=>`<span class="euh-chip" title="${escapeHTML(s.label)}">${escapeHTML(s.code)}</span>`).join('')||'<span style="font-size:12px;color:#8aa0b2">No EUH code established</span>'}</div><p class="result-explanation">${text}</p>${triggered}${gap}${upgrade}${both}</article>`;
+  }).join('');
+  $('#sds-box').innerHTML=a.sdsRequest.length?`<h3>Additional SDS-on-request consideration</h3><p>Category 2 endocrine-disrupting ingredients present at ≥0.1% may require a safety data sheet to be available upon request even where the mixture’s corresponding Category 2 classification limit (1%) is not met. Flagged: ${a.sdsRequest.map(x=>`${escapeHTML(x.ingredient)} (${formatPercent(x.concentration)}% · ${x.group==='edhh'?'human health':'environment'})`).join('; ')}. See CLP Annex II, section 2.10 and Annex I Tables 3.11.2 / 4.2.2.</p>`:'';
+  drawReviewQueue();
+}
+
+function drawReviewQueue(){
+  const q=createMixtureReviewQueue(state.mixture,state.library);
+  $('#review-counts').innerHTML=`<span class="review-count">${q.counts.blocker} blockers</span><span class="review-count">${q.counts.review} assessments</span><span class="review-count">${q.counts.verify} source checks</span>`;
+  $('#review-queue').innerHTML=q.items.length?q.items.map(x=>`<div class="review-step"><span class="step-icon ${escapeHTML(x.priority)}">${x.priority==='blocker'?'!':x.priority==='verify'?'?':'•'}</span><div><strong>${escapeHTML(x.title)}</strong><small>${escapeHTML(x.section)} · ${escapeHTML(x.priority)}</small><p>${escapeHTML(x.detail)}</p></div></div>`).join(''):'<div class="queue-empty"><strong>Checklist clear for recorded inputs</strong>No outstanding guided-workflow items identified. This is not an independent verification of scientific evidence or legal classification.</div>';
+}
+function drawLibrary(){
+  const list=state.library||[];
+  $('#library-summary').innerHTML=list.length?`<p><strong>${list.length} locally reviewed substance record${list.length===1?'':'s'}</strong>. Matching uses validated CAS / EC identifiers. The information is user-supplied, not automatically sourced or verified against the current ECHA database.</p>${list.slice(0,8).map(r=>`<div class="library-entry"><div><strong>${escapeHTML(r.name)}</strong> (${escapeHTML(r.identifier)})<small> · ${Object.keys(r.groups||{}).length} reviewed groups</small></div><small>${escapeHTML(r.reviewer)} · ${escapeHTML((r.reviewedAt||'').slice(0,10))}</small></div>`).join('')}${list.length>8?`<small>+ ${list.length-8} further records in exported library</small>`:''}`:'<p>No reviewed substance records saved yet. Open Substance screening, record defensible decisions, and save at least one reviewed hazard group. Then apply it to mixtures by CAS / EC identifier.</p>';
+}
+function updateWithLibrary(index=null){
+  const selected=index===null?state.mixture.components:[state.mixture.components[index]];
+  if(!selected?.length)return;
+  const result=applyReviewedLibrary(selected,state.library);
+  if(index===null)state.mixture.components=result.components; else state.mixture.components[index]=result.components[0];
+  logAction('library-match',{applied:result.applied,conflicts:result.conflicts,unmatched:result.unmatched});
+  drawComponents();drawMixtureResults();save();
+  if(result.conflicts.length)toast(`Conflicts not overwritten: ${result.conflicts.slice(0,2).join('; ')}`);
+  else toast(`${result.applied.length} reviewed hazard-group decision(s) applied. ${result.unmatched.length} ingredient(s) unmatched.`);
+}
+
+
+function openSubstanceFromMixture(index){
+  const c=state.mixture.components[index];if(!c)return;
+  if(state.substance.name && normaliseIdentifier(state.substance.cas)!==normaliseIdentifier(c.cas) && !confirm('Start a new substance dossier for this ingredient? The current screening draft will be replaced. Export it first if necessary.'))return;
+  if(normaliseIdentifier(state.substance.cas)!==normaliseIdentifier(c.cas)){
+    state.substance={...defaults().substance,name:c.name,cas:c.cas,reviewer:state.substance.reviewer||''};
+    for(const [id,key] of Object.entries({'sub-name':'name','sub-cas':'cas','sub-date':'date','sub-older':'older','sub-sources':'sources','sub-reviewer':'reviewer'}))$(`#${id}`).value=state.substance[key]||'';
+    drawSubstanceCriteria();drawNumericInputs();drawDecisionCards();drawSubResults();
+  }
+  document.querySelector('[data-view="substance"]').click();save();toast('Guided substance dossier opened. Verify identity and legal sources before approval.');
+}
+
+function bindMixture(){
+  const fields={'mixture-name':'name','mixture-phase':'phase','mixture-date':'date','mixture-older':'older'};
+  for(const [id,key] of Object.entries(fields)){
+    const el=$(`#${id}`);el.value=state.mixture[key]??'';
+    el.addEventListener('input',e=>{state.mixture[key]=e.target.value;save();drawMixtureResults();});
+  }
+  const tbody=$('#ingredient-rows');
+  tbody.addEventListener('input',e=>{
+    const el=e.target, idx=Number(el.dataset.idx),field=el.dataset.field;
+    if(!field||!state.mixture.components[idx])return;
+    const ingredient=state.mixture.components[idx];
+    if(field==='cas' && ingredient.cas!==el.value){ingredient.provenance={};if((ingredient.source||'').startsWith('Reviewed library:'))ingredient.source='';}
+    if(GROUPS.some(g=>g.key===field) && ingredient[field]!==el.value)delete ingredient.provenance?.[field];
+    ingredient[field]=field==='concentration'?(el.value.trim()===''?null:Number(el.value)):el.value;
+    save();drawMixtureResults();
+  });
+  tbody.addEventListener('click',e=>{
+    const auto=e.target.closest('[data-auto]');if(auto){updateWithLibrary(Number(auto.dataset.auto));return;}
+    const assess=e.target.closest('[data-assess]');if(assess){openSubstanceFromMixture(Number(assess.dataset.assess));return;}
+    const btn=e.target.closest('[data-remove]');if(!btn)return;
+    state.mixture.components.splice(Number(btn.dataset.remove),1);drawComponents();save();drawMixtureResults();
+  });
+  $('#add-ingredient').addEventListener('click',()=>{state.mixture.components.push(newIngredient());drawComponents();save();drawMixtureResults();});
+  $('#auto-library').addEventListener('click',()=>updateWithLibrary());
+  for(const [id,key] of [['mix-whole','whole'],['mix-bridging','bridging'],['mix-ed-notes','expertNotes'],['mix-ed-reviewer','reviewer']]){const el=$(`#${id}`);el.value=state.mixture.edReview[key];el.addEventListener('input',()=>{state.mixture.edReview[key]=el.value;drawReviewQueue();save()});}
+  $('#export-library').addEventListener('click',()=>download('clp-reviewed-substance-library.json',{kind:'CLP_2023_707_reviewed_substance_library',ruleVersion:RULESET.version,exportedAt:new Date().toISOString(),records:state.library,audit:state.audit}));
+  $('#import-library').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.kind!=='CLP_2023_707_reviewed_substance_library'||!Array.isArray(data.records)||data.records.length>3000)throw Error('Invalid reviewed-library format.');const validated=data.records.map(r=>{if(!r||!validChemicalIdentifier(r.identifier)||!r.name||!r.reviewer||!r.reviewedAt||!r.groups)throw Error('Record identity or reviewer invalid.');const groups={};for(const g of GROUPS){const d=r.groups[g.key];if(d && registryAssessment({name:r.name,cas:r.identifier,reviewer:r.reviewer,decisions:{[g.key]:d}}).approved[g.key])groups[g.key]=d;}if(!Object.keys(groups).length)throw Error('Record lacks signed-off group data.');return {...r,id:normaliseIdentifier(r.identifier),identifier:normaliseIdentifier(r.identifier),groups};});if(!confirm(`Import ${validated.length} user-reviewed record(s)? This tool cannot independently validate the sources; only import records from a trusted, reviewed library.`))return;for(const r of validated){state.library=state.library.filter(x=>x.identifier!==r.identifier);state.library.push(r);}logAction('library-import',{count:validated.length});drawLibrary();save();toast(`${validated.length} reviewed records imported; recheck their legal currency before use.`)}catch(err){toast(`Library import failed: ${err.message}`)}finally{e.target.value='';}});
+  $('#reset-mixture').addEventListener('click',()=>{if(!confirm('Clear all entered mixture information?'))return;state.mixture=defaults().mixture;bindMixtureValues();bindEDReviewValues();drawComponents();save();drawMixtureResults();toast('Mixture assessment cleared.');});
+  $('#export-json').addEventListener('click',()=>download('clp-mixture-assessment.json',{kind:'CLP_2023_707_mixture_assessment',ruleset:RULESET,exportedAt:new Date().toISOString(),mixture:state.mixture,assessment:evaluateMixture(state.mixture),reviewQueue:createMixtureReviewQueue(state.mixture,state.library),audit:state.audit}));
+  $('#print-report').addEventListener('click',()=>window.print());
+  $('#import-json').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{const data=JSON.parse(await file.text());const m=data.mixture;if(!m||!Array.isArray(m.components)||m.components.length>2000||m.components.some(c=>!c||typeof c!=='object'||typeof c.name!=='string'))throw Error('Invalid mixture file.');
+      state.mixture={name:String(m.name||''),phase:String(m.phase||'liquid'),date:String(m.date||asLocalDate()),older:String(m.older||'unknown'),components:m.components.map(c=>({...newIngredient(),...c})),edReview:{...defaults().mixture.edReview,...m.edReview}};bindMixtureValues();bindEDReviewValues();drawComponents();save();drawMixtureResults();toast('Assessment imported. Review all evidence and classifications.');
+    }catch(err){toast(`Import failed: ${err.message}`);}finally{e.target.value='';}
+  });
+  drawComponents();drawLibrary();drawMixtureResults();
+}
+function bindMixtureValues(){for(const [id,key] of Object.entries({'mixture-name':'name','mixture-phase':'phase','mixture-date':'date','mixture-older':'older'}))$(`#${id}`).value=state.mixture[key]??'';}
+function bindEDReviewValues(){for(const [id,key] of [['mix-whole','whole'],['mix-bridging','bridging'],['mix-ed-notes','expertNotes'],['mix-ed-reviewer','reviewer']])$(`#${id}`).value=state.mixture.edReview[key]||'';}
+function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),600);toast('JSON file prepared for download.');}
+const ynOptions=val=>[['unknown','Not assessed'],['yes','Yes · evidence supports'],['no','No · not demonstrated']].map(([v,label])=>option(v,label,val||'unknown')).join('');
+const endocrineFields=[['Activity','Evidence of endocrine activity'],['Adverse','Evidence of an adverse effect'],['Link','Biologically plausible causal link']];
+const propFields=[['persistent','Persistent (P)','§§4.3 / 4.4'],['veryPersistent','Very persistent (vP)','§§4.3 / 4.4'],['bioaccumulative','Bioaccumulative (B)','§4.3'],['veryBioaccumulative','Very bioaccumulative (vB)','§4.3'],['mobile','Mobile (M)','§4.4'],['veryMobile','Very mobile (vM)','§4.4'],['toxic','Toxic (T)','§§4.3 / 4.4']];
+function drawSubstanceCriteria(){
+  for(const [prefix,target] of [['hh','#edhh-criteria'],['env','#edenv-criteria']]){
+    $(target).innerHTML=endocrineFields.map(([key,text])=>`<div class="criteria-row"><label for="${prefix}${key}">${text}</label><select id="${prefix}${key}" data-evidence="${prefix}${key}">${ynOptions(state.substance.evidence[`${prefix}${key}`])}</select></div>`).join('');
+  }
+  $('#property-flags').innerHTML=propFields.map(([key,label,section])=>`<div class="flag"><label for="p-${key}">${label}<span>Annex I ${section}</span></label><select id="p-${key}" data-evidence="${key}">${ynOptions(state.substance.evidence[key])}</select></div>`).join('');
+}
+function drawSubResults(){
+  const r=screenSubstance(state.substance.evidence);
+  $('#sub-compliance').textContent=complianceStatus('substance',state.substance.date,state.substance.older).text;
+  $('#sub-results').innerHTML=GROUPS.map(g=>{
+    const x=r[g.key];
+    return `<article class="result-card"><div class="result-title"><h3>${escapeHTML(g.title)}</h3><small>§ ${g.section}</small></div><div class="result-type ${x.status==='candidate'?'review':'clear'}">${x.status==='candidate'?'Potential criteria identified · review required':'Insufficient to establish classification'}</div><p class="result-explanation">${escapeHTML(x.message)}</p>${x.candidates?.length?`<div class="result-main" style="margin-top:10px">${x.candidates.map(s=>`<span class="euh-chip">${escapeHTML(s)} candidate</span>`).join('')}</div>`:''}</article>`;
+  }).join('');
+}
+
+
+function drawNumericInputs(){
+  const data=state.substance.numeric||{};
+  $('#numeric-inputs').innerHTML=METRICS.map(m=>`<label class="field">${escapeHTML(m.label)} (${escapeHTML(m.unit)})<input type="number" step="any" data-metric="${m.key}" value="${escapeHTML(data[m.key]??'')}" placeholder="Not available" /></label>`).join('')+
+    `<label class="field">Ionisable substance?<select data-metric="ionisable">${[['unknown','Not assessed'],['yes','Yes'],['no','No']].map(([v,l])=>option(v,l,data.ionisable||'unknown')).join('')}</select></label>`+
+    `<label class="field">For ionisable substance: log Koc evidence covers pH 4–9?<select data-metric="phCoverage">${[['unknown','Not confirmed'],['yes','Yes — lowest value established'],['no','No']].map(([v,l])=>option(v,l,data.phCoverage||'unknown')).join('')}</select></label>`;
+  drawNumericResults();
+}
+function drawNumericResults(){
+  const n=evaluateNumericEvidence(state.substance.numeric);
+  const labels={P:'Persistent (P)',vP:'Very persistent (vP)',B:'Bioaccumulative (B)',vB:'Very bioaccumulative (vB)',M:'Mobile (M)',vM:'Very mobile (vM)',T:'Toxic (T): aquatic long-term criterion'};
+  $('#numeric-results').innerHTML=`<div class="numeric-flags">${Object.entries(labels).map(([k,l])=>`<span class="numeric-flag ${n.supported[k]?'numeric-met':'numeric-unchecked'}" title="${escapeHTML((n.flags[k]||[]).join('; ')||'No positive numerical result entered. This is not a negative classification.')}" >${n.supported[k]?'✓ Indicated':'— Unresolved'} · ${escapeHTML(l)}</span>`).join('')}</div>`+
+    (n.provisional.length?`<p class="numeric-message"><strong>Possible combinations from numerical data: ${escapeHTML(n.provisional.join(', '))}.</strong> These are screening candidates only. Confirm the scientific and legal assessment before signing off.</p>`:'<p class="numeric-message">No full PBT/vPvB/PMT/vPvM combination established using the entered numeric measurements alone. Other evidence may change the result.</p>')+
+    (n.uncertain.length?`<p class="numeric-warning"><strong>Mobility applicability check:</strong> ${escapeHTML(n.uncertain.join('; '))}</p>`:'')+
+    (n.invalid.length?`<p class="numeric-warning"><strong>Invalid data:</strong> ${escapeHTML(n.invalid.join('; '))}</p>`:'');
+}
+
+const decisionGuides={
+  edhh:'Verify Annex VI for this differentiation. For self-classification, consider endocrine activity, adverse effects in an intact organism/progeny, biological plausibility, human relevance and evidence strength. Select Cat. 1 or Cat. 2 only after reviewing the legal category criteria (§3.11).',
+  edenv:'Verify Annex VI. Review endocrine activity, adverse effects at organism, population or subpopulation level, causal biological plausibility, relevance to the environment and the weight of evidence (§4.2).',
+  pbt:'Verify Annex VI. Review P and vP degradation criteria for each relevant medium, B and vB bioaccumulation data, T criteria, reliability/weight of evidence and whether PBT and vPvB both apply (§4.3).',
+  pmt:'Verify Annex VI. Assess P and vP, M and vM including adsorption/Koc and conditions, T criteria, evidence reliability and whether PMT and vPvM both apply (§4.4).'
+};
+function drawDecisionCards(){
+  $('#decision-cards').innerHTML=GROUPS.map(g=>{
+    const d=state.substance.decisions[g.key]||{};
+    return `<article class="decision-card"><h3>${escapeHTML(g.title)}</h3><p class="decision-description">${escapeHTML(decisionGuides[g.key])}</p>
+      <label class="field">Expert / binding classification outcome<select data-decision="${g.key}" data-dfield="classification">${classSelect(g.key,d.classification||'unknown')}</select></label>
+      <label class="field">Regulatory basis<select data-decision="${g.key}" data-dfield="basis">${[['','Select basis'],['annex_vi','Harmonised Annex VI entry (verify scope)'],['expert_review','Expert self-classification / evidence review']].map(([v,l])=>option(v,l,d.basis||'')).join('')}</select></label>
+      <label class="field">Traceable source / legal entry / studies<input data-decision="${g.key}" data-dfield="source" value="${escapeHTML(d.source||'')}" placeholder="Study IDs, Annex VI ATP entry, link and date" /></label>
+      <label class="field">Regulatory reasoning / evidence sufficiency<textarea rows="3" data-decision="${g.key}" data-dfield="reason" placeholder="Why this outcome and not another? Include the studies, thresholds, limitations and uncertainty.">${escapeHTML(d.reason||'')}</textarea></label>
+      <label class="verify-row"><input type="checkbox" data-decision="${g.key}" data-dfield="annexChecked" ${d.annexChecked?'checked':''}/>Applicable Annex VI harmonisation checked and substance identity/scope verified</label>
+      <label class="verify-row"><input type="checkbox" data-decision="${g.key}" data-dfield="reviewed" ${d.reviewed?'checked':''}/>I have reviewed the evidence and explicitly approve this hazard-group conclusion</label>
+      <small class="soft-warning">Annex I §${g.section} · Leave unresolved if evidence is insufficient. A user-entered “harmonised” claim is not verified by this app.</small>
+    </article>`;
+  }).join('');drawDecisionCheck();
+}
+function drawDecisionCheck(){
+  const x=registryAssessment(state.substance);
+  $('#decision-check').innerHTML=`<strong>${Object.keys(x.approved).length} of 4 hazard groups ready for local sign-off</strong>. ${x.unreviewed.length?`Unresolved: ${escapeHTML(x.unreviewed.join('; '))}. `:''}${x.issues.length?`<span class="soft-warning">${escapeHTML(x.issues.join(' '))}</span>`:'Ready to save the signed-off groups. Unresolved groups stay unknown when imported into mixtures.'}`;
+}
+
+function bindSubstance(){
+  const fields={'sub-name':'name','sub-cas':'cas','sub-date':'date','sub-older':'older','sub-sources':'sources','sub-reviewer':'reviewer'};
+  for(const [id,key] of Object.entries(fields)){
+    const el=$(`#${id}`);el.value=state.substance[key]||'';
+    el.addEventListener('input',e=>{state.substance[key]=e.target.value;save();drawSubResults();drawDecisionCheck();});
+  }
+  $('#numeric-inputs').addEventListener('input',e=>{const el=e.target,key=el.dataset.metric;if(!key)return;state.substance.numeric[key]=el.value;save();drawNumericResults();});
+  $('#view-substance').addEventListener('change',e=>{
+    if(!e.target.dataset.evidence)return;
+    state.substance.evidence[e.target.dataset.evidence]=e.target.value;save();drawSubResults();
+  });
+  $('#export-substance').addEventListener('click',()=>download('clp-substance-evidence.json',{kind:'CLP_2023_707_substance_screening',ruleset:RULESET,exportedAt:new Date().toISOString(),substance:state.substance,screening:screenSubstance(state.substance.evidence),numericEvidence:evaluateNumericEvidence(state.substance.numeric),approvalReadiness:registryAssessment(state.substance),audit:state.audit}));
+  $('#print-substance').addEventListener('click',()=>window.print());
+  $('#reset-substance').addEventListener('click',()=>{if(!confirm('Clear all substance evidence and identity information?'))return;state.substance=defaults().substance;for(const [id,key] of Object.entries(fields))$(`#${id}`).value=state.substance[key]||'';drawSubstanceCriteria();drawNumericInputs();drawDecisionCards();save();drawSubResults();toast('Substance screening cleared.');});
+  $('#decision-cards').addEventListener('input',e=>{const el=e.target,group=el.dataset.decision,field=el.dataset.dfield;if(!group||!field)return;state.substance.decisions[group]??={};state.substance.decisions[group][field]=el.type==='checkbox'?el.checked:el.value;save();drawDecisionCheck();});
+  $('#decision-cards').addEventListener('change',e=>{const el=e.target,group=el.dataset.decision,field=el.dataset.dfield;if(!group||!field)return;state.substance.decisions[group]??={};state.substance.decisions[group][field]=el.type==='checkbox'?el.checked:el.value;save();drawDecisionCheck();});
+  $('#save-decisions').addEventListener('click',()=>{const outcome=makeRegistryRecord(state.substance);if(!outcome.ok){toast(outcome.issues.join(' '));drawDecisionCheck();return;}const record=outcome.record;const existing=state.library.find(r=>r.identifier===record.identifier);if(existing && !confirm(`Replace the reviewed library record for ${record.identifier}? Existing mixture decisions will need their provenance rechecked.`))return;state.library=state.library.filter(x=>x.identifier!==record.identifier);state.library.push(record);logAction('reviewed-substance-record',{identifier:record.identifier,reviewer:record.reviewer,approved:Object.keys(record.groups)});save();drawLibrary();toast(`${Object.keys(record.groups).length} reviewed hazard-group decision(s) saved for ${record.identifier}.`);});
+  drawSubstanceCriteria();drawNumericInputs();drawDecisionCards();drawSubResults();
+}
+function navigation(){
+  document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+    const view=b.dataset.view;document.querySelectorAll('.nav-link').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${view}`));
+    if(location.hash!==`#${view}`)history.replaceState(null,'',`#${view}`);window.scrollTo({top:0,behavior:'instant'});
+  }));
+  const v=location.hash.replace('#','');const initial=document.querySelector(`[data-view="${v}"]`);if(initial)initial.click();
+}
+navigation();bindMixture();bindSubstance();
+</script>
+</body>
+</html>
