@@ -263,11 +263,15 @@ REVIEW CORRECTIONS (NOVEMBER 2026)
   notes any unspecified Category 1 sensitiser (1A limits: 0.1 % / EUH208 0.01 %).
 - EUH208 "driver" detection uses structured data instead of text matching.
 - New "Solid" physical state; flammable-liquid criteria are skipped for solids.
-- A non-additive corrosive ingredient no longer replaces an additive Skin Corr.
-  1A/1B/1C result with the unspecified "Skin Corr. 1".
-- P202 and P301+P310 are flagged for review: later UN GHS revisions mark them
-  obsolete (P203, P301+P316). Check which version of CLP Annex IV applies to
-  your label; codes are NOT changed automatically.
+- If a non-additive corrosive ingredient independently triggers Table 3.2.4,
+  the output is Skin Corr. 1 (no subcategory). Any additive 1A/1B/1C result
+  remains visible in the calculation trail and a subcategory-review note is added.
+- STOT SE/RE calculation steps identify whether each threshold comes from
+  an entered SCL, an entered Category 2 band, or a generic limit; band entries
+  on Category 2 substances are flagged as ignored.
+- P202 and P301+P310 remain listed in EU CLP Annex IV. Differences in later
+  UN GHS editions (P203 and P301+P316) are informational only and do not
+  invalidate the EU statements.
 Regression tests: node verification/test_review_fixes.js
 
 SCL / ATE / M-FACTOR RELIABILITY IMPROVEMENTS
