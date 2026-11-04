@@ -98,24 +98,70 @@ test('Liquid state still classifies from flash point', () => {
   assert.ok(labels(run([water(100)], { flashPoint: '10', ibp: '80' })).includes('Flam. Liq. 2'));
 });
 
-/* 6. Non-additive corrosive does not erase an additive 1A/1B/1C sub-category */
-test('Additive 1A kept when a non-additive corrosive also triggers', () => {
+/* 6. Separate additive and non-additive skin corrosion decisions */
+test('Additive 1A plus non-additive 1C reports unspecified Skin Corr. 1', () => {
   const a = ing(6, null, { skinCorr: '1A' }); a.name = 'A';
-  const b = ing(2, null, { skinCorr: '1B', nonAdditive: true }); b.name = 'B';
-  assert.ok(labels(run([a, b, water(92)])).includes('Skin Corr. 1A'));
+  const b = ing(2, null, { skinCorr: '1C', nonAdditive: true }); b.name = 'B';
+  const r = run([a, b, water(92)]);
+  assert.ok(labels(r).includes('Skin Corr. 1'));
+  assert.ok(!labels(r).includes('Skin Corr. 1A'));
+  assert.ok(hz(r, 'skin').notes.some(x => /subcategory requires expert review/.test(x)));
+  assert.ok(hz(r, 'skin').steps.some(x => /Additive route indicated Skin Corr. 1A/.test(x)));
 });
-test('Non-additive corrosive still upgrades Skin Irrit. 2 to Skin Corr. 1', () => {
+test('Additive 1C plus non-additive 1A does not understate as 1C', () => {
+  const a = ing(6, null, { skinCorr: '1C' }); a.name = 'A';
+  const b = ing(2, null, { skinCorr: '1A', nonAdditive: true }); b.name = 'B';
+  const r = run([a, b, water(92)]);
+  assert.ok(labels(r).includes('Skin Corr. 1'));
+  assert.ok(!labels(r).includes('Skin Corr. 1C'));
+  assert.ok(hz(r, 'skin').notes.some(x => /subcategory requires expert review/.test(x)));
+});
+test('Additive irritant plus non-additive corrosive results in Skin Corr. 1', () => {
   const a = ing(15, null, { skinCorr: '2' }); a.name = 'A';
   const b = ing(2, null, { skinCorr: '1B', nonAdditive: true }); b.name = 'B';
-  assert.ok(labels(run([a, b, water(83)])).includes('Skin Corr. 1'));
+  assert.ok(labels(run([a,b,water(83)])).includes('Skin Corr. 1'));
+});
+test('Non-additive corrosive below its SCL does not override additive 1A', () => {
+  const a = ing(6, null, { skinCorr: '1A' }); a.name = 'A';
+  const b = ing(2, null, { skinCorr: '1B', nonAdditive: true, scl: { skinCorr: '5' } }); b.name = 'B';
+  const r = run([a,b,water(92)]);
+  assert.ok(labels(r).includes('Skin Corr. 1A'));
+  assert.ok(!hz(r, 'skin').notes.some(x => /subcategory requires expert review/.test(x)));
+});
+test('Additive 1A alone keeps the substantiated subcategory', () => {
+  assert.ok(labels(run([ing(6, null, { skinCorr: '1A' }), water(94)])).includes('Skin Corr. 1A'));
 });
 
-/* 7. GHS-superseded P codes are flagged for review, not silently replaced */
-test('P202 / P301+P310 flagged as GHS-superseded', () => {
+/* 7. STOT SCL provenance and ignored Category 2 band fields */
+test('STOT RE Category 1 threshold labels entered SCL', () => {
+  const r = run([ing(21, 'H372', { scl: { stotRE: '20', stotRE2: '5' } }), water(79)]);
+  assert.ok(hz(r,'stotRE').steps.some(x => /20 % \(entered Category 1 SCL\)/.test(x)));
+});
+test('STOT RE Category 2 band labels entered band SCL and Category 1 limit', () => {
+  const r = run([ing(6, 'H372', { scl: { stotRE: '20', stotRE2: '5' } }), water(94)]);
+  assert.ok(hz(r,'stotRE').steps.some(x => /5 % \(entered Category 2 band SCL\).*20 % \(entered Category 1 SCL\)/.test(x)));
+});
+test('STOT RE generic threshold source is explicit', () => {
+  const r = run([ing(11, 'H372'), water(89)]);
+  assert.ok(hz(r,'stotRE').steps.some(x => /10 % \(generic Category 1 limit\)/.test(x)));
+});
+test('STOT SE Category 2 ingredient warns about ignored band', () => {
+  const r = run([ing(12, 'H371', { scl: { stotSE2: '5' } }), water(88)]);
+  assert.ok(hz(r,'stotSE').notes.some(x => /band limit was entered for a Category 2 ingredient/.test(x)));
+  assert.ok(hz(r,'stotSE').steps.some(x => /generic Category 2 limit/.test(x)));
+});
+test('STOT RE Category 2 entered SCL is labelled', () => {
+  const r = run([ing(6, 'H373', { scl: { stotRE: '5' } }), water(94)]);
+  assert.ok(hz(r,'stotRE').steps.some(x => /5 % \(entered Category 2 SCL\)/.test(x)));
+});
+
+/* 8. UN GHS changes are informational, not EU CLP obsolescence */
+test('P202 and P301+P310 retain EU CLP applicability', () => {
   const r = run([ing(1, 'H350'), ing(50, null, { acute: { oral: { cat: '3', ate: '', unknown: false }, dermal: { cat: '', ate: '', unknown: false }, inh: { form: 'vapour', cat: '', ate: '', unknown: false }, unknown: false } }), water(49)], { audience: 'professional', intendedUse: 'test' });
-  const codes = r.label.article28.review.filter((x) => /obsolete in later UN GHS/.test(x.reason)).map((x) => x.code);
-  assert.ok(codes.includes('P202'));
-  assert.ok(codes.includes('P301+P310'));
+  const entries = r.label.article28.review.filter(x => /remains listed in EU CLP Annex IV/.test(x.reason));
+  assert.ok(entries.some(x=>x.code==='P202'));
+  assert.ok(entries.some(x=>x.code==='P301+P310'));
+  assert.ok(entries.every(x=>x.severity==='info' && !/obsolete/.test(x.reason)));
 });
 
 console.log(n + ' review-fix regression tests passed');
