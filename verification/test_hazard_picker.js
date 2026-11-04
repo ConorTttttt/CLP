@@ -46,6 +46,14 @@ test("Acute toxicity ATE appears on its corresponding chip",()=>{
  const i=make("H302");i.acute.oral.ate="450";
  assert.match(ui.hazardRowChipsHTML(i),/ATE 450/);
 });
+test("Entered SCL and STOT details appear on hazard chips",()=>{
+ const i=make("H314 H370 H372");
+ i.skinCorr="1B";i.scl.skinCorr="0.5";i.stotSE="1";i.stotRE="1";i.scl.stotRE="20";
+ const result=ui.hazardRowChipsHTML(i);
+ assert.match(result,/Skin Corr\. 1B · SCL 0\.5%/);
+ assert.match(result,/STOT SE 1/);
+ assert.match(result,/STOT RE 1 · SCL 20%/);
+});
 test("Three hazard groups still classify suggestions",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
 test("Autocomplete by H phrase",()=>assert(ui.searchHazards("physical","highly flammable liquid").some(x=>x.code==="H225")));
 test("Autocomplete by class",()=>assert(ui.searchHazards("health","Skin Corr. 1").some(x=>x.code==="H314")));
