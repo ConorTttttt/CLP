@@ -2289,24 +2289,151 @@ const HAZARD_CHOICES=[
  ...Object.entries(HAZARD_ENVIRONMENTAL).map(([code,classification])=>({code,classification,text:CLP.HTEXT[code]||"Verify wording",group:"environmental"}))
 ];
 const HAZARD_MAP=new Map(HAZARD_CHOICES.map(item=>[item.code,item]));
-const ingredientHCodes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(item=>item.code);
+const enteredHCodes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(item=>item.code);
+// A classification entered under Details must appear in the same row as an
+// explicitly entered H-code; classification and statement code remain distinct.
+function detailHCodes(i){
+ const codes=[],add=(yes,code)=>{if(yes)codes.push(code);};
+ const acuteMap={oral:["H300","H300","H301","H302"],dermal:["H310","H310","H311","H312"],inh:["H330","H330","H331","H332"]};
+ for(const route of ["oral","dermal","inh"]){
+   const category=String(i.acute?.[route]?.cat||"");
+   if(["1","2","3","4"].includes(category))codes.push(acuteMap[route][Number(category)-1]);
+ }
+ add(["1","1A","1B","1C"].includes(i.skinCorr),"H314");
+ add(i.skinCorr==="2","H315");
+ add(i.eye==="1","H318");add(i.eye==="2","H319");
+ add(!!i.skinSens,"H317");add(!!i.respSens,"H334");
+ add(["1A","1B"].includes(i.muta),"H340");add(i.muta==="2","H341");
+ add(["1A","1B"].includes(i.carc),i.carcRoute==="inhalation"?"H350i":"H350");
+ add(i.carc==="2","H351");
+ const strong=c=>c==="1A"||c==="1B", f=i.reproFert,d=i.reproDev;
+ if(strong(f)&&strong(d))codes.push("H360FD");
+ else if(strong(f)&&d==="2")codes.push("H360Fd");
+ else if(f==="2"&&strong(d))codes.push("H360Df");
+ else if(f==="2"&&d==="2")codes.push("H361fd");
+ else{add(strong(f),"H360F");add(strong(d),"H360D");add(f==="2","H361f");add(d==="2","H361d");}
+ add(strong(i.repro),"H360");add(i.repro==="2","H361");
+ add(!!i.lact,"H362");
+ add(i.stotSE==="1","H370");add(i.stotSE==="2","H371");
+ add(!!i.stotSEresp,"H335");add(!!i.stotSEnarc,"H336");
+ add(i.stotRE==="1","H372");add(i.stotRE==="2","H373");
+ add(!!i.asp,"H304");
+ add(!!i.aquaAcute,"H400");
+ const aquatic={1:"H410",2:"H411",3:"H412",4:"H413"};
+ add(!!aquatic[i.aquaChronic],aquatic[i.aquaChronic]);
+ add(i.edHH==="1","EUH380");add(i.edHH==="2","EUH381");
+ add(i.edEnv==="1","EUH430");add(i.edEnv==="2","EUH431");
+ add(!!i.pbt,"EUH440");add(!!i.vpvb,"EUH441");
+ add(!!i.pmt,"EUH450");add(!!i.vpvm,"EUH451");
+ add(!!i.ozone,"H420");
+ return [...new Set(codes)];
+}
+const ingredientHCodes=i=>[...new Set([...enteredHCodes(i),...detailHCodes(i)])];
+function clearDetailHazard(i,code){
+ const field={
+ H314:"skinCorr",H315:"skinCorr",H318:"eye",H319:"eye",
+ H317:"skinSens",H334:"respSens",H340:"muta",H341:"muta",
+ H350:"carc",H350i:"carc",H351:"carc",H360:"repro",H361:"repro",
+ H362:"lact",H370:"stotSE",H371:"stotSE",H372:"stotRE",H373:"stotRE",
+ H335:"stotSEresp",H336:"stotSEnarc",H304:"asp",H400:"aquaAcute",
+ H410:"aquaChronic",H411:"aquaChronic",H412:"aquaChronic",H413:"aquaChronic",
+ H420:"ozone",EUH380:"edHH",EUH381:"edHH",EUH430:"edEnv",EUH431:"edEnv",
+ EUH440:"pbt",EUH441:"vpvb",EUH450:"pmt",EUH451:"vpvm"
+ }[code];
+ const route=/^H30[012]$/.test(code)?"oral":/^H31[012]$/.test(code)?"dermal":/^H33[012]$/.test(code)?"inh":null;
+ if(route){i.acute[route].cat="";return;}
+ if(["H360FD","H360Fd","H360Df","H361fd"].includes(code)){
+   i.reproFert="";i.reproDev="";return;
+ }
+ if(code==="H360F"||code==="H361f"){i.reproFert="";return;}
+ if(code==="H360D"||code==="H361d"){i.reproDev="";return;}
+ if(!field)return;
+ i[field]=typeof i[field]==="boolean"?false:"";
+ if(field==="carc")i.carcRoute="";
+}
 function groupForCode(code){
  return HAZARD_MAP.get(code)?.group||(/^H2/.test(code)?"physical":/^H4|^EUH4/.test(code)?"environmental":"health");
+}
+// Some H-statements cover several ingredient subcategories. Search may resolve
+// a specific category, but the stored hazard statement remains the original H-code.
+const HAZARD_SUBCATEGORIES={
+ H314:{field:"skinCorr",prefix:"Skin Corr.",cats:["1","1A","1B","1C"]},
+ H317:{field:"skinSens",prefix:"Skin Sens.",cats:["1","1A","1B"]},
+ H334:{field:"respSens",prefix:"Resp. Sens.",cats:["1","1A","1B"]},
+ H340:{field:"muta",prefix:"Muta.",cats:["1A","1B"]},
+ H350:{field:"carc",prefix:"Carc.",cats:["1A","1B"]},
+ H350i:{field:"carc",prefix:"Carc.",cats:["1A","1B"]},
+ H360:{field:"repro",prefix:"Repr.",cats:["1A","1B"]}
+};
+function hazardQueryCategory(query){
+ const q=String(query||"").trim();
+ const match=/^(H\d{3}i?)\s*[-:/]?\s*(?:cat(?:egory)?\.?\s*)?(1A|1B|1C|1)$/i.exec(q);
+ if(!match)return null;
+ const code=HAZARD_CHOICES.find(x=>x.code.toLowerCase()===match[1].toLowerCase())?.code;
+ const spec=HAZARD_SUBCATEGORIES[code],category=match[2].toUpperCase();
+ return spec?.cats.includes(category)?{code,category,field:spec.field}:null;
+}
+function hazardChipLabel(code,i){
+ const base=HAZARD_MAP.get(code)?.classification||"Unmapped code";
+ const spec=HAZARD_SUBCATEGORIES[code];
+ let label=base, sclKey="";
+ if(spec&&i?.[spec.field]&&spec.cats.includes(String(i[spec.field]))){
+   label=spec.prefix+" "+i[spec.field];
+   sclKey=spec.field;
+ } else if(code==="H315"&&i?.skinCorr==="2"){label="Skin Irrit. 2";sclKey="skinIrrit";}
+ else if(code==="H318"&&i?.eye==="1"){label="Eye Dam. 1";sclKey="eyeDam";}
+ else if(code==="H319"&&i?.eye==="2"){label="Eye Irrit. 2";sclKey="eyeIrrit";}
+ else if(code==="H410"&&i?.aquaChronic==="1")label="Aquatic Chronic 1"+(i.mChronic?" · M="+i.mChronic:"");
+ else if(code==="H400"&&i?.aquaAcute)label="Aquatic Acute 1"+(i.mAcute?" · M="+i.mAcute:"");
+ else if(code==="H370"||code==="H371"){label="STOT SE "+(i?.stotSE|| (code==="H370"?"1":"2"));sclKey="stotSE";}
+ else if(code==="H372"||code==="H373"){label="STOT RE "+(i?.stotRE|| (code==="H372"?"1":"2"));sclKey="stotRE";}
+ else {
+   const route=/^H30[012]$/.test(code)?"oral":/^H31[012]$/.test(code)?"dermal":/^H33[012]$/.test(code)?"inh":null;
+   if(route&&i?.acute?.[route]){
+     const a=i.acute[route];
+     const suffix=route==="inh"?"inhalation":route;
+     label="Acute Tox. "+(a.cat||base.replace(/^.*?(\d(?:\/\d)?).*$/,"$1"))+" "+suffix+
+       (a.ate?" · ATE "+a.ate:"");
+   }
+ }
+ // Show only an applicable, entered SCL: do not imply an SCL for endpoints
+ // that are not represented in the ingredient's detailed classification.
+ const limit=i?.scl?.[sclKey];
+ if(sclKey&&limit!==undefined&&limit!==null&&String(limit).trim()!=="")label+=" · SCL "+limit+"%";
+ return label;
 }
 function searchHazards(group,query,existing=[]){
  const q=String(query||"").trim().toLowerCase();
  if(!q)return [];
- const selected=new Set(existing);
- return HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group)&&!selected.has(x.code))
-   .filter(x=>(x.code+" "+x.classification+" "+x.text).toLowerCase().includes(q))
+ const specified=hazardQueryCategory(query),selected=new Set(existing);
+ // An exact H-code search should not also expand codes that merely share its prefix
+ // (for example H350 must not silently include H350i).
+ const exact=HAZARD_MAP.has(String(query||"").trim()) ? String(query||"").trim() :
+   HAZARD_CHOICES.find(x=>x.code.toLowerCase()===q)?.code;
+ const matching=HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group) &&
+   (!exact||x.code===exact) &&
+   // Allow an already-selected H-code to be refined when searched directly.
+   (!selected.has(x.code)||specified?.code===x.code||x.code.toLowerCase()===q))
+   .filter(x=>specified ? specified.code===x.code :
+     (x.code+" "+x.classification+" "+x.text).toLowerCase().includes(q))
    .sort((a,b)=>{
      const score=x=>x.code.toLowerCase().startsWith(q)?0:x.classification.toLowerCase().startsWith(q)?1:2;
      return score(a)-score(b)||a.code.localeCompare(b.code);
-   }).slice(0,8);
+   });
+ // Each applicable subcategory is a separate selectable suggestion. The
+ // statement code itself is unchanged; choosing a row sets its detail field.
+ return matching.flatMap(x=>{
+   const spec=HAZARD_SUBCATEGORIES[x.code];
+   if(!spec)return [x];
+   const cats=specified?.code===x.code?[specified.category]:spec.cats;
+   return cats.map(category=>({...x,category,classification:spec.prefix+" "+category}));
+ }).slice(0,8);
 }
-function hazardChip(code){
- const entry=HAZARD_MAP.get(code),label=entry?.classification||"Unmapped code";
- return `<span class="hazard-chip" title="${esc(entry?.text||'Check source evidence')}">
+function hazardChip(code,i){
+ const entry=HAZARD_MAP.get(code),label=hazardChipLabel(code,i);
+ const detailsOnly=!enteredHCodes(i).includes(code);
+ return `<span class="hazard-chip" data-hazard-origin="${detailsOnly?"details":"entered"}"
+   title="${esc((detailsOnly?"From ingredient Details":"Entered H/EUH code")+": "+(entry?.text||'Check source evidence'))}">
    <strong>${esc(code)}</strong><span>${esc(label)}</span>
    <button type="button" data-remove-hazard="${esc(code)}" title="Remove ${esc(code)}"
      aria-label="Remove ${esc(code)}: ${esc(label)}">×</button>
@@ -2314,7 +2441,7 @@ function hazardChip(code){
 }
 function hazardRowChipsHTML(i){
  const codes=ingredientHCodes(i);
- return codes.map(hazardChip).join("") || '<span class="hint">No hazards selected</span>';
+ return codes.map(code=>hazardChip(code,i)).join("") || '<span class="hint">No hazards selected</span>';
 }
 function hazardRowControlsHTML(i){
  const expanded=hazardPanelsOpen.has(i._id);
@@ -2333,7 +2460,7 @@ function hazardEditorHTML(i){
      <input type="text" data-hazard-query data-group="all" role="combobox" autocomplete="off"
        aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}"
        aria-label="Add any ingredient hazard by H or EUH code, classification or phrase"
-       placeholder="+ Search any H/EUH code, classification or hazard phrase">
+       placeholder="+ Search H314 1C, H317 1A, H-code or hazard phrase">
      <div id="${listId}" class="hazard-suggestions" role="listbox" hidden></div>
    </div>
  </div>`;
@@ -2424,7 +2551,7 @@ function renderHazardSuggestions(input){
  const choices=ing?searchHazards(input.dataset.group,input.value,ingredientHCodes(ing)):[];
  list.innerHTML=choices.map((item,n)=>`<button type="button" class="hazard-suggestion"
    role="option" aria-selected="false" id="${list.id}-opt-${n}"
-   data-hazard-option="${esc(item.code)}"><code>${esc(item.code)}</code>
+   data-hazard-option="${esc(item.code)}"${item.category?` data-hazard-category="${esc(item.category)}"`:""}><code>${esc(item.code)}</code>
    <span><b>${esc(item.classification)}</b><small>${esc(item.text)}</small></span>
  </button>`).join("") || (input.value.trim()?'<div class="hint hazard-no-matches">No matching classification. Use Advanced for another H/EUH code.</div>':"");
  list.hidden=!input.value.trim();
@@ -2452,11 +2579,13 @@ function closeHazardSuggestions(input){
  input.removeAttribute("aria-activedescendant");
  input.dataset.activeIndex="-1";
 }
-function chooseIngredientHazard(input,code){
+function chooseIngredientHazard(input,code,category=""){
  const holder=input.closest("[data-id]"),id=+(holder?.dataset.id||0);
  const ing=mix.ingredients.find(item=>item._id===id);
  if(!ing||(input.dataset.group!=="all"&&HAZARD_MAP.get(code)?.group!==input.dataset.group))return;
  changeIngredientHazard(ing,code,true);
+ const spec=HAZARD_SUBCATEGORIES[code];
+ if(spec&&spec.cats.includes(category))ing[spec.field]=category;
  refreshRow(id);update();
  const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
  if(replacement){
@@ -2514,8 +2643,13 @@ function refreshRow(id) {
 }
 function refreshSummaryOnly(id) {
  const ing=mix.ingredients.find(x=>x._id===id);
+ if(!ing)return;
  const section=document.querySelector(`tr[data-sum="${id}"] [data-resolved]`);
- if(section&&ing)section.innerHTML=summaryChips(ing);
+ if(section)section.innerHTML=summaryChips(ing);
+ const row=document.querySelector(`tr[data-id="${id}"] [data-hazard-row-chips]`);
+ if(row)row.innerHTML=hazardRowChipsHTML(ing);
+ const count=document.querySelector(`tr[data-sum="${id}"] [data-hazard-selected-count]`);
+ if(count)count.textContent=String(ingredientHCodes(ing).length);
 }
 
 $("ings").addEventListener("click", (e) => {
@@ -2567,9 +2701,10 @@ function onIngInput(e) {
     refreshRow(id);
   } else if (p.startsWith("scl.")) {
     i.scl[p.slice(4)] = v;
+    refreshSummaryOnly(id);
   } else {
     setPath(i, p, v);
-    if (t.tagName === "SELECT" || t.type === "checkbox") refreshSummaryOnly(id); else if (/^(mAcute|mChronic|acute\.)/.test(p)) refreshSummaryOnly(id);
+    refreshSummaryOnly(id);
   }
   update();
 }
@@ -2629,14 +2764,14 @@ $("ings").addEventListener("keydown",event=>{
  if(event.key==="Enter"&&!list.hidden&&options.length){
    event.preventDefault();
    const index=Math.max(0,Number(input.dataset.activeIndex??-1));
-   chooseIngredientHazard(input,options[Math.min(index,options.length-1)].dataset.hazardOption);
+   chooseIngredientHazard(input,options[Math.min(index,options.length-1)].dataset.hazardOption,options[Math.min(index,options.length-1)].dataset.hazardCategory||"");
  }
 });
 $("ings").addEventListener("click",event=>{
  const option=event.target.closest("button[data-hazard-option]");
  if(option){
    const input=option.closest("[data-hazard-picker]")?.querySelector("input[data-hazard-query]");
-   if(input)chooseIngredientHazard(input,option.dataset.hazardOption);
+   if(input)chooseIngredientHazard(input,option.dataset.hazardOption,option.dataset.hazardCategory||"");
    return;
  }
  const remove=event.target.closest("button[data-remove-hazard]");
@@ -2645,7 +2780,9 @@ $("ings").addEventListener("click",event=>{
    const ing=mix.ingredients.find(i=>i._id===id);
    if(!ing)return;
    const removedCode=remove.dataset.removeHazard;
+   const wasEntered=enteredHCodes(ing).includes(removedCode);
    changeIngredientHazard(ing,removedCode,false);
+   if(!wasEntered)clearDetailHazard(ing,removedCode);
    refreshRow(id);update();
    // The chip was removed from the DOM: restore keyboard focus to the next
    // remaining chip, or the Add/edit button when there are no more chips.

@@ -9,9 +9,112 @@ const $=id=>dom[id]||(dom[id]={innerHTML:""}),mix={ingredients:[]};
 const esc=x=>String(x??"").replace(/[&<>"']/g,k=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[k]));
 const hazardPanelsOpen=new Set();
 const ui=new Function("CLP","esc","$","mix","hazardPanelsOpen",s+
- "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,changeIngredientHazard,applyIngredientHazards,groupForCode};")(C,esc,$,mix,hazardPanelsOpen);
+ "\nreturn {HAZARD_CHOICES,HAZARD_GROUPS,searchHazards,hazardEditorHTML,hazardRowChipsHTML,hazardRowControlsHTML,ingredientHCodes,enteredHCodes,detailHCodes,clearDetailHazard,changeIngredientHazard,applyIngredientHazards,groupForCode,hazardChipLabel,hazardQueryCategory};")(C,esc,$,mix,hazardPanelsOpen);
 const make=(codes="")=>{const i=C.blankIngredient();i._id=1;C.applyHCodes(i,codes);mix.ingredients=[i];return i};
 let n=0;function test(name,fn){try{fn();n++}catch(e){throw Error(name+": "+e.message)}}
+test("Typing H314 immediately lists every skin corrosion subcategory",()=>{
+ const choices=ui.searchHazards("all","H314");
+ assert.deepEqual(choices.map(x=>x.category),["1","1A","1B","1C"]);
+ assert(choices.every(x=>x.code==="H314"));
+ assert.deepEqual(choices.map(x=>x.classification),
+   ["Skin Corr. 1","Skin Corr. 1A","Skin Corr. 1B","Skin Corr. 1C"]);
+});
+test("Typing other applicable H-codes lists available categories",()=>{
+ assert.deepEqual(ui.searchHazards("all","H317").map(x=>x.category),["1","1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H334").map(x=>x.category),["1","1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H350").map(x=>x.category),["1A","1B"]);
+ assert.deepEqual(ui.searchHazards("all","H318").map(x=>x.code),["H318"]);
+});
+test("Class-name search shows subcategories without a qualified code",()=>{
+ const choices=ui.searchHazards("all","Skin Corr");
+ assert(choices.some(x=>x.code==="H314"&&x.category==="1C"));
+ assert(choices.some(x=>x.code==="H314"&&x.category==="1A"));
+});
+test("Autocomplete still caps choices at eight entries",()=>{
+ assert(ui.searchHazards("all","h").length<=8);
+ assert(ui.searchHazards("all","skin").length<=8);
+});
+test("Search supports H314 skin corrosion subcategories",()=>{
+ for(const cat of ["1A","1B","1C"]){
+  const items=ui.searchHazards("all","h314 "+cat);
+  assert.equal(items[0]?.code,"H314");
+  assert.equal(items[0]?.category,cat);
+  assert.equal(items[0]?.classification,"Skin Corr. "+cat);
+ }
+});
+test("Refine already selected H314 by typing subcategory",()=>{
+ const h=ui.searchHazards("all","H314 1C",["H314"]);
+ assert.equal(h[0]?.category,"1C");
+ assert.deepEqual(ui.searchHazards("all","H314",["H314"]).map(x=>x.category),["1","1A","1B","1C"]);
+});
+test("Category search validates supported code/category combinations",()=>{
+ assert.equal(ui.searchHazards("all","H317 1A")[0]?.category,"1A");
+ assert.equal(ui.searchHazards("all","H334 1B")[0]?.category,"1B");
+ assert.equal(ui.searchHazards("all","H314 2").length,0);
+ assert.equal(ui.hazardQueryCategory("H314 1D"),null);
+});
+test("Hazard chips show category refinements from Details",()=>{
+ const i=make("H314 H317 H410 H400");
+ i.skinCorr="1C";i.skinSens="1A";i.mChronic="10";i.mAcute="100";
+ const result=ui.hazardRowChipsHTML(i);
+ assert.match(result,/H314<\/strong><span>Skin Corr\. 1C<\/span>/);
+ assert.match(result,/H317<\/strong><span>Skin Sens\. 1A<\/span>/);
+ assert.match(result,/Aquatic Chronic 1 · M=10/);
+ assert.match(result,/Aquatic Acute 1 · M=100/);
+ i.skinCorr="1A";
+ assert.match(ui.hazardRowChipsHTML(i),/Skin Corr\. 1A/);
+});
+test("Acute toxicity ATE appears on its corresponding chip",()=>{
+ const i=make("H302");i.acute.oral.ate="450";
+ assert.match(ui.hazardRowChipsHTML(i),/ATE 450/);
+});
+test("Entered SCL and STOT details appear on hazard chips",()=>{
+ const i=make("H314 H370 H372");
+ i.skinCorr="1B";i.scl.skinCorr="0.5";i.stotSE="1";i.stotRE="1";i.scl.stotRE="20";
+ const result=ui.hazardRowChipsHTML(i);
+ assert.match(result,/Skin Corr\. 1B · SCL 0\.5%/);
+ assert.match(result,/STOT SE 1/);
+ assert.match(result,/STOT RE 1 · SCL 20%/);
+});
+test("Details-only Skin Corr. 1C appears beside entered Eye Dam. 1",()=>{
+ const i=make("H318");i.skinCorr="1C";
+ const chips=ui.hazardRowChipsHTML(i);
+ assert.equal((chips.match(/data-remove-hazard=/g)||[]).length,2);
+ assert.match(chips,/data-remove-hazard="H318"/);
+ assert.match(chips,/data-remove-hazard="H314"/);
+ assert.match(chips,/H314<\/strong><span>Skin Corr\. 1C<\/span>/);
+ assert.match(chips,/data-hazard-origin="details"/);
+ assert.equal(ui.ingredientHCodes(i).length,2);
+});
+test("Details-only classifications from multiple sections appear as cards",()=>{
+ const i=make();
+ Object.assign(i,{skinCorr:"1A",eye:"1",skinSens:"1B",respSens:"1A",
+   stotSE:"1",stotSEresp:true,stotRE:"2",aquaAcute:true,aquaChronic:"2",
+   edHH:"1",pbt:true,asp:true});
+ i.acute.oral.cat="4";
+ const codes=ui.ingredientHCodes(i);
+ for(const code of ["H314","H318","H317","H334","H370","H335","H373","H400","H411","EUH380","EUH440","H304","H302"])
+   assert(codes.includes(code),code);
+ assert.equal(new Set(codes).size,codes.length,"No duplicate cards");
+});
+test("Details-only cards can clear their underlying field",()=>{
+ const i=make("H318");i.skinCorr="1C";
+ assert(ui.ingredientHCodes(i).includes("H314"));
+ ui.clearDetailHazard(i,"H314");
+ assert.equal(i.skinCorr,"");
+ assert.deepEqual(ui.ingredientHCodes(i),["H318"]);
+});
+test("Removal of STOT SE3 effect leaves STOT SE1 and other effect intact",()=>{
+ const i=make();i.stotSE="1";i.stotSEresp=true;i.stotSEnarc=true;
+ ui.clearDetailHazard(i,"H335");
+ assert.deepEqual(ui.detailHCodes(i).filter(x=>["H370","H335","H336"].includes(x)),["H370","H336"]);
+});
+test("Details-only reproductive combined statement is not duplicated",()=>{
+ const i=make();i.reproFert="1A";i.reproDev="2";
+ assert(ui.detailHCodes(i).includes("H360Fd"));
+ assert(!ui.detailHCodes(i).includes("H360F"));
+ assert(!ui.detailHCodes(i).includes("H361d"));
+});
 test("Three hazard groups still classify suggestions",()=>assert.deepEqual(ui.HAZARD_GROUPS.map(x=>x.id),["physical","health","environmental"]));
 test("Autocomplete by H phrase",()=>assert(ui.searchHazards("physical","highly flammable liquid").some(x=>x.code==="H225")));
 test("Autocomplete by class",()=>assert(ui.searchHazards("health","Skin Corr. 1").some(x=>x.code==="H314")));
@@ -25,7 +128,10 @@ test("Search bounded to group and eight suggestions",()=>{
  assert(ui.searchHazards("health","a").length<=8);
  assert.deepEqual(ui.searchHazards("health",""),[]);
 });
-test("Selected hazards excluded from suggestions",()=>assert(!ui.searchHazards("health","H314",["H314"]).some(x=>x.code==="H314")));
+test("Selected hazards can be refined by selecting another subcategory",()=>{
+ const choices=ui.searchHazards("health","H314",["H314"]);
+ assert.deepEqual(choices.map(x=>x.category),["1","1A","1B","1C"]);
+});
 test("Unified search covers all three hazard groups",()=>{
  assert(ui.searchHazards("all","H225").some(x=>x.code==="H225"));
  assert(ui.searchHazards("all","severe skin burns").some(x=>x.code==="H314"));
