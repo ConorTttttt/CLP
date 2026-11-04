@@ -3155,7 +3155,7 @@ function applyCalcFilter(){
  const root=$("res");
  root.querySelectorAll?.(".calc-panel").forEach(panel=>{
   panel.hidden=calcFilter!=="all" && (calcFilter==="classified"?
-    !["classified","incomplete"].includes(panel.dataset.status):
+    panel.dataset.status!=="classified":
     panel.dataset.status!=="incomplete");
  });
  root.querySelectorAll?.("[data-calc-filter]").forEach(b=>
