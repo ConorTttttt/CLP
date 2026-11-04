@@ -171,6 +171,55 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .insight-tag.review{background:#fff2d9;color:#805100}
 .insight-tag.no-trigger{background:var(--panel);color:var(--mute)}
 @media(prefers-color-scheme:dark){.insight-yes,.insight-tag.include{background:#173e2b;color:#b3ebca;border-color:#377c52}.insight-tag.review{background:#49351b;color:#ffda9a}}
+
+/* Classification breakdown — outcome-first, grouped evidence, progressive disclosure. */
+.calc-panel{padding:0;overflow:hidden;border-color:var(--line);background:var(--panel);box-shadow:0 2px 8px rgba(19,42,77,.035)}
+.calc-panel>summary{list-style:none;padding:13px 15px;display:flex;align-items:center;gap:11px;background:var(--panel);font-size:14px;flex-wrap:wrap}
+.calc-panel>summary::-webkit-details-marker{display:none}
+.calc-panel>summary:before{content:"▸";font-size:14px;color:var(--accent);transition:transform .15s}
+.calc-panel[open]>summary:before{transform:rotate(90deg)}
+.calc-panel>summary .badge{float:none;margin-left:auto;flex:none}
+.calc-panel>summary:focus-visible,.calc-evidence>summary:focus-visible,.calc-raw>summary:focus-visible{outline:3px solid #8aafe4;outline-offset:-2px}
+.calc-heading{flex:1;min-width:150px}
+.calc-heading strong{display:block;line-height:1.35}
+.calc-heading small{display:block;color:var(--mute);font-size:11px;font-weight:400;margin-top:2px}
+.calc-body{padding:0 15px 15px;border-top:1px solid var(--line)}
+.calc-result-strip{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:12px 0 5px}
+.calc-result-strip .calc-outcome{background:var(--soft);border-color:var(--line);font-weight:700}
+.calc-result-caption{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);width:100%}
+.calc-route-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:9px;margin:12px 0}
+.calc-route-card{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:11px;min-width:0}
+.calc-route-card[data-state="classified"]{border-top:3px solid var(--good)}
+.calc-route-card[data-state="not"]{border-top:3px solid var(--line)}
+.calc-route-card[data-state="review"]{border-top:3px solid #bf8b23}
+.calc-route-head{display:flex;gap:7px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.calc-route-head strong{font-size:12.5px}
+.calc-route-state{font-size:10px;border-radius:5px;padding:3px 6px;background:var(--soft);color:var(--mute);font-weight:700}
+.calc-route-card[data-state="classified"] .calc-route-state{background:#e0f1e6;color:#205b37}
+.calc-route-card[data-state="review"] .calc-route-state{background:#fff2d8;color:#805100}
+.calc-route-value{font-size:12px;line-height:1.65;margin:10px 0;overflow-wrap:anywhere}
+.calc-route-value strong{font-size:13px;color:var(--ink)}
+.calc-evidence{border-top:1px solid var(--line);padding:8px 0 0;margin-top:9px}
+.calc-evidence>summary{font-size:11px;color:var(--accent);font-weight:650;cursor:pointer}
+.calc-evidence .step{margin-top:7px;line-height:1.6}
+.calc-key-steps{display:grid;gap:8px;margin:10px 0}
+.calc-key-step{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:10px 12px}
+.calc-key-step[data-role="formula"]{border-left:3px solid var(--accent)}
+.calc-key-step[data-role="decision"]{border-left:3px solid var(--good)}
+.calc-key-step .step{line-height:1.6;overflow-wrap:anywhere}
+.calc-review{border:1px solid #e6c889;border-radius:8px;background:#fff8e9;padding:10px 12px;margin-top:12px}
+.calc-review>summary{font-size:12px;font-weight:700;color:#805100;cursor:pointer}
+.calc-review[open] .calc-note{background:transparent;border-left-color:#bb8a32;color:#5b4a2e}
+.calc-review .calc-note{overflow-wrap:anywhere}
+.calc-support{margin-top:12px}
+.calc-support>summary{font-size:12px;cursor:pointer;color:var(--accent);font-weight:650}
+.calc-support .calc-step-list{margin-top:9px}
+.calc-raw{padding-top:10px}
+.calc-intro{line-height:1.55}
+.calc-intro strong{color:var(--ink)}
+@media(max-width:640px){.calc-panel>summary{padding:12px}.calc-body{padding:0 10px 12px}.calc-panel>summary .badge{margin-left:0}.calc-route-grid{grid-template-columns:1fr}}
+@media(prefers-color-scheme:dark){.calc-route-card[data-state="classified"] .calc-route-state{background:#173e2b;color:#b3ebca}.calc-review{background:#3e321d;border-color:#8e7237}.calc-review>summary,.calc-review .calc-note{color:#eed3a4}.calc-route-card[data-state="review"] .calc-route-state{background:#49351b;color:#ffda9a}}
+
 .calc-intro{font-size:12.5px;color:var(--mute);margin:6px 0 12px}
 .calc-panel{border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:10px 12px;margin:9px 0}
 .calc-panel>summary{cursor:pointer;font-weight:650;font-size:13px}
@@ -3036,27 +3085,93 @@ function calcStepHTML(h,line) {
   return '<div class="calc-step-block" data-role="'+role+'"><span class="calc-step-label">'+esc(label)+'</span>'+
     chunks.map(t=>'<div class="step calc-step-item">'+esc(t)+'</div>').join("")+'</div>';
 }
+/* Formatting only: derive a concise preview from the engine's existing trail.
+   We never recalculate or alter hazard status, outcome or thresholds here. */
+function calcRouteSummary(line){
+ const s=String(line).trim();
+ const match=/^(?:—\s*)?(oral|dermal|inhalation(?:\s*\((?:vapour|dust_mist|gas)\))?|vapour|dust_mist|gas)\s*(?:\([^)]*\))?:/i.exec(s);
+ if(!match)return null;
+ const key=match[1].toLowerCase();
+ const name=/^oral/.test(key)?"Oral":/^dermal/.test(key)?"Dermal":
+   /dust_mist/.test(key)?"Inhalation · dust/mist":/vapour/.test(key)?"Inhalation · vapour":
+   /gas/.test(key)?"Inhalation · gas":"Inhalation";
+ return {name,key};
+}
+function calcRouteGroups(h){
+ if(h.id!=="acute")return [];
+ const groups=[];let current=null;
+ for(const line of h.steps||[]){
+  const route=calcRouteSummary(line);
+  if(route){
+    current={...route,ingredients:[String(line)],math:[],other:[]};
+    groups.push(current);
+  }else if(current){
+    if(/ATEmix\s*=/.test(line))current.math.push(String(line));
+    else if(/^\s+/.test(String(line)))current.other.push(String(line));
+  }
+ }
+ return groups;
+}
+function calcRouteCardHTML(group){
+ const math=group.math[0]||"";
+ const classified=/→\s*Category\s+[1-4]/i.test(math);
+ const not=/not classified for this route|above Category 4 limit/i.test(math);
+ const state=classified?"classified":not?"not":"review";
+ const label=classified?"Classified":not?"Not classified":"Review";
+ const parts=/ATEmix\s*=\s*(.*?)\s*→\s*(.*)/i.exec(math);
+ const result=parts?'<strong>ATEmix = '+esc(parts[1])+'</strong><br>'+esc(parts[2]):math?esc(math):"Route calculation recorded; view evidence below.";
+ return '<div class="calc-route-card" data-state="'+state+'">'+
+  '<div class="calc-route-head"><strong>'+esc(group.name)+'</strong><span class="calc-route-state">'+label+'</span></div>'+
+  '<div class="calc-route-value">'+result+'</div>'+
+  '<details class="calc-evidence"><summary>Ingredient terms and route evidence</summary>'+
+   group.ingredients.map(x=>'<div class="step">'+esc(x)+'</div>').join("")+
+   group.other.map(x=>'<div class="step">'+esc(x)+'</div>').join("")+
+   (!group.math.length?'<div class="hint">No ATEmix value reported for this route.</div>':'')+
+  '</details></div>';
+}
 function calcExplanationHTML(h) {
-  const kind=h.id==="aquatic" ? "Aquatic summation: weighted M-factors and 25% limits"
-    : h.id==="acute" ? "Acute toxicity: route-specific ingredient ATE and ATEmix"
-    : h.id==="skin" || h.id==="eye" ? "Skin/eye: additive concentrations, SCL/GCL and thresholds"
-    : h.id==="asp" ? "Aspiration: summation and viscosity" : "";
-  const outcome=(h.outcomes||[]).map(o=>'<span class="calc-outcome">'+esc(o.label)+
-    (o.h?.length ? ' · '+esc(o.h.join(", ")) : '')+
-    (Number.isFinite(o.ate) ? ' · ATEmix '+esc(CLP.fmt(o.ate)) : '')+'</span>').join("");
-  const state=h.status==="incomplete" ? "Incomplete — review required" : h.status==="classified" ? "Classified" : "Not classified";
-  return '<details class="calc-panel" data-calc-id="'+esc(h.id)+'"'+
-    ((h.status==="classified"||h.status==="incomplete")?' open':'')+'>'+
-    '<summary>'+esc(h.name)+' <span class="badge '+esc(h.status)+'">'+esc(state)+'</span></summary>'+
-    (kind?'<div class="calc-kind">'+esc(kind)+'</div>':'')+
-    (outcome?'<div class="calc-outcomes">'+outcome+'</div>':'<div class="calc-kind">'+esc(state)+(h.status==="incomplete"?' — not a final assessment':' — no triggered classification')+'</div>')+
-    '<div class="calc-step-list">'+(h.steps||[]).map(t=>calcStepHTML(h,t)).join("")+'</div>'+
-    (h.notes?.length?'<div class="calc-kind">Review notes and limitations</div>'+
-      h.notes.map(n=>'<div class="calc-note">'+esc(n)+'</div>').join(""):'')+
-    '<details class="calc-raw"><summary>Show original calculation trail and regulatory reference</summary>'+
-    '<div class="ref">'+esc(h.ref)+'</div>'+
-    (h.steps||[]).map(t=>'<div class="step">'+esc(t)+'</div>').join("")+
-    '</details></details>';
+ const kind=h.id==="aquatic" ? "M-factor summation and 25% limits"
+   : h.id==="acute" ? "Route-specific ATE and mixture ATEmix"
+   : h.id==="skin" || h.id==="eye" ? "Additivity, SCL/GCL and thresholds"
+   : h.id==="asp" ? "Concentration and viscosity checks" : "";
+ const outcomes=(h.outcomes||[]).map(o=>'<span class="calc-outcome">'+esc(o.label)+
+   (o.h?.length?' · '+esc(o.h.join(", ")):'')+
+   (Number.isFinite(o.ate)?' · ATEmix '+esc(CLP.fmt(o.ate)):'')+'</span>').join("");
+ const state=h.status==="incomplete"?"Incomplete — review required":h.status==="classified"?"Classified":"Not classified";
+ const groups=calcRouteGroups(h);
+ const roles=(h.steps||[]).map(t=>({line:String(t),role:calcRole(h,t)}));
+ // Route summaries are shown separately. This selection is presentational only.
+ const highlights=roles.filter(x=>x.role==="formula"||x.role==="decision")
+   .filter(x=>!(groups.length&&/ATEmix\s*=/.test(x.line)));
+ const ingredientLines=roles.filter(x=>x.role==="ingredients");
+ const supporting=roles.filter(x=>x.role==="detail"||x.role==="warning");
+ const leading=highlights.slice(0,h.id==="acute"?2:3);
+ const remaining=highlights.slice(leading.length);
+ const notes=h.notes||[];
+ const raw=(h.steps||[]).map(t=>'<div class="step">'+esc(t)+'</div>').join("");
+ return '<details class="calc-panel" data-calc-id="'+esc(h.id)+'"'+
+   (h.status==="classified"||h.status==="incomplete"?' open':'')+'>'+
+  '<summary><span class="calc-heading"><strong>'+esc(h.name)+'</strong>'+
+   (kind?'<small>'+esc(kind)+'</small>':'')+'</span><span class="badge '+esc(h.status)+'">'+esc(state)+'</span></summary>'+
+  '<div class="calc-body">'+
+  (outcomes?'<div class="calc-result-strip"><div class="calc-result-caption">Mixture classification</div>'+outcomes+'</div>':
+   '<div class="calc-result-strip"><div class="calc-result-caption">Mixture result</div><span class="calc-outcome">'+
+   esc(state)+'</span></div>')+
+  (groups.length?'<div class="calc-route-grid">'+groups.map(calcRouteCardHTML).join("")+'</div>':'')+
+  (leading.length?'<div class="calc-key-steps">'+leading.map(x=>
+   '<div class="calc-key-step" data-role="'+x.role+'"><span class="calc-step-label">'+
+   (x.role==="formula"?"Calculation / threshold":"Classification decision")+'</span>'+
+   '<div class="step">'+esc(x.line)+'</div></div>').join("")+'</div>':'')+
+  (notes.length?'<details class="calc-review" open><summary>Review notes and limitations ('+notes.length+')</summary>'+
+   notes.map(n=>'<div class="calc-note">'+esc(n)+'</div>').join("")+'</details>':'')+
+  ((ingredientLines.length||supporting.length||remaining.length)?
+    '<details class="calc-support"><summary>Show '+(ingredientLines.length+supporting.length+remaining.length)+
+    ' supporting calculation step(s)</summary><div class="calc-step-list">'+
+    [...ingredientLines,...remaining,...supporting].map(x=>calcStepHTML(h,x.line)).join("")+
+    '</div></details>':'')+
+  '<details class="calc-raw"><summary>Original calculation trail and regulatory reference</summary>'+
+   '<div class="ref">'+esc(h.ref)+'</div>'+raw+'</details>'+
+  '</div></details>';
 }
 
 
@@ -3408,7 +3523,7 @@ function renderResult(r) {
   const shown = r.hazards.filter((h) => h.status !== "na" && (h.status !== "not" || h.steps.some((s) => !BOILER.test(s))));
   const hidden = r.hazards.filter((h) => !shown.includes(h) && h.status !== "na");
   L.push(`<div class="card" data-view="calculation"><h2>Calculation breakdown</h2>
-    <div class="calc-intro">Ingredient contributions, summation formulae, thresholds and outcomes are grouped below. Open each hazard for the calculation. The unchanged engine calculation trail and regulatory reference are available under each result.</div>
+    <div class="calc-intro"><strong>Result first:</strong> each hazard shows the mixture classification, key calculation and review notes. Open route cards or supporting steps for more detail; the original engine calculation trail and regulatory reference remain available unchanged.</div>
     ${shown.map(calcExplanationHTML).join("") || '<div class="hint">Nothing to show yet.</div>'}
     ${hidden.length ? `<div class="note" style="margin-top:8px">No ingredient triggers: ${hidden.map((h) => esc(h.name)).join("; ")}.</div>` : ""}</div>`);
   L.push(ingredientInsightsHTML(r));
