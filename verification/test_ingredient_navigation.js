@@ -30,6 +30,31 @@ check("Hazard codes map to correct contextual tab and section",()=>{
  assert.equal(api.tabForHazard('H225'),'physical');
  assert.equal(api.sectionForHazard('H225'),'');
 });
+check("Always-visible hazard search is beneath ingredient name",()=>{
+ const start=app.indexOf("function renderIngs(){"),end=app.indexOf("function refreshRow(id)",start);
+ const renderer=app.slice(start,end);
+ assert.match(renderer,/class="ingredient-name"/);
+ assert.match(renderer,/ingredientQuickSearchHTML\(i\)/);
+ assert(renderer.indexOf("ingredient-name")<renderer.indexOf("ingredientQuickSearchHTML(i)"));
+ assert.match(app,/function ingredientQuickSearchHTML\(i\)/);
+ assert.match(app,/quick-hazard-options-/);
+ assert.match(app,/data-hazard-query data-group="all"/);
+});
+check("Expanded editor does not duplicate the quick search",()=>{
+ const start=app.indexOf("function ingredientWorkspaceHTML(i)"),end=app.indexOf("function showIngredientEditor(",start);
+ const workspace=app.slice(start,end);
+ assert(!workspace.includes('hazardEditorHTML(i)'));
+ assert.match(workspace,/Advanced: paste or edit H\/EUH codes/);
+ assert.match(workspace,/ingredientTabs\.get/);
+});
+check("Hazard selection retains the row search and keyboard focus",()=>{
+ const start=app.indexOf("function chooseIngredientHazard(input,code"),end=app.indexOf("function rememberHazardPanelStates",start);
+ const choice=app.slice(start,end);
+ assert.match(choice,/tr\[data-id=/);
+ assert.match(choice,/replacement\.value=""/);
+ assert.match(choice,/replacement\.focus\(\)/);
+ assert(!choice.includes('tr[data-detrow='));
+});
 check("Clicking hazard chip opens its context",()=>{
  assert.match(app,/data-edit-hazard=/);
  assert.match(app,/showIngredientEditor\(id,editChip\.dataset\.editHazard\)/);
