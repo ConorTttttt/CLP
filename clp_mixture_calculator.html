@@ -2405,18 +2405,24 @@ function hazardChipLabel(code,i){
 function searchHazards(group,query,existing=[]){
  const q=String(query||"").trim().toLowerCase();
  if(!q)return [];
- const specified=hazardQueryCategory(query);
- const selected=new Set(existing);
- return HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group) &&
-    (!selected.has(x.code)||specified?.code===x.code))
+ const specified=hazardQueryCategory(query),selected=new Set(existing);
+ const matching=HAZARD_CHOICES.filter(x=>(group==="all"||x.group===group) &&
+   // Allow an already-selected H-code to be refined when searched directly.
+   (!selected.has(x.code)||specified?.code===x.code||x.code.toLowerCase()===q))
    .filter(x=>specified ? specified.code===x.code :
      (x.code+" "+x.classification+" "+x.text).toLowerCase().includes(q))
-   .map(x=>specified?.code===x.code ?
-     {...x,category:specified.category,classification:HAZARD_SUBCATEGORIES[x.code].prefix+" "+specified.category}:x)
    .sort((a,b)=>{
      const score=x=>x.code.toLowerCase().startsWith(q)?0:x.classification.toLowerCase().startsWith(q)?1:2;
      return score(a)-score(b)||a.code.localeCompare(b.code);
-   }).slice(0,8);
+   });
+ // Each applicable subcategory is a separate selectable suggestion. The
+ // statement code itself is unchanged; choosing a row sets its detail field.
+ return matching.flatMap(x=>{
+   const spec=HAZARD_SUBCATEGORIES[x.code];
+   if(!spec)return [x];
+   const cats=specified?.code===x.code?[specified.category]:spec.cats;
+   return cats.map(category=>({...x,category,classification:spec.prefix+" "+category}));
+ }).slice(0,8);
 }
 function hazardChip(code,i){
  const entry=HAZARD_MAP.get(code),label=hazardChipLabel(code,i);
