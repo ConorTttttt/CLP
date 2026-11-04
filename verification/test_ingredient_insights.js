@@ -6,9 +6,9 @@ const app=scripts[1],start=app.indexOf("/* Transparent screening for REACH Annex
 assert(start>=0&&end>start,"Ingredient screening functions missing");
 const code=app.slice(start,end),esc=x=>String(x??"").replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
 let mix={ingredients:[],state:"liquid"},codes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(x=>x.code);
-const fn=new Function("CLP","esc","ingredientHCodes","getMix",code.replace("const rows=mix.ingredients.map","const rows=getMix().ingredients.map").replace("mix.state===","getMix().state===")+
+const fn=new Function("CLP","esc","ingredientHCodes","getMix","groupForCode","hazardChipLabel",code.replace("const rows=mix.ingredients.map","const rows=getMix().ingredients.map").replace("mix.state===","getMix().state===")+
  "\nreturn {ingredientSection3Signals,hazardIngredientRelevant,ingredientInsightsHTML,ingredientCutoffDetails,ingredientContributionModel,ingredientContributionDetailsHTML};");
-const ui=fn(CLP,esc,codes,()=>mix);
+const ui=fn(CLP,esc,codes,()=>mix,code=>/^H2/.test(code)?"physical":/^H4|^EUH4/.test(code)?"environmental":"health",code=>code);
 const ing=(pct,codes="",props={})=>{const i=CLP.blankIngredient();i.name=props.name||"Test";i.pct=String(pct);CLP.applyHCodes(i,codes);return Object.assign(i,props);};
 const screen=(i,classified=true,gas=false)=>ui.ingredientSection3Signals(i,classified,gas);
 const run=(a)=>{mix={name:"Test",state:"liquid",ingredients:a};return CLP.classify(mix)};
