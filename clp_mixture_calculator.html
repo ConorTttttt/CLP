@@ -172,6 +172,26 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .insight-tag.no-trigger{background:var(--panel);color:var(--mute)}
 @media(prefers-color-scheme:dark){.insight-yes,.insight-tag.include{background:#173e2b;color:#b3ebca;border-color:#377c52}.insight-tag.review{background:#49351b;color:#ffda9a}}
 
+
+/* Multiple independently editable, browser-local formulations. */
+.formulation-workspaces{padding:12px 20px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
+.formulation-workspaces-header{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+.formulation-workspaces-header strong{font-size:12px;letter-spacing:.035em;color:var(--ink)}
+.formulation-workspaces-header .hint{font-size:11px}
+.formulation-workspaces-content{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.formulation-tab-list{display:flex;gap:5px;align-items:stretch;overflow-x:auto;flex:1;min-width:0;padding:3px 0 7px;scrollbar-width:thin}
+.formulation-tab{display:flex;align-items:center;flex:none;border:1px solid var(--line);border-radius:9px 9px 5px 5px;background:var(--bg);min-width:115px;max-width:225px}
+.formulation-tab.active{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
+.formulation-tab button{border:0;background:transparent;border-radius:6px}
+.formulation-tab [data-workspace-select]{font-weight:650;font-size:12px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;max-width:186px;padding:9px 6px 9px 11px}
+.formulation-tab [data-workspace-close]{color:var(--mute);font-size:16px;padding:5px 9px;line-height:1}
+.formulation-tab [data-workspace-close]:hover{color:var(--bad)}
+.formulation-tab button:focus-visible,.formulation-workspaces-actions button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.formulation-workspaces-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.formulation-workspaces-actions button{font-size:12px;padding:7px 9px}
+.formulation-storage-warning{color:var(--bad)!important;font-weight:700}
+@media(max-width:700px){.formulation-workspaces{padding:9px 12px}.formulation-workspaces-content{align-items:flex-start}.formulation-tab-list{width:100%;flex-basis:100%}.formulation-workspaces-actions{width:100%}}
+
 /* Classification breakdown — outcome-first, grouped evidence, progressive disclosure. */
 
 .calc-toolbar{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin:10px 0 13px}
@@ -474,6 +494,18 @@ pre.rep{padding:14px}
     <div class="banner-detail">You supply the ingredient classifications (from Annex VI / C&amp;L Inventory / SDS); the calculator applies its implemented Annex I mixture rules and shows every step. It does <u>not</u> model bridging principles, tested-mixture data, physical hazards other than flammable liquids, independent validation of manual hazard classifications under Article 26(2), full Article 27 case-by-case redundancy review, or complete Article 28 P-statement selection. It applies Article 26 pictogram precedence, explicit Article 27 Annex III H/EUH omission pairs, and a conservative Article 28 candidate selector, each with an audit trail. Verify against the official text before relying on a result.</div>
   </details>
 </div>
+
+<section class="formulation-workspaces noprint" aria-label="Open classification workspaces">
+ <div class="formulation-workspaces-header"><strong>Open classifications</strong>
+  <span class="hint" id="workspace-storage-status" role="status">Saved locally in this browser · no database</span></div>
+ <div class="formulation-workspaces-content">
+  <nav class="formulation-tab-list" id="formulation-tab-list" aria-label="Switch between formulations"></nav>
+  <div class="formulation-workspaces-actions">
+   <button id="workspace-add" type="button" class="primary">+ New classification</button>
+   <button id="workspace-duplicate" type="button" title="Create an independent copy of the current formulation">Duplicate current</button>
+  </div>
+ </div>
+</section>
 
 <div class="wrap">
 <section id="inputs" aria-label="Formulation inputs">
@@ -2134,7 +2166,8 @@ pre.rep{padding:14px}
 "use strict";
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const STORE = "clp_calc_state_v1";
+const STORE = "clp_calc_state_v1"; // Legacy single-formulation storage (migration only)
+const WORKSPACE_STORE = "clp_calc_workspaces_v1"; // Browser-local, no server or database
 const VIEWER_STORE = "clp_calc_viewer_settings_v1";
 /* Display preferences are stored independently of formulation JSON: hiding
    a result never changes hazard classification, label selection or exports. */
@@ -2217,7 +2250,7 @@ let last = null;
 function getPath(o, p) { return p.split(".").reduce((a, k) => (a == null ? a : a[k]), o); }
 function setPath(o, p, v) { const ks = p.split("."); const l = ks.pop(); const t = ks.reduce((a, k) => a[k], o); t[l] = v; }
 function newIng(p) { const i = CLP.blankIngredient(); i._id = uid++; return Object.assign(i, p || {}); }
-function save() { try { localStorage.setItem(STORE, JSON.stringify(mix)); } catch (e) {} }
+function save() { saveWorkspaceState(); renderWorkspaceTabs(); }
 function loadSaved() { try { const s = localStorage.getItem(STORE); if (s) return JSON.parse(s); } catch (e) {} return null; }
 function adopt(obj) {
   const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
@@ -2225,6 +2258,146 @@ function adopt(obj) {
   m.manual = Array.isArray(m.manual) ? m.manual : [];
   mix = m; open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear();
 }
+
+
+/* Multi-classification workspace. Only the active formulation is loaded in
+   \`mix\`; inactive workspaces hold independent in-memory mixtures. All states
+   are also retained locally in this browser via localStorage, never sent to
+   any API. A legacy single-formulation state is imported once on first use. */
+let workspaceTabs=[];
+let activeWorkspaceId=null;
+let workspaceSequence=0;
+let workspaceStorageOkay=true;
+function nextWorkspaceId(){
+ workspaceSequence++;
+ return "formulation-"+Date.now().toString(36)+"-"+workspaceSequence.toString(36);
+}
+function newBlankMixture(){
+ return { name:"",state:"liquid",flashPoint:"",ibp:"",viscosity40:"",pH:"",
+  pHReserveOk:false,article27Mode:"apply",article26Mode:"retainOptional",
+  audience:"unknown",intendedUse:"",disposalDestination:"",ppeDescription:"",
+  manualPExtra:"",manualPExcluded:"",manualPReason:"",ingredients:[],manual:[]};
+}
+function workspaceSnapshot(){
+ return {version:1,activeId:activeWorkspaceId,tabs:workspaceTabs.map(tab=>({
+  id:tab.id,mixture:tab.id===activeWorkspaceId?mix:tab.mixture
+ }))};
+}
+function saveWorkspaceState(){
+ if(!activeWorkspaceId)return;
+ const tab=workspaceTabs.find(x=>x.id===activeWorkspaceId);
+ if(tab)tab.mixture=mix;
+ try{
+  localStorage.setItem(WORKSPACE_STORE,JSON.stringify(workspaceSnapshot(),(key,value)=>
+    key==="_id"?undefined:value));
+  workspaceStorageOkay=true;
+ }catch(e){workspaceStorageOkay=false;}
+ const status=$("workspace-storage-status");
+ if(status){
+  status.textContent=workspaceStorageOkay?"Saved locally in this browser · no database":
+   "Browser storage unavailable or full — export your formulations as JSON!";
+  status.classList.toggle("formulation-storage-warning",!workspaceStorageOkay);
+ }
+}
+function readWorkspaceState(){
+ try{
+  const raw=localStorage.getItem(WORKSPACE_STORE);
+  if(!raw)return null;
+  const saved=JSON.parse(raw);
+  if(saved?.version!==1||!Array.isArray(saved.tabs)||!saved.tabs.length)return null;
+  const ids=new Set();
+  const tabs=saved.tabs.filter(t=>{
+   if(typeof t?.id!=="string"||ids.has(t.id)||!t.mixture||typeof t.mixture!=="object"||
+     !Array.isArray(t.mixture.ingredients))return false;
+   ids.add(t.id);return true;
+  }).map(t=>({id:t.id,mixture:t.mixture}));
+  if(!tabs.length)return null;
+  return {tabs,activeId:tabs.some(t=>t.id===saved.activeId)?saved.activeId:tabs[0].id};
+ }catch(e){return null;}
+}
+function renderWorkspaceTabs(){
+ const box=$("formulation-tab-list");
+ if(!box)return;
+ box.innerHTML=workspaceTabs.map((tab,index)=>{
+  const active=tab.id===activeWorkspaceId;
+  const current=active?mix:tab.mixture;
+  const title=(current?.name||"").trim()||"Classification "+(index+1);
+  return '<div class="formulation-tab'+(active?' active':'')+'">'+
+   '<button type="button" data-workspace-select="'+esc(tab.id)+'" aria-pressed="'+active+
+   '" title="'+esc(title)+'">'+esc(title)+'</button>'+
+   '<button type="button" data-workspace-close="'+esc(tab.id)+
+   '" aria-label="Close '+esc(title)+'" title="Close this classification (requires confirmation)">×</button></div>';
+ }).join("");
+}
+function initialiseWorkspaces(){
+ const stored=readWorkspaceState();
+ if(stored){workspaceTabs=stored.tabs;activeWorkspaceId=stored.activeId;}
+ else{
+  const legacy=loadSaved();
+  const initial=legacy&&Array.isArray(legacy.ingredients)?legacy:newBlankMixture();
+  const id=nextWorkspaceId();workspaceTabs=[{id,mixture:initial}];activeWorkspaceId=id;
+ }
+ const active=workspaceTabs.find(t=>t.id===activeWorkspaceId);
+ adopt(active.mixture);
+}
+function switchWorkspace(id){
+ if(id===activeWorkspaceId)return;
+ const next=workspaceTabs.find(t=>t.id===id);
+ if(!next)return;
+ saveWorkspaceState();
+ activeWorkspaceId=id;
+ adopt(next.mixture);
+ $("parsenotes").innerHTML="";
+ $("revout").innerHTML="";$("impout").innerHTML="";
+ renderAll();
+}
+function addWorkspace(copy=false){
+ saveWorkspaceState();
+ const independent=copy?JSON.parse(JSON.stringify(mix,(key,value)=>key==="_id"?undefined:value)):
+   newBlankMixture();
+ if(copy)independent.name=(String(independent.name||"").trim()||"Classification")+" (copy)";
+ const id=nextWorkspaceId();
+ workspaceTabs.push({id,mixture:independent});
+ activeWorkspaceId=id;
+ adopt(independent);
+ $("parsenotes").innerHTML="";
+ $("revout").innerHTML="";$("impout").innerHTML="";
+ renderAll();
+ $("mname").focus();
+}
+function closeWorkspace(id){
+ const index=workspaceTabs.findIndex(t=>t.id===id);
+ if(index<0)return;
+ const tab=workspaceTabs[index],isActive=tab.id===activeWorkspaceId;
+ const current=isActive?mix:tab.mixture;
+ const title=(current?.name||"").trim()||"Classification "+(index+1);
+ if(!confirm('Close "'+title+'"? Its local working copy will be removed. Export the JSON first if you want to keep it.'))return;
+ if(!isActive)saveWorkspaceState();
+ workspaceTabs.splice(index,1);
+ if(!workspaceTabs.length){
+  const freshId=nextWorkspaceId();
+  workspaceTabs=[{id:freshId,mixture:newBlankMixture()}];
+ }
+ if(isActive){
+  const target=workspaceTabs[Math.min(index,workspaceTabs.length-1)];
+  activeWorkspaceId=target.id;
+  adopt(target.mixture);
+  $("parsenotes").innerHTML="";
+  $("revout").innerHTML="";$("impout").innerHTML="";
+  renderAll();
+ }else{
+  saveWorkspaceState();
+  renderWorkspaceTabs();
+ }
+}
+$("formulation-tab-list").addEventListener("click",e=>{
+ const close=e.target.closest("button[data-workspace-close]");
+ if(close){closeWorkspace(close.dataset.workspaceClose);return;}
+ const selected=e.target.closest("button[data-workspace-select]");
+ if(selected)switchWorkspace(selected.dataset.workspaceSelect);
+});
+$("workspace-add").addEventListener("click",()=>addWorkspace(false));
+$("workspace-duplicate").addEventListener("click",()=>addWorkspace(true));
 
 /* ---------- mixture fields ---------- */
 const MF = { mname: "name", mstate: "state", mfp: "flashPoint", mibp: "ibp", mvisc: "viscosity40", mph: "pH",
@@ -3669,8 +3842,7 @@ $("imp").onclick = async () => {
 };
 
 /* ---------- init ---------- */
-const saved = loadSaved();
-if (saved && saved.ingredients && saved.ingredients.length) adopt(saved);
+initialiseWorkspaces();
 renderAll();
 </script>
 </body>
