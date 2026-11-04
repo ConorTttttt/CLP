@@ -460,8 +460,17 @@
         const target=corrI?'1':'2';
         S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % ≥ '+fmt(limit)+
           ' % ('+(has(sclValue(i,corrI?'skinCorr':'skinIrrit'))?'SCL':'Table 3.2.4')+') → Skin '+(corrI?'Corr. 1':'Irrit. 2'));
-        // Keep a more specific Skin Corr. 1A/1B/1C sub-category already established by additivity.
-        if(corrI ? (!sCat || sCat === '2') : !sCat) sCat=target;
+        // Table 3.2.4 establishes Skin Corr. 1 without a subcategory.
+        // Keep the additive result in the trail, but do not infer a mixed-method subcategory.
+        if (corrI) {
+          if (sCat && ['1A','1B','1C'].includes(sCat)) {
+            S.steps.push('Additive route indicated Skin Corr. '+sCat+
+              '; non-additive Table 3.2.4 route gives Skin Corr. 1 (unspecified subcategory).');
+            S.notes.push('Skin corrosion subcategory requires expert review: additive assessment indicated Skin Corr. '+sCat+
+              ', while a non-additive corrosive ingredient independently triggers Skin Corr. 1 under Table 3.2.4. The methods do not establish a combined subcategory.');
+          }
+          sCat='1';
+        } else if (!sCat) sCat='2';
       } else S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
@@ -690,14 +699,21 @@
           // Category 1 substance (e.g. Cat 1: C ≥ 20 %; Cat 2: 5 % ≤ C < 20 %).
           const band = sclValue(i, f + '2');
           const l2 = has(band) ? band : 1;
+          const source1 = useScl ? 'entered Category 1 SCL' : 'generic Category 1 limit';
+          const source2 = has(band) ? 'entered Category 2 band SCL' : 'generic Category 2 lower limit';
           if (has(band) && band > l1 + EPS) H.notes.push(`${nm(i)}: Category 2 band SCL ${fmt(band)} % is above the Category 1 limit ${fmt(l1)} % – check the Annex VI entry.`);
-          if (ge(i.pct, l1)) { trig1.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % ≥ ${fmt(l1)} % → Category 1`); }
-          else if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % is ≥ ${fmt(l2)} %${has(band) ? ' (Category 2 band SCL)' : ''} but < ${fmt(l1)} % → Category 2`); }
-          else H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % < ${fmt(l2)} %${has(band) ? ' (Category 2 band SCL)' : ''} → no classification`);
+          if (ge(i.pct, l1)) { trig1.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % ≥ ${fmt(l1)} % (${source1}) → Category 1`); }
+          else if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % is ≥ ${fmt(l2)} % (${source2}) but < ${fmt(l1)} % (${source1}) → Category 2`); }
+          else H.steps.push(`${nm(i)} [Cat. 1] ${fmt(i.pct)} % < ${fmt(l2)} % (${source2}) → no classification`);
         } else {
+          const ignoredBand = (i.scl || {})[f+'2'];
+          if (ignoredBand !== undefined && ignoredBand !== null && String(ignoredBand).trim() !== '') {
+            H.notes.push(`${nm(i)}: Category 2 band limit was entered for a Category 2 ingredient. Band limits apply to the Category 2 range of a Category 1 substance; this entry is not used. Check the source and enter the applicable Category 2 SCL in the ${tag} SCL field if appropriate.`);
+          }
           const l2 = useScl ? scl : 10;
-          if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 2] ${fmt(i.pct)} % ≥ ${fmt(l2)} % → Category 2`); }
-          else H.steps.push(`${nm(i)} [Cat. 2] ${fmt(i.pct)} % < ${fmt(l2)} % → no classification`);
+          const source2 = useScl ? 'entered Category 2 SCL' : 'generic Category 2 limit';
+          if (ge(i.pct, l2)) { trig2.push(i); H.steps.push(`${nm(i)} [Cat. 2] ${fmt(i.pct)} % ≥ ${fmt(l2)} % (${source2}) → Category 2`); }
+          else H.steps.push(`${nm(i)} [Cat. 2] ${fmt(i.pct)} % < ${fmt(l2)} % (${source2}) → no classification`);
           if (ge(i.pct, 1)) ctx.sds.push(`SDS available on request: ${tag} Cat. 2 ingredient ${nm(i)} ≥ 1.0 % (note 1).`);
         }
       });
@@ -1158,12 +1174,13 @@
         review.push({severity:'review',code:c.code,reason:'Bracketed Annex IV wording alternatives are conditional and must be chosen by the supplier; do not print the brackets verbatim.'});
     }
 
-    // Later UN GHS revisions mark P201/P202 and P301+P310 obsolete (P203, P301+P316).
-    // Their status in EU CLP depends on the Annex IV version that applies to the label.
-    const ghsSuperseded = { 'P202': 'P203', 'P301+P310': 'P301+P316' };
-    Object.keys(ghsSuperseded).filter((code) => active.has(code)).forEach((code) =>
-      review.push({severity:'review',code,
-        reason:code+' is marked obsolete in later UN GHS revisions (replacement '+ghsSuperseded[code]+'). Check which code and wording the CLP Annex IV version applicable to this label requires.'}));
+    // EU CLP Annex IV is authoritative for this calculator. Later UN GHS
+    // revisions use different codes, but do not automatically amend EU CLP.
+    const ghsAlternatives = { 'P202': 'P203', 'P301+P310': 'P301+P316' };
+    Object.keys(ghsAlternatives).filter((code) => active.has(code)).forEach((code) =>
+      review.push({severity:'info',code,
+        reason:code+' remains listed in EU CLP Annex IV. Later UN GHS revisions use '+ghsAlternatives[code]+
+          ' instead; this does not supersede the EU code. Retain the EU CLP statement unless the applicable EU legal text is amended.'}));
 
     // Annex IV table 6.1 and 6.2 explicitly allow these redundancies.
     const explicitPairs=[['P103','P202','Annex IV Table 6.1: P103 may be omitted when P202 is used'],
