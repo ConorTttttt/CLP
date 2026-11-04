@@ -16,14 +16,14 @@ function makeRuntime(legacy=null,confirmValue=true){
    events:{},addEventListener(k,fn){this.events[k]=fn},focus(){this.focused=true}
  });return els.get(id)};
  const initialMix=initial();
- const factory=new Function("$","localStorage","esc","loadSaved","confirm",
+ const factory=new Function("$","localStorage","esc","loadSaved","confirm","WORKSPACE_STORE",
   "let mix="+JSON.stringify(initialMix)+";"+
   "function adopt(obj){mix=JSON.parse(JSON.stringify(obj));}"+
   "function renderAll(){saveWorkspaceState();renderWorkspaceTabs();}"+
   section+
   "\nreturn {initialiseWorkspaces,switchWorkspace,addWorkspace,closeWorkspace,saveWorkspaceState,renderWorkspaceTabs,"+
   "getMix:()=>mix,getTabs:()=>workspaceTabs,getActive:()=>activeWorkspaceId,selectors:()=>$('formulation-tab-list').innerHTML};");
- return factory($,storage,escaping,()=>legacy,()=>confirmValue);
+ return factory($,storage,escaping,()=>legacy,()=>confirmValue,"clp_calc_workspaces_v1");
 }
 let n=0;
 function test(label,fn){try{fn();n++}catch(e){throw Error(label+": "+e.message)}}
