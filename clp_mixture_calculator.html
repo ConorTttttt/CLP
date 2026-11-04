@@ -2278,8 +2278,10 @@ pre.rep{padding:14px}
       // A.1.3.3(c): where all converted ingredient category estimates are
       // in the same category, retain that category rather than allowing a
       // conversion point on a category boundary to spuriously upgrade it.
-      const allSameConverted=rows.length>0&&rows.every(r=>
-        r.source.startsWith("Table A.1.2")&&r.category===rows[0].category);
+      const allSameConverted=unknown===0&&
+        rows.reduce((total,r)=>total+r.pct,0)>=99.999&&
+        rows.length>0&&rows.every(r=>
+          r.source.startsWith("Table A.1.2")&&r.category===rows[0].category);
       if(allSameConverted&&c!==rows[0].category){
         section.steps.push("A.1.3.3(c): all converted ingredient estimates are Category "+rows[0].category+
           "; use that category rather than the formula-boundary result "+(c||"not classified")+".");
