@@ -2657,7 +2657,7 @@ function chooseIngredientHazard(input,code,category=""){
  const spec=HAZARD_SUBCATEGORIES[code];
  if(spec&&spec.cats.includes(category))ing[spec.field]=category;
  refreshRow(id);update();
- const replacement=document.querySelector(`tr[data-sum="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
+ const replacement=document.querySelector(`tr[data-detrow="${id}"] [data-hazard-query][data-group="${input.dataset.group}"]`);
  if(replacement){
    replacement.value="";
    closeHazardSuggestions(replacement);
@@ -2737,43 +2737,55 @@ function renderIngs(){
   ${open.has(i._id)?`<tr data-detrow="${i._id}"><td colspan="5" id="ingredient-editor-${i._id}">${ingredientWorkspaceHTML(i)}</td></tr>`:""}
  `).join("");
 }
-function refreshRow(id) {
-  const i = mix.ingredients.find((x) => x._id === id); if (!i) return;
-  const row=document.querySelector(`tr[data-id="${id}"]`);
-  const chips=row?.querySelector("[data-hazard-row-chips]");
-  if(chips)chips.innerHTML=hazardRowChipsHTML(i);
-  const toggle=row?.querySelector('button[data-act="hazards"]');
-  if(toggle){
-    const openPanel=hazardPanelsOpen.has(id);
-    toggle.setAttribute("aria-expanded",String(openPanel));
-    toggle.textContent=openPanel?"− Hide hazard search":"+ Add / edit hazards";
-    toggle.setAttribute("aria-label",(openPanel?"Hide":"Show")+" hazard search for "+(i.name||"ingredient"));
-  }
-  const panel=document.getElementById(`hazard-editor-${id}`);
-  if(panel){
-    const number=panel.querySelector("[data-hazard-selected-count]");
-    if(number)number.textContent=String(ingredientHCodes(i).length);
-    const resolution=panel.querySelector("[data-resolved]");
-    if(resolution)resolution.innerHTML=summaryChips(i);
-    const advanced=panel.querySelector('input[data-p="hcodes"]');
-    if(advanced&&document.activeElement!==advanced)advanced.value=i.hcodes;
-  }
-  const d = document.querySelector(`tr[data-detrow="${id}"] td`); if (d) d.innerHTML = detailHTML(i);
+function refreshRow(id){
+ const ing=mix.ingredients.find(x=>x._id===id);if(!ing)return;
+ const chips=document.querySelector('tr[data-id="'+id+'"] [data-hazard-row-chips]');
+ if(chips)chips.innerHTML=hazardRowChipsHTML(ing);
+ const workspace=document.querySelector('tr[data-detrow="'+id+'"] td');
+ if(workspace)workspace.innerHTML=ingredientWorkspaceHTML(ing);
 }
-function refreshSummaryOnly(id) {
- const ing=mix.ingredients.find(x=>x._id===id);
- if(!ing)return;
- const section=document.querySelector(`tr[data-sum="${id}"] [data-resolved]`);
- if(section)section.innerHTML=summaryChips(ing);
- const row=document.querySelector(`tr[data-id="${id}"] [data-hazard-row-chips]`);
- if(row)row.innerHTML=hazardRowChipsHTML(ing);
- const count=document.querySelector(`tr[data-sum="${id}"] [data-hazard-selected-count]`);
+function refreshSummaryOnly(id){
+ const ing=mix.ingredients.find(x=>x._id===id);if(!ing)return;
+ const chips=document.querySelector('tr[data-id="'+id+'"] [data-hazard-row-chips]');
+ if(chips)chips.innerHTML=hazardRowChipsHTML(ing);
+ const panel=document.querySelector('tr[data-detrow="'+id+'"]');
+ const count=panel?.querySelector("[data-hazard-selected-count]");
  if(count)count.textContent=String(ingredientHCodes(ing).length);
+ const summary=panel?.querySelector("[data-resolved]");
+ if(summary)summary.innerHTML=summaryChips(ing);
+ const info=panel?.querySelector(".ix-header small");
+ if(info)info.textContent=(ing.cas||"No CAS/EC")+" · "+(ing.pct||"0")+"% · "+
+  ingredientHCodes(ing).length+" hazard(s)";
 }
-
 $("ings").addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-act]"); if (!b) return;
+ const editChip=e.target.closest("button[data-edit-hazard]");
+ if(editChip){
+  const id=Number(editChip.closest("tr[data-id]")?.dataset.id);
+  showIngredientEditor(id,editChip.dataset.editHazard);return;
+ }
+ const tab=e.target.closest("button[data-ingredient-tab]");
+ if(tab){
+  const id=Number(tab.closest("[data-ingredient-workspace]")?.dataset.ingredientWorkspace);
+  const ing=mix.ingredients.find(i=>i._id===id);if(!ing)return;
+  ingredientTabs.set(id,tab.dataset.ingredientTab);
+  const area=document.querySelector('tr[data-detrow="'+id+'"] .ix-editor');
+  area.dataset.tab=tab.dataset.ingredientTab;
+  tab.closest(".ix-tabs").querySelectorAll("[data-ingredient-tab]").forEach(t=>
+   t.setAttribute("aria-selected",String(t===tab)));
+  return;
+ }
+ const close=e.target.closest("button[data-close-ingredient]");
+ if(close){
+  open.delete(Number(close.dataset.closeIngredient));
+  renderIngs();if(last)renderIngredientInsightMarkers(last);return;
+ }
+ const b = e.target.closest("button[data-act]"); if (!b) return;
   const id = +b.closest("tr").dataset.id;
+  if(b.dataset.act==="det"){
+    if(open.has(id)){open.delete(id);renderIngs();if(last)renderIngredientInsightMarkers(last);}
+    else showIngredientEditor(id);
+    return;
+  }
   if(b.dataset.act==="hazards"){
     const panel=document.getElementById(`hazard-editor-${id}`);
     if(!panel)return;
@@ -2788,9 +2800,9 @@ $("ings").addEventListener("click", (e) => {
   }
   else if (b.dataset.act === "del") {
     mix.ingredients = mix.ingredients.filter((x) => x._id !== id);
-    open.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
+    open.delete(id); ingredientTabs.delete(id); detailPanels.delete(id); hazardPanelsOpen.delete(id);
     renderIngs(); update();
-  } else { open.has(id) ? open.delete(id) : open.add(id); renderIngs(); }
+  } else { open.has(id) ? open.delete(id) : open.add(id); renderIngs();if(last)renderIngredientInsightMarkers(last); }
 });
 function onIngInput(e) {
   const t = e.target; const p = t.dataset.p; if (!p) return;
@@ -2927,8 +2939,8 @@ window.addEventListener("resize",()=>{
 $("ings").addEventListener("input", onIngInput);
 $("ings").addEventListener("change", onIngInput);
 
-$("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i); renderIngs(); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
-$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("addIng").onclick = () => { const i = newIng(); mix.ingredients.push(i);showIngredientEditor(i._id); update(); const el = document.querySelector(`tr[data-id="${i._id}"] input`); if (el) el.focus(); };
+$("clr").onclick = () => { if (mix.ingredients.length && !confirm("Remove all ingredients and manual entries?")) return; mix = Object.assign(mix, { ingredients: [], manual: [] }); open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- manual entries ---------- */
 function renderManual() {
@@ -3270,7 +3282,7 @@ function exampleMix() {
   const W = newIng({ name: "Water", pct: "30" });
   return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
-$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
+$("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); ingredientTabs.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
 /* ---------- save / load / report ---------- */
 function download(name, text, type) { const b = new Blob([text], { type: type || "text/plain" }); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
