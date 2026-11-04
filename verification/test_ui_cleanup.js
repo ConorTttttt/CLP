@@ -21,7 +21,7 @@ function makeResults(){
  const $=k=>els[k]||(els[k]={innerHTML:"",textContent:"",hidden:false,events:{},addEventListener(type,fn){this.events[type]=fn}});
  const document={querySelectorAll(){return [...$("res").innerHTML.matchAll(/data-view="([^"]+)"/g)].map(x=>({dataset:{view:x[1]},hidden:false}))}};
  const code=section("const VIEWER_STORE = ","\nlet mix =")+section("/* ---------- results ---------- */","let tm = null;");
- const api=new Function("$","document","localStorage","esc","CLP",code+"\nreturn {renderResult,setViewerPreferences};")($,document,localStorage,esc,CLP);
+ const api=new Function("$","document","localStorage","esc","CLP","mix","ingredientHCodes",code+"\nreturn {renderResult,setViewerPreferences};")($,document,localStorage,esc,CLP,{ingredients:[],state:"liquid"},()=>[]);
  return {api,$};
 }
 const fixture={warnings:["Unverified M-factor"],incomplete:["Aquatic hazard incomplete"],nodata:[],sds:[],outcomes:[],hazards:[],notes:[],

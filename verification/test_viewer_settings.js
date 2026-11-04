@@ -13,8 +13,8 @@ function setup(saved={}){
  const elements={};const $=id=>elements[id]||(elements[id]={innerHTML:'',textContent:'',hidden:false,events:{},addEventListener(k,f){this.events[k]=f}});
  const document={nodes:[],querySelectorAll(){this.nodes=[...$('res').innerHTML.matchAll(/data-view="([^"]+)"/g)].map(m=>({dataset:{view:m[1]},hidden:false}));return this.nodes}};
  const esc=x=>String(x||'');
- const ui=new Function('$','document','localStorage','esc','CLP',code+
-   '\nreturn {renderResult,setViewerPreferences,viewerSettings,VIEWER_OPTIONS};')($,document,localStorage,esc,{fmt:String});
+ const ui=new Function('$','document','localStorage','esc','CLP','mix','ingredientHCodes',code+
+   '\nreturn {renderResult,setViewerPreferences,viewerSettings,VIEWER_OPTIONS};')($,document,localStorage,esc,{fmt:String,num:Number},{ingredients:[],state:'liquid'},()=>[]);
  return {ui,store,$,document};
 }
 function example(){
@@ -27,8 +27,8 @@ function example(){
 }
 test('Collapsible settings panel present',()=>assert.ok(html.includes('id="viewersettings"')));
 test('Every section has a visible toggle',()=>{
- const x=setup();assert.equal(x.ui.VIEWER_OPTIONS.length,16);
- for(const key of ['classification','label','article26','article27','article28','sds','calculation','notes'])
+ const x=setup();assert.equal(x.ui.VIEWER_OPTIONS.length,17);
+ for(const key of ['classification','label','article26','article27','article28','sds','calculation','ingredientsInsight','notes'])
   assert.ok(html.includes('data-view="'+key+'"'),key);
 });
 test('All toggles default to visible',()=>{
