@@ -73,7 +73,7 @@ check('All section controls are present', ['classification','label','article26',
 check('All label detail controls are present', ['labelSignal','labelPictograms','labelH',
   'labelEUH','labelSupplemental','labelP','labelNoData'].every(k=>html.includes('data-view="'+k+'"')));
 check('Plain report is independent',html.includes('viewerSettings.report === false'));
-check('Visibility applied after result renderer',html.includes('applyViewerSettings();\n}\nlet tm = null;'));
+check('Visibility applied after result renderer',html.includes('applyViewerSettings();\n  applyCalcFilter();\n}'));
 check('Preferences reset and article explanation preset available',
   html.includes('id="viewer-show-all"')&&html.includes('id="viewer-hide-audits"')&&
   html.includes('id="viewer-defaults"'));
