@@ -87,6 +87,11 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 .insight-pill{font-size:12px;border-radius:7px;padding:5px 8px;border:1px solid var(--line)}
 .insight-yes{background:#e8f6ee;border-color:#85c9a2;color:#195a35}
 .insight-no{background:var(--bg);color:var(--mute)}
+.ingredient-insight-flags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.ingredient-insight-flags .insight-tag{font-size:10px;padding:4px 6px}
+.ingredient-insight-flags .insight-tag.contributor{background:#e8f6ee;color:#195a35}
+.ingredient-insight-flags .insight-tag.not-contributor{background:var(--panel);color:var(--mute)}
+@media(prefers-color-scheme:dark){.ingredient-insight-flags .insight-tag.contributor{background:#173e2b;color:#b3ebca}}
 .insight-table-wrap{overflow-x:auto;margin-top:10px}
 .insight-table{width:100%;border-collapse:collapse;font-size:12px;min-width:630px}
 .insight-table th,.insight-table td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}
@@ -2636,7 +2641,7 @@ function renderIngs() {
     <td><input data-p="name" value="${esc(i.name)}" placeholder="Ingredient name" aria-label="Ingredient name"></td>
     <td><input data-p="cas" value="${esc(i.cas)}" placeholder="CAS / EC" aria-label="CAS number"></td>
     <td><input data-p="pct" value="${esc(i.pct)}" inputmode="decimal" placeholder="%" aria-label="Concentration percent"></td>
-    <td class="ingredient-hazards-cell">${hazardRowControlsHTML(i)}</td>
+    <td class="ingredient-hazards-cell">${hazardRowControlsHTML(i)}<div class="ingredient-insight-flags" data-ingredient-insight="${i._id}"></div></td>
     <td style="white-space:nowrap"><button class="small" data-act="det">${open.has(i._id) ? "Hide" : "Details"}</button> <button class="x small" data-act="del" title="Remove" aria-label="Remove ingredient">✕</button></td>
   </tr>
   <tr data-sum="${i._id}"><td colspan="5" style="padding-top:0">${hazardEditorHTML(i)}</td></tr>
@@ -3017,6 +3022,22 @@ function ingredientInsightsHTML(r){
  '</tbody></table></div>'+
  '<div class="note" style="margin-top:10px">Not a finished SDS Section 3 determination. Verify constituent identities, EU-level OELs, Candidate List/Annex XIII/ED status, substance-specific limits, registered nanoforms and applicable regulatory updates. CLP ED classifications do not automatically prove the distinct ED criteria under REACH Annex II. See REACH Annex II §§3.2.1–3.2.4, as amended by Regulation (EU) 2020/878.</div></div>';
 }
+function renderIngredientInsightMarkers(r){
+ const classified=r.outcomes.length>0,gas=mix.state==="gas";
+ const calculated=(r.outcomes||[]).filter(o=>!/^manual/.test(o.hazardId));
+ mix.ingredients.forEach(i=>{
+   const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
+   if(!element)return;
+   const matches=calculated.filter(o=>hazardIngredientRelevant({id:o.hazardId},i));
+   const section=ingredientSection3Signals(i,classified,gas);
+   element.innerHTML='<span class="insight-tag '+(matches.length?'contributor':'not-contributor')+'" title="'+
+     esc(matches.length?'Ingredient has a hazard relevant to '+matches.map(x=>x.label).join(', '):
+       'No input hazard matched the calculated mixture classifications')+'">'+
+     (matches.length?'Potential contributor · '+matches.length:'No contributor identified')+'</span>'+
+     '<span class="insight-tag '+esc(section.status)+'" title="'+esc(section.reasons.join('; ')||
+       section.review.join('; '))+'">'+(section.status==='include'?'SDS §3: disclose indicated':'SDS §3: review')+'</span>';
+ });
+}
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
@@ -3138,7 +3159,7 @@ function update() { save(); clearTimeout(tm); tm = setTimeout(compute, 60); }
 function compute() {
   const tot = mix.ingredients.reduce((s, i) => { const n = CLP.num(i.pct); return s + (isFinite(n) ? n : 0); }, 0);
   $("tot").textContent = mix.ingredients.length ? `— ${CLP.fmt(tot)} % entered` : "";
-  try { last = CLP.classify(mix); renderResult(last); $("rep").textContent = CLP.report(mix, last, {}); }
+  try { last = CLP.classify(mix); renderResult(last); renderIngredientInsightMarkers(last); $("rep").textContent = CLP.report(mix, last, {}); }
   catch (e) { $("res").innerHTML = `<div class="alert bad">Calculation error: ${esc(e.message)}</div>`; last = null; }
 }
 function renderAll() {
