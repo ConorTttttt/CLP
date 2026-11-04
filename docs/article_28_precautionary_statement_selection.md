@@ -85,11 +85,11 @@ The Article 28 suite currently has 50 tests. It checks consumer disposal, applic
 
 **Before professional use:** Verify the current official EU consolidated version, all applicable Annex I and Annex IV conditions, the chosen language and exact wording, and the intended use, disposal and packaging information.
 
-## UN GHS superseded codes (November 2026)
+## EU CLP statements and later UN GHS differences (November 2026)
 
-Later UN GHS revisions mark P201/P202 obsolete (replaced by P203) and P301+P310
-obsolete (replaced by P301+P316). When the catalogue proposes P202 or P301+P310,
-the Article 28 audit adds a review item asking the user to confirm which code and
-wording the applicable version of CLP Annex IV requires. The catalogue codes are
-not changed automatically, because EU adoption depends on the Annex IV version in
-force for the label.
+P202 and P301+P310 remain listed in EU CLP Annex IV. Later UN GHS revisions
+use P203 and P301+P316 instead; those changes do not automatically amend EU CLP.
+For the EU CLP calculator, the Article 28 audit shows an informational note
+about the GHS difference, without treating the EU codes as obsolete or
+automatically substituting the later UN GHS codes. Always use the version
+of EU CLP Annex IV legally applicable to the label.
