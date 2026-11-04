@@ -190,19 +190,20 @@ test("Row chips remain visible when hazard editor is collapsed",()=>{
  assert(ui.hazardRowChipsHTML(item).includes('data-remove-hazard="H225"'));
  assert(ui.hazardRowChipsHTML(item).includes('data-remove-hazard="H314"'));
 });
-test("Hazard panel state survives full ingredient rerender",()=>{
- assert(script.includes("rememberHazardPanelStates();"));
- assert(script.includes('hazardPanelsOpen.add(id)'));
- assert(script.includes('hazardPanelsOpen.delete(id)'));
- assert(script.includes("data-hazard-panel"));
+test("Quick hazard search is always available in collapsed ingredient rows",()=>{
+ const render=script.slice(script.indexOf("function renderIngs(){"),script.indexOf("function refreshRow(",script.indexOf("function renderIngs(){")));
+ assert(render.includes("ingredientQuickSearchHTML(i)"));
+ assert(render.includes("ingredientWorkspaceHTML(i)"));
+ assert(script.includes('quick-hazard-options-'));
 });
-test("Adding or removing chips does not replace open search DOM",()=>{
+test("Chip refresh preserves the quick-search input DOM and selected hazard remains editable",()=>{
  const start=script.indexOf("function refreshRow("),end=script.indexOf("function refreshSummaryOnly(",start);
  const block=script.slice(start,end);
- assert(!block.includes("s.innerHTML = hazardEditorHTML(i)"));
- assert(block.includes('chips.innerHTML=hazardRowChipsHTML(i)'));
- assert(block.includes('panel.querySelector("[data-hazard-selected-count]")'));
- assert(script.includes("closeHazardSuggestions(replacement)"));
+ assert(block.includes('chips.innerHTML=hazardRowChipsHTML(ing)'));
+ assert(!block.includes('ingredientQuickSearchHTML(ing)'));
+ const choose=script.slice(script.indexOf("function chooseIngredientHazard("),script.indexOf("function rememberHazardPanelStates("));
+ assert(choose.includes('replacement.focus()'));
+ assert(choose.includes('tr[data-id='));
 });
 test("Add H-code sets source classification",()=>{
  const i=make("H314");ui.changeIngredientHazard(i,"H317",true);
