@@ -18,6 +18,10 @@ and shows every calculation step with the Annex I table/page reference:
   missing/invalid M values trigger prominent provisional classification warnings
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
+- Supplemental hazard information (Annex II EUH statements): EUH070 (>= 0.1 %), EUH071
+  (corrosive + inhalable), EUH201/201A, EUH202, EUH203, EUH204, EUH205, EUH206, EUH207,
+  EUH209/209A, EUH210, EUH211/212 and EUH401 from ingredient flags and product facts; property-based
+  EUH014-EUH066 only when confirmed from data (see docs/euh_supplemental_hazard_information.md)
 - Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
 
 WORKSPACE UI (PRESENTATION ONLY)

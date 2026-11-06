@@ -50,7 +50,7 @@ check("Optional labelling context and manual entries",()=>{
 });
 check("Hazard detail groups organised by physical / health / environmental",()=>{
  const h=makeEditor().detailHTML(ing(1)),groups=[...h.matchAll(/data-detail-section="([^"]+)"/g)].map(x=>x[1]);
- assert.deepEqual(groups,["acute","skin","cmr","stot","edHH","aquatic","newHazards","otherSCL","provenance"]);
+ assert.deepEqual(groups,["acute","skin","cmr","stot","edHH","aquatic","newHazards","otherSCL","euhIdentity","provenance"]);
  const cats=[...h.matchAll(/data-detail-category="([^"]+)"/g)].map(x=>x[1]);
  assert.deepEqual(cats,["physical","health","environmental","shared"]);
  assert(!h.includes("<fieldset>"));

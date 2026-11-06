@@ -73,7 +73,31 @@
     H411: 'Toxic to aquatic life with long lasting effects', H412: 'Harmful to aquatic life with long lasting effects',
     H413: 'May cause long lasting harmful effects to aquatic life',
     H420: 'Harms public health and the environment by destroying ozone in the upper atmosphere',
+    EUH014: 'Reacts violently with water',
+    EUH018: 'In use may form flammable/explosive vapour-air mixture',
+    EUH019: 'May form explosive peroxides',
+    EUH029: 'Contact with water liberates toxic gas',
+    EUH031: 'Contact with acids liberates toxic gas',
+    EUH032: 'Contact with acids liberates very toxic gas',
+    EUH044: 'Risk of explosion if heated under confinement',
+    EUH066: 'Repeated exposure may cause skin dryness or cracking',
+    EUH070: 'Toxic by eye contact',
+    EUH071: 'Corrosive to the respiratory tract',
+    EUH201: 'Contains lead. Should not be used on surfaces liable to be chewed or sucked by children',
+    EUH201A: 'Warning! Contains lead',
+    EUH202: 'Cyanoacrylate. Danger. Bonds skin and eyes in seconds. Keep out of the reach of children',
+    EUH203: 'Contains chromium (VI). May produce an allergic reaction',
+    EUH204: 'Contains isocyanates. May produce an allergic reaction',
+    EUH205: 'Contains epoxy constituents. May produce an allergic reaction',
+    EUH206: 'Warning! Do not use together with other products. May release dangerous gases (chlorine)',
+    EUH207: 'Warning! Contains cadmium. Dangerous fumes are formed during use. See information supplied by the manufacturer. Comply with the safety instructions',
     EUH208: 'Contains (name of sensitising substance). May produce an allergic reaction',
+    EUH209: 'Can become highly flammable in use',
+    EUH209A: 'Can become flammable in use',
+    EUH210: 'Safety data sheet available on request',
+    EUH211: 'Warning! Hazardous respirable droplets may be formed when sprayed. Do not breathe spray or mist',
+    EUH212: 'Warning! Hazardous respirable dust may be formed when used. Do not breathe dust',
+    EUH401: 'To avoid risks to human health and the environment, comply with the instructions for use',
     EUH380: 'May cause endocrine disruption in humans', EUH381: 'Suspected of causing endocrine disruption in humans',
     EUH430: 'May cause endocrine disruption in the environment', EUH431: 'Suspected of causing endocrine disruption in the environment',
     EUH440: 'Accumulates in the environment and living organisms including in humans',
@@ -106,6 +130,8 @@
       stotSE: '', stotSEresp: false, stotSEnarc: false, stotRE: '', asp: false,
       aquaAcute: false, mAcute: '', aquaChronic: '', mChronic: '', aquaUnknown: false,
       edHH: '', edEnv: '', pbt: false, vpvb: false, pmt: false, vpvm: false, ozone: false,
+      // Annex II Part 2 identity flags (not derivable from H/EUH codes)
+      isocyanate: false, epoxyLowMW: false, halogenatedHC: false, tio2: '',
       scl: {}
     };
   }
@@ -125,6 +151,7 @@
     const m = String(raw).replace(/\s/g, '').match(/^(EUH|H)(\d{3})([A-Za-z]*)$/i);
     if (!m) return null;
     const base = m[1].toUpperCase() + m[2], suffix = m[3];
+    if (base === 'EUH201' || base === 'EUH209') return !suffix ? base : suffix.toUpperCase() === 'A' ? base + 'A' : null;
     if (base === 'H350') return !suffix ? base : suffix.toLowerCase() === 'i' ? 'H350i' : null;
     if (base === 'H360') {
       if (!suffix) return base;
@@ -608,7 +635,7 @@
       if (!named.length) return;
       if (H.status !== 'classified') {
         named.forEach((n) => {
-          ctx.euh.push({ code: 'EUH208', text: `Contains ${nm(n.i)}. May produce an allergic reaction`, why: `${nm(n.i)} (${lab} sensitiser ${n.c}) at ${fmt(n.i.pct)} % ≥ elicitation limit ${fmt(n.lim)} % (Table 3.4.6) and the mixture is not classified as ${lab} sensitising (Annex II 2.8, cons. p.242)` });
+          ctx.euh.push({ code: 'EUH208', ingredient: n.i, text: `Contains ${nm(n.i)}. May produce an allergic reaction`, why: `${nm(n.i)} (${lab} sensitiser ${n.c}) at ${fmt(n.i.pct)} % ≥ elicitation limit ${fmt(n.lim)} % (Table 3.4.6) and the mixture is not classified as ${lab} sensitising (Annex II 2.8, cons. p.242)` });
           ctx.sds.push(`SDS available on request: ${lab} sensitiser ${nm(n.i)} ≥ elicitation limit ${fmt(n.lim)} % (Table 3.4.6, note 1).`);
         });
       } else {
@@ -1244,6 +1271,220 @@
     };
   }
 
+  /* ---------------- supplemental hazard information (EUH) ----------------
+     CLP Annex II Part 1 (Article 25(1)), Part 2 (Article 25(6)) and Part 4.
+     Only EUH070 (≥ 0.1 %), EUH201 (lead > 0.15 %), EUH203 (Cr(VI) > 2 ppm), EUH206
+     (active chlorine > 1 %), EUH209/209A (> 5 % flammable), EUH210 and EUH211/212
+     (TiO2 ≥ 1 %) carry numerical criteria. The remaining Part 1 statements are
+     property-based: an ingredient carrying them is NOT a legal transfer rule, so the
+     engine raises a review item and assigns the statement only when the user confirms
+     the mixture's property (m.euhConfirmed) from test data, experience or literature.
+     EUH208 is handled with sensitisation (Table 3.4.6). EUH380–EUH451 are hazard
+     classes calculated in newClasses(). */
+  const EUH_PROPERTY_RULES = [
+    { code: 'EUH014', ref: 'Annex II 1.1.1', what: 'reacts violently with water (e.g. acetyl chloride, alkali metals, titanium tetrachloride)' },
+    { code: 'EUH018', ref: 'Annex II 1.1.2', what: 'is not itself classified as flammable but may form a flammable/explosive vapour-air mixture in use (volatile flammable component, or loss of a non-flammable volatile component)' },
+    { code: 'EUH019', ref: 'Annex II 1.1.3', what: 'may form explosive peroxides during storage (e.g. diethyl ether, 1,4-dioxane)' },
+    { code: 'EUH044', ref: 'Annex II 1.1.4', what: 'is not classified as explosive but may show explosive properties when heated under confinement' },
+    { code: 'EUH029', ref: 'Annex II 1.2.1', what: 'liberates Acute Tox. 1–3 gases in potentially dangerous amounts on contact with water or damp air' },
+    { code: 'EUH031', ref: 'Annex II 1.2.2', what: 'liberates Acute Tox. 3 gases in dangerous amounts on reaction with acids' },
+    { code: 'EUH032', ref: 'Annex II 1.2.3', what: 'liberates Acute Tox. 1 or 2 gases in dangerous amounts on reaction with acids' },
+    { code: 'EUH066', ref: 'Annex II 1.2.4', what: 'may cause skin dryness, flaking or cracking on repeated exposure, without meeting the skin irritation criteria (Annex I 3.2)' },
+    { code: 'EUH070', ref: 'Annex II 1.2.5', what: 'caused systemic toxicity or mortality in an eye irritation test, or human systemic toxicity after eye contact' },
+    { code: 'EUH071', ref: 'Annex II 1.2.6', what: 'has corrosivity as the mechanism of acute inhalation toxicity (Annex I 3.1.2.3.3, Table 3.1.3 note 1)' }
+  ];
+  const FLAMMABLE_ING = { H220: 'high', H221: 'flam', H222: 'high', H223: 'flam', H224: 'high', H225: 'high', H226: 'flam' };
+  const flag = (v) => v === true || v === 'true' || v === 'yes' || v === 1;
+  const ingCodes = (i) => new Set((i.hcodeDetails || []).map((d) => d.code));
+
+  function supplementalEUH(m, ings, outcomes, ctx) {
+    const H = hz('euh', 'Supplemental hazard information (EUH statements)', 'CLP Article 25 · Annex II Parts 1, 2 and 4 · Annex III Part 2');
+    const assigned = [], review = [], omitted = [];
+    const assign = (code, why, extra) => {
+      if (assigned.some((a) => a.code === code)) return;
+      assigned.push(Object.assign({ code, text: HTEXT[code], why }, extra || {}));
+      H.steps.push(`${code} assigned: ${why}`);
+    };
+    const ask = (codes, reason, basis) => { review.push({ codes: [].concat(codes), reason, basis }); H.steps.push('REVIEW ' + [].concat(codes).join('/') + ': ' + reason); };
+    const labels = outcomes.map((o) => o.label);
+    const classifiedAs = (re) => labels.some((l) => re.test(l));
+    const confirmed = new Set([].concat(m.euhConfirmed || []).map((c) => String(c).toUpperCase()));
+    const audience = ['consumer', 'professional', 'industrial'].includes(m.audience) ? m.audience : 'unknown';
+    const state = m.state || 'liquid';
+    const amount = (v) => { const n = num(v); return has(n) ? n : NaN; };
+
+    /* ---- Part 1: property-based statements ---- */
+    EUH_PROPERTY_RULES.forEach((rule) => {
+      const carriers = ings.filter((i) => ingCodes(i).has(rule.code));
+      const names = carriers.map((i) => `${nm(i)} (${fmt(i.pct)} %)`).join(', ');
+      if (rule.code === 'EUH070') {
+        // The one Part 1 statement with a mixture concentration rule.
+        const hits = carriers.filter((i) => ge(i.pct, concentrationLimit(i, 'euh070', 0.1)));
+        if (hits.length) assign('EUH070', `${hits.map((i) => `${nm(i)} (EUH070) at ${fmt(i.pct)} % ≥ ${fmt(concentrationLimit(i, 'euh070', 0.1))} %`).join('; ')} (${rule.ref}: mixture contains ≥ 0.1 % of a substance labelled EUH070, unless Annex VI Part 3 sets otherwise).`, { basis: rule.ref });
+        else if (confirmed.has('EUH070')) assign('EUH070', `user-confirmed data: the mixture ${rule.what} (${rule.ref}).`, { basis: rule.ref, confirmed: true });
+        else if (carriers.length) H.steps.push(`EUH070 not assigned: ${names} below 0.1 % (${rule.ref}).`);
+        return;
+      }
+      if (rule.code === 'EUH071') {
+        const corrosive = classifiedAs(/^Skin Corr\./);
+        const inhaled = m.mayBeInhaled;
+        const inhData = flag(m.acuteInhTestData);
+        if (corrosive && flag(inhaled) && !inhData)
+          assign('EUH071', `mixture classified ${labels.filter((l) => /^Skin Corr\./.test(l)).join(', ')}, may be inhaled, and no acute inhalation test data are available (${rule.ref}, second criterion).`, { basis: rule.ref });
+        else if (confirmed.has('EUH071')) {
+          assign('EUH071', `user-confirmed data: the mixture ${rule.what} (${rule.ref}, first criterion).`, { basis: rule.ref, confirmed: true });
+          if (!classifiedAs(/^Acute Tox\. \d \(inhalation\)/)) ask('EUH071', 'The first EUH071 criterion applies in addition to an acute inhalation toxicity classification, but the mixture has none. Check the inhalation data and classification.', rule.ref);
+        } else if (corrosive && (inhaled === '' || inhaled === undefined || inhaled === null) && !inhData)
+          ask('EUH071', 'The mixture is skin corrosive. State whether it may be inhaled (gas, vapour, spray, aerosol, dust or mist): if so, and no acute inhalation test data exist, EUH071 applies.', rule.ref);
+        else if (corrosive) H.steps.push(`EUH071 not assigned: ${inhData ? 'acute inhalation test data are available (first criterion governs)' : 'the mixture is recorded as not inhalable'} (${rule.ref}).`);
+        if (!assigned.some((a) => a.code === 'EUH071') && carriers.length)
+          ask('EUH071', `${names} carries EUH071. Annex II 1.2.6 has no concentration transfer rule: decide from the mixture's corrosivity and inhalation data.`, rule.ref);
+        return;
+      }
+      if (confirmed.has(rule.code)) {
+        if (rule.code === 'EUH066' && classifiedAs(/^Skin (Corr|Irrit)\./)) {
+          omitted.push({ code: 'EUH066', reason: 'Mixture meets the skin irritation/corrosion criteria; EUH066 is only for mixtures that do not.', basis: rule.ref });
+          H.steps.push('EUH066 not assigned: the mixture is classified for skin corrosion/irritation (Annex II 1.2.4 applies only where those criteria are not met).');
+        } else if (rule.code === 'EUH018' && classifiedAs(/^Flam\./)) {
+          omitted.push({ code: 'EUH018', reason: 'Mixture is classified as flammable; EUH018 is for mixtures not classified as flammable.', basis: rule.ref });
+          H.steps.push('EUH018 not assigned: the mixture is classified as flammable.');
+        } else if (rule.code === 'EUH044' && classifiedAs(/^(Expl\.|Unst\. Expl\.)/)) {
+          omitted.push({ code: 'EUH044', reason: 'Mixture is classified as explosive.', basis: rule.ref });
+        } else assign(rule.code, `user-confirmed: the mixture ${rule.what} (${rule.ref}).`, { basis: rule.ref, confirmed: true });
+        return;
+      }
+      if (carriers.length) {
+        if (rule.code === 'EUH066' && classifiedAs(/^Skin (Corr|Irrit)\./)) { H.steps.push(`EUH066 on ${names} not relevant: the mixture is classified for skin corrosion/irritation.`); return; }
+        if (rule.code === 'EUH018' && classifiedAs(/^Flam\./)) { H.steps.push(`EUH018 on ${names} not relevant: the mixture is classified as flammable.`); return; }
+        ask(rule.code, `${names} carries ${rule.code}. ${rule.ref} has no concentration rule: confirm whether the mixture ${rule.what}.`, rule.ref);
+      }
+    });
+    // EUH018 screen from volatile flammable ingredients in a non-flammable mixture
+    if (!assigned.some((a) => a.code === 'EUH018') && !classifiedAs(/^Flam\./) && !confirmed.has('EUH018')) {
+      const vol = ings.filter((i) => [...ingCodes(i)].some((c) => FLAMMABLE_ING[c]) && !ingCodes(i).has('EUH018'));
+      if (vol.length) ask('EUH018', `Mixture is not classified as flammable but contains flammable ingredient(s) ${vol.map((i) => nm(i)).join(', ')}. Consider whether a flammable/explosive vapour-air mixture may form in use.`, 'Annex II 1.1.2');
+    }
+
+    /* ---- Part 2: special rules for certain mixtures ---- */
+    const lead = amount(m.leadPct);
+    if (flag(m.isPaintVarnish) && has(lead)) {
+      if (lead > 0.15 + EPS) {
+        const small = has(amount(m.packVolumeMl)) && amount(m.packVolumeMl) < 125;
+        assign(small && m.leadShortStatement ? 'EUH201A' : 'EUH201', `paint/varnish with total lead ${fmt(lead)} % > 0.15 % of total mixture weight (ISO 6503)${small ? '; package < 125 ml' + (m.leadShortStatement ? ', short statement chosen' : ' so EUH201A may be used instead') : ''} (Annex II 2.1).`, { basis: 'Annex II 2.1' });
+      } else H.steps.push(`EUH201 not assigned: lead ${fmt(lead)} % ≤ 0.15 % (Annex II 2.1).`);
+    } else if (has(lead) && lead > 0.15 + EPS) ask('EUH201', 'Lead content above 0.15 % is entered: EUH201 applies if the product is a paint or varnish. Tick the paint/varnish option if so.', 'Annex II 2.1');
+
+    const cyano = ings.filter((i) => /cyanoacryl/i.test(i.name || ''));
+    if (flag(m.isCyanoacrylateAdhesive)) assign('EUH202', 'cyanoacrylate-based adhesive (Annex II 2.2). The immediate packaging must bear the statement; appropriate safety advice must accompany the package.', { basis: 'Annex II 2.2' });
+    else if (cyano.length) ask('EUH202', `${cyano.map(nm).join(', ')} appears to be a cyanoacrylate. EUH202 applies if the mixture is a cyanoacrylate-based adhesive.`, 'Annex II 2.2');
+
+    if (flag(m.isCement)) {
+      const cr = amount(m.solubleCrVIppm);
+      const sensitising = outcomes.some((o) => o.h.includes('H317'));
+      if (sensitising) H.steps.push('EUH203 not assigned: the cement mixture is already classified and labelled H317 (Annex II 2.3).');
+      else if (!has(cr)) ask('EUH203', 'Cement or cement mixture: enter the soluble chromium(VI) content after hydration (ppm of total dry cement weight). EUH203 applies above 2 ppm (0.0002 %).', 'Annex II 2.3');
+      else if (cr > 2 + EPS) assign('EUH203', `soluble Cr(VI) ${fmt(cr)} ppm > 2 ppm (0.0002 %) of total dry cement weight, and the mixture is not labelled H317 (Annex II 2.3).`, { basis: 'Annex II 2.3' });
+      else H.steps.push(`EUH203 not assigned: soluble Cr(VI) ${fmt(cr)} ppm ≤ 2 ppm.`);
+      if (flag(m.crVIReducingAgent)) ctx.supplemental.push('Cement with Cr(VI) reducing agent: state the packing date, storage conditions and storage period during which the reducing agent keeps soluble Cr(VI) ≤ 0.0002 % (Annex II 2.3).');
+    }
+
+    const iso = ings.filter((i) => flag(i.isocyanate));
+    if (iso.length) assign('EUH204', `contains isocyanate(s) ${iso.map((i) => `${nm(i)} (${fmt(i.pct)} %)`).join(', ')} – monomers, oligomers, prepolymers etc., any concentration; not required if already on the label (Annex II 2.4).`, { basis: 'Annex II 2.4', ingredients: iso });
+    else { const s2 = ings.filter((i) => /isocyan/i.test(i.name || '')); if (s2.length) ask('EUH204', `${s2.map(nm).join(', ')} may be an isocyanate. Tick "isocyanate" on the ingredient if so (EUH204 applies at any concentration).`, 'Annex II 2.4'); }
+
+    const epoxy = ings.filter((i) => flag(i.epoxyLowMW));
+    if (epoxy.length) assign('EUH205', `contains epoxy constituent(s) with average MW ≤ 700: ${epoxy.map((i) => `${nm(i)} (${fmt(i.pct)} %)`).join(', ')}; not required if already on the label (Annex II 2.5).`, { basis: 'Annex II 2.5', ingredients: epoxy });
+    else { const s3 = ings.filter((i) => /epox|glycidyl|bisphenol[ -]?a.*epichlorohydrin/i.test(i.name || '')); if (s3.length) ask('EUH205', `${s3.map(nm).join(', ')} may be an epoxy constituent. Tick "epoxy, MW ≤ 700" on the ingredient if its average molecular weight is ≤ 700.`, 'Annex II 2.5'); }
+
+    // EUH204/205 may replace EUH208 for the same substance (Annex II 2.8, last paragraph).
+    const covered = new Set([...iso, ...epoxy]);
+    for (let k = ctx.euh.length - 1; k >= 0; k--) {
+      const e = ctx.euh[k];
+      if (e.code === 'EUH208' && covered.has(e.ingredient)) {
+        omitted.push({ code: 'EUH208', reason: `EUH208 for ${nm(e.ingredient)} omitted: covered by ${flag(e.ingredient.isocyanate) ? 'EUH204' : 'EUH205'}.`, basis: 'Annex II 2.8, last paragraph' });
+        H.steps.push(`EUH208 for ${nm(e.ingredient)} omitted: already covered by ${flag(e.ingredient.isocyanate) ? 'EUH204' : 'EUH205'} (Annex II 2.8).`);
+        ctx.euh.splice(k, 1);
+      }
+    }
+
+    const cl = amount(m.activeChlorinePct);
+    if (has(cl) && cl > 1 + EPS) {
+      if (audience === 'consumer') assign('EUH206', `sold to the general public and contains ${fmt(cl)} % > 1 % active chlorine (Annex II 2.6).`, { basis: 'Annex II 2.6' });
+      else if (audience === 'unknown') ask('EUH206', `Active chlorine ${fmt(cl)} % > 1 %: EUH206 applies if the mixture is sold to the general public. Select the supply audience.`, 'Annex II 2.6');
+      else H.steps.push(`EUH206 not assigned: active chlorine > 1 % but the mixture is not sold to the general public (${audience}).`);
+    }
+
+    if (flag(m.isCdBrazingAlloy)) assign('EUH207', 'cadmium-containing alloy intended for brazing or soldering (Annex II 2.7).', { basis: 'Annex II 2.7' });
+
+    if (state === 'liquid' && ings.some((i) => flag(i.halogenatedHC))) {
+      const fp = num(m.flashPoint);
+      const noFp = flag(m.noFlashPoint);
+      const inRange = noFp || (has(fp) && fp > 60 + EPS && le(fp, 93));
+      const flam = ings.filter((i) => [...ingCodes(i)].some((c) => FLAMMABLE_ING[c]));
+      const flamPct = sum(flam.map((i) => i.pct));
+      const highly = flam.some((i) => [...ingCodes(i)].some((c) => FLAMMABLE_ING[c] === 'high'));
+      if (!noFp && !has(fp)) ask(['EUH209', 'EUH209A'], 'Liquid with a halogenated hydrocarbon: enter the flash point or tick "no flash point" to assess EUH209/EUH209A.', 'Annex II 2.9');
+      else if (!inRange) H.steps.push(`EUH209/209A not assessed further: flash point ${fmt(fp)} °C is outside "none or > 60 °C and ≤ 93 °C" (Annex II 2.9).`);
+      else if (flamPct > 5 + EPS) {
+        const code = highly ? 'EUH209' : 'EUH209A';
+        assign(code, `liquid with ${noFp ? 'no flash point' : 'flash point ' + fmt(fp) + ' °C'}, containing a halogenated hydrocarbon and ${fmt(flamPct)} % > 5 % ${highly ? 'highly ' : ''}flammable substances (${flam.map(nm).join(', ')}) (Annex II 2.9).`, { basis: 'Annex II 2.9' });
+        if (highly && flam.some((i) => ![...ingCodes(i)].some((c) => FLAMMABLE_ING[c] === 'high'))) H.notes.push('Both highly flammable and flammable substances are present: EUH209 (highly flammable) is used as the more protective statement.');
+      } else H.steps.push(`EUH209/209A not assigned: flammable substances ${fmt(flamPct)} % ≤ 5 % (Annex II 2.9).`);
+    }
+
+    const tio2 = ings.filter((i) => i.tio2 === 'respirable' || i.tio2 === 'present');
+    if (tio2.length) {
+      if (state === 'liquid') {
+        const resp = tio2.filter((i) => i.tio2 === 'respirable');
+        const pct = sum(resp.map((i) => i.pct));
+        if (ge(pct, 1)) assign('EUH211', `liquid mixture with ${fmt(pct)} % ≥ 1 % titanium dioxide particles of aerodynamic diameter ≤ 10 μm (Annex II 2.12).`, { basis: 'Annex II 2.12' });
+        else if (resp.length) H.steps.push(`EUH211 not assigned: respirable TiO2 ${fmt(pct)} % < 1 %.`);
+        if (tio2.some((i) => i.tio2 === 'present') && ge(sum(tio2.map((i) => i.pct)), 1) && !ge(pct, 1))
+          ask('EUH211', 'Liquid contains ≥ 1 % titanium dioxide of unconfirmed particle size. EUH211 applies if particles of aerodynamic diameter ≤ 10 μm are ≥ 1 %.', 'Annex II 2.12');
+      } else if (state === 'solid') {
+        const pct = sum(tio2.map((i) => i.pct));
+        if (ge(pct, 1)) assign('EUH212', `solid mixture with ${fmt(pct)} % ≥ 1 % titanium dioxide (Annex II 2.12).`, { basis: 'Annex II 2.12' });
+        else H.steps.push(`EUH212 not assigned: TiO2 ${fmt(pct)} % < 1 %.`);
+      }
+    }
+
+    /* EUH210: mixture NOT classified, NOT intended for the general public, with a trigger. */
+    const classified = outcomes.length > 0;
+    const gasMix = state === 'gas';
+    const triggers = [...new Set(ctx.sds)];
+    ings.forEach((i) => {
+      const lim = gasMix ? 0.2 : 1;
+      const acuteRoute = (a, route) => !!a.cat || (validPositive(a.ate) && catFromATE(route, num(a.ate)) > 0);
+      const healthEnv = !!(acuteRoute(i.acute.oral, 'oral') || acuteRoute(i.acute.dermal, 'dermal') || acuteRoute(i.acute.inh, AT[i.acute.inh.form] ? i.acute.inh.form : 'vapour') ||
+        i.skinCorr || i.eye || i.skinSens || i.respSens || i.muta || i.carc || i.repro || i.reproFert || i.reproDev || i.lact ||
+        i.stotSE || i.stotRE || i.asp || i.aquaAcute || i.aquaChronic || i.edHH || i.edEnv || i.pbt || i.vpvb || i.pmt || i.vpvm || i.ozone);
+      if (ge(i.pct, lim) && (healthEnv || flag(i.sdsUnionOEL)))
+        triggers.push(`${nm(i)} at ${fmt(i.pct)} % ≥ ${lim} % ${gasMix ? 'v/v' : 'w/w'} ${healthEnv ? 'is classified for a health or environmental hazard' : 'has a Union workplace exposure limit'} (Annex II 2.10(e)).`);
+    });
+    const tioEuh = assigned.filter((a) => a.code === 'EUH211' || a.code === 'EUH212');
+    if (tioEuh.length) triggers.push(`${tioEuh.map((a) => a.code).join('/')} is assigned (Annex II 2.12, final paragraph).`);
+    const uniqTriggers = [...new Set(triggers)];
+    if (!classified && uniqTriggers.length) {
+      if (audience === 'professional' || audience === 'industrial')
+        assign('EUH210', `mixture not classified as hazardous, not intended for the general public, and ${uniqTriggers.join(' ')}`, { basis: 'Annex II 2.10', triggers: uniqTriggers });
+      else if (audience === 'unknown') ask('EUH210', 'The mixture is not classified but has an SDS-on-request trigger. EUH210 is required if it is not intended for the general public: select the supply audience.', 'Annex II 2.10');
+      else H.steps.push('EUH210 not assigned: the mixture is supplied to the general public. (An SDS on request may still be due under REACH Article 31(3).)');
+    }
+
+    if (flag(m.isPlantProtection)) assign('EUH401', 'plant protection product (Annex II Part 4), in addition to the Regulation (EC) No 1107/2009 labelling.', { basis: 'Annex II Part 4' });
+
+    if (m.isAerosol || flag(m.isAerosol)) H.notes.push('Aerosol: the labelling provisions of points 2.2 and 2.3 of the Annex to Directive 75/324/EEC also apply (Annex II 2.11).');
+
+    // EUH202/EUH201A etc. are statements on the label; ctx.euh feeds Article 27 selection.
+    assigned.forEach((a) => ctx.euh.push({ code: a.code, text: a.text, why: a.why }));
+    // Review items are surfaced in the label section and notes; they do not mark the
+    // hazard-class calculation "incomplete" (no Annex I classification depends on them).
+    H.status = assigned.length ? 'classified' : 'not';
+    if (!H.steps.length && !review.length) H.steps.push('No Annex II supplemental hazard statement is triggered by the entered information.');
+    H.notes.push('Property-based EUH statements (EUH014–EUH071 except EUH070) have no ingredient-concentration rule in Annex II Part 1: they are assigned only when you confirm the mixture property from data.');
+    return { hazard: H, assigned, review, omitted };
+  }
+
   /* ---------------- main ---------------- */
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
@@ -1350,6 +1591,10 @@
     const classified = hazards.filter((h) => h.status === 'classified');
     const outcomes = [];
     classified.forEach((h) => h.outcomes.forEach((o) => outcomes.push(Object.assign({}, o, { hazardId: h.id, hazard: h.name }))));
+    const euhInfo = supplementalEUH(m, ings, outcomes, ctx);
+    hazards.push(euhInfo.hazard);
+    // One EUH208 entry per named substance (skin and respiratory both name it once).
+    ctx.euh = ctx.euh.filter((e, k, a) => a.findIndex((x) => x.code === e.code && x.text === e.text) === k);
     const art26 = selectArticle26(outcomes, { omitOptional: m.article26Mode === 'omitOptional' });
     const hs = [];
     const seen = new Set();
@@ -1402,6 +1647,7 @@
       notes.push('Article 28 P-statement selection is provisional and has blocking gaps (audience, disposal, wording, coverage, or six-statement prioritisation). Review the Article 28 audit.');
     else if (art28.review.length)
       notes.push('Article 28 P-statements require confirmation of uses, relevant conditional wording and omissions before release.');
+    if (euhInfo.review.length) notes.push('Supplemental hazard information (Annex II) needs review: ' + [...new Set(euhInfo.review.flatMap((x) => x.codes))].join(', ') + '.');
     if (outcomes.some((o) => ['ED HH 1', 'ED HH 2', 'ED ENV 1', 'ED ENV 2', 'PBT', 'vPvB', 'PMT', 'vPvM'].includes(o.label)))
       notes.push('New hazard classes: mixtures placed on the market before 1 May 2026 need not be classified/labelled for these classes until 1 May 2028 (3.11.3.4, 4.2.3.4, 4.3.3.2, 4.4.3.2).');
     return {
@@ -1413,7 +1659,12 @@
         ...art27,
         precautionaryStatements: art28.selected,
         article28: art28,
-        supplemental: ctx.supplemental
+        supplemental: ctx.supplemental,
+        supplementalHazardInformation: {
+          assigned: euhInfo.assigned.map((a) => ({ code: a.code, text: a.text, why: a.why, basis: a.basis, confirmed: !!a.confirmed })),
+          review: euhInfo.review,
+          omitted: euhInfo.omitted
+        }
       },
       sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name)
     };
@@ -1452,6 +1703,10 @@
       if (i.aquaAcute) c.push('Aquatic Acute 1' + (i.mAcute ? ` (M=${i.mAcute})` : '')); if (i.aquaChronic) c.push('Aquatic Chronic ' + i.aquaChronic + (i.mChronic && i.aquaChronic === '1' ? ` (M=${i.mChronic})` : ''));
       if (i.aquaUnknown) c.push('aquatic data unavailable');
       if (i.edHH) c.push('ED HH ' + i.edHH); if (i.edEnv) c.push('ED ENV ' + i.edEnv);
+      if (i.isocyanate) c.push('isocyanate'); if (i.epoxyLowMW) c.push('epoxy constituent MW ≤ 700'); if (i.halogenatedHC) c.push('halogenated hydrocarbon');
+      if (i.tio2) c.push(i.tio2 === 'respirable' ? 'TiO2 (≤ 10 μm particles)' : 'TiO2');
+      const ingEuh = (i.hcodeDetails || []).filter((d) => /^EUH0/.test(d.code)).map((d) => d.code);
+      if (ingEuh.length) c.push('source ' + ingEuh.join(', '));
       ['pbt', 'vpvb', 'pmt', 'vpvm', 'ozone'].forEach((f) => { if (i[f]) c.push({ pbt: 'PBT', vpvb: 'vPvB', pmt: 'PMT', vpvm: 'vPvM', ozone: 'Ozone 1' }[f]); });
       const scl = Object.entries(i.scl).filter(([, v]) => v !== '' && v !== null && v !== undefined).map(([k2, v]) => `SCL ${k2} ${v} %`);
       const differentiated = (i.hcodeDetails || []).filter((d) => d.suffix).map((d) => d.code);
@@ -1468,6 +1723,12 @@
       `Pictograms (Article 26 selected): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
       `Retained H statements: ${result.label.hazardStatements.map((x) => x.code).join(', ') || 'none'}`,
       `Retained EUH / supplemental: ${[...result.label.euhStatements.map((x) => x.code), ...result.label.supplemental].join(' | ') || 'none'}`);
+    const shi = result.label.supplementalHazardInformation || { assigned: [], review: [], omitted: [] };
+    L.push('', 'SUPPLEMENTAL HAZARD INFORMATION (CLP Annex II):');
+    shi.assigned.forEach((a) => L.push(`- ${a.code}: ${a.why}`));
+    shi.omitted.forEach((a) => L.push(`- ${a.code} not used: ${a.reason} [${a.basis}]`));
+    shi.review.forEach((a) => L.push(`- REVIEW ${a.codes.join('/')}: ${a.reason} [${a.basis}]`));
+    if (!shi.assigned.length && !shi.omitted.length && !shi.review.length) L.push('- none triggered by the entered information');
     L.push('', 'ARTICLE 26 PICTOGRAM AUDIT:',
       'Physical pictogram optional omissions: ' + (result.label.omitOptionalPictograms ? 'enabled' : 'disabled (retained)'));
     (result.label.pictogramDecisions || []).forEach((d) => {
