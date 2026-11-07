@@ -226,5 +226,23 @@
       "HPR Part 7 physical hazard classes",
       "Label and SDS bilingual contents"
     ]
+  },
+  "parentAct": {
+    "name": "Hazardous Products Act (HPA)",
+    "citation": "R.S.C. 1985, c. H-3",
+    "sourceMap": "data/canada/hpa_2023_source_map.json",
+    "sourceUpload": "Hazardous products.xml",
+    "xmlLastAmended": "2023-01-14",
+    "appliesTo": "Legal hazard-class scope, product-type exclusions and supplier obligations. Detailed classification criteria remain governed by HPR SOR/2015-17.",
+    "hazardClassCount": {
+      "physical": 20,
+      "health": 12
+    },
+    "notes": [
+      "Schedule 2 lists legally recognised hazard classes; only implemented HPR rules may yield automated results.",
+      "Part II section 12 and Schedule 1 exclusions are not equivalent to a negative hazard classification.",
+      "Physical hazard Schedule 2 item 19 is repealed.",
+      "Crosscheck external statutory definitions for exclusions; do not infer applicability from ingredient-only data."
+    ]
   }
 }
