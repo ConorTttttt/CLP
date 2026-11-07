@@ -187,22 +187,28 @@
       outcomes,review,supplementalStatements:[]};
     if(!d){notes.push("Inhalation form not selected; no inhalation classification performed.");return result;}
     const fractionKey=d.basis;
-    if(!items.length){result.status="invalid";notes.push("Enter ingredients before inhalation calculation.");return result;}
-    const invalidInputs=items.map((item,index)=>{
-      const n=finite(item[fractionKey]);
-      return n===null||n<0||n>100?"Ingredient "+(index+1)+": "+(form==="gas"?"volume % v/v":"mass % w/w")+" must be between 0 and 100.":null;
-    }).filter(Boolean);
-    if(invalidInputs.length){
-      result.status="invalid";notes.push(...invalidInputs);return result;
+    // Whole-mixture LC50 and applicable bridging evidence take precedence:
+    // individual gas volume percentages are only needed for ingredient
+    // additivity, never to use a valid HPR 8.1.3 whole-mixture test.
+    const ingredientMethod=blank(q.wholeMixtureLC50)&&blank(q.bridgedCategory);
+    if(ingredientMethod){
+      if(!items.length){result.status="invalid";notes.push("Enter ingredients before inhalation calculation.");return result;}
+      const invalidInputs=items.map((item,index)=>{
+        const n=finite(item[fractionKey]);
+        return n===null||n<0||n>100?
+          "Ingredient "+(index+1)+": "+(form==="gas"?"volume % v/v":"mass % w/w")+" must be between 0 and 100.":null;
+      }).filter(Boolean);
+      if(invalidInputs.length){result.status="invalid";notes.push(...invalidInputs);return result;}
+      const total=items.reduce((sum,item)=>sum+Number(item[fractionKey]),0);
+      if(Math.abs(total-100)>0.01){
+        result.status="invalid";notes.push("Inhalation "+(form==="gas"?"volume":"mass")+
+          " percentage total is "+total.toFixed(4)+"%, not 100%.");return result;
+      }
     }
-    const total=items.reduce((sum,item)=>sum+Number(item[fractionKey]),0);
-    if(Math.abs(total-100)>0.01){
-      result.status="invalid";
-      notes.push("Inhalation "+(form==="gas"?"volume":"mass")+" percentage total is "+total.toFixed(4)+"%, not 100%.");
-      return result;
-    }
-    steps.push("Inhalation form: "+d.label+"; concentration basis: "+(form==="gas"?"% v/v":"% w/w")+".");
-    if(form==="gas")notes.push("Gas mixture calculations require explicitly entered volume concentrations; mass % was not substituted.");
+    steps.push("Inhalation form: "+d.label+"; "+(ingredientMethod?"ingredient basis: ":"evidence route: ")+
+      (form==="gas"?"% v/v for ingredient method":"% w/w for ingredient method")+".");
+    if(form==="gas"&&ingredientMethod)
+      notes.push("Gas mixture calculations use explicitly entered volume concentrations; mass % is not substituted.");
     // HPR 8.1.3: whole-mixture LC50 data precede HPR 8.1.4 bridging
     // and the HPR 8.1.5–8.1.6 ingredient-based estimation.
     if(!blank(q.wholeMixtureLC50)){
