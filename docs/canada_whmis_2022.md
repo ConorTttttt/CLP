@@ -33,6 +33,20 @@ HPA **sections 13–14** prescribe supplier label/SDS duties for covered sales/i
 
 **Implementation:** a user-declaration-based federal supplier Part II scope screen is now available in `verification/whmis_extended.js`. Its status is separate from the mixture hazard result; it does not decide legal scope definitively or establish absence of hazards.
 
+## CLP-matched raw-material hazard selection (2026-11-07)
+
+**`canada_whmis_calculator.html` now follows the main CLP calculator's hazard-entry pattern** in each ingredient card, including when **Edit details** is collapsed.
+
+- Type an H-code (e.g. `H314`, `H317`, `H350`), hazard classification name (e.g. *Skin corrosion*, *Respiratory sensitization*) or relevant phrase into **+ Add hazard classification**. Search results show the H-code (where prescribed), exact category, class and phrase. Use **All / Health / Physical** tabs to limit results. Keyboard: arrow keys, Enter and Escape.
+- **H-codes are not necessarily unique category identifiers.** `H314` offers Skin Corr. 1, 1A, 1B and 1C separately; `H300` offers oral acute toxicity Categories 1 and 2. The selected exact category writes to the existing Canadian raw-material input field, **not** an EU CLP field. Selecting a different category within the same hazard class replaces it.
+- Selected classes display in **removable chips**, with `×` to clear that classification. Click the chip label to edit the original category field. Detailed controls remain available for ATEs, ingredient physical state, gas volume percentages, SCL-like supporting evidence and additional Canadian input requirements.
+- An acute hazard selection clears a contradictory evidence-backed **not acutely toxic** checkbox for that route. A measured/entered **ATE/LC₅₀ remains unchanged** and takes precedence over a category estimate when the applicable HPR method requires it; the UI flags the need to reconcile overlapping data.
+- **Physical-class entries are raw-material declarations only.** They are recorded on the ingredient, shown as dashed chips and can be removed. They **do not automatically classify the finished mixture** under HPR Part 7; product-specific physical hazard calculations still require independent inputs and verified methods. The physical picker currently covers a limited set of common category/H-code combinations, plus Canadian-specific class declarations, and does not claim every HPR physical subcategory is complete.
+- **Environmental GHS hazard classes are not adopted as WHMIS Schedule 2 classes** and therefore are not in the Canadian hazard picker. This does not preclude environmental hazard information being relevant to other regulations or SDS requirements.
+- Canadian HHNOC can be selected as `HHNOC 1` without inventing a universal H-code.
+
+The code is isolated in `verification/whmis_hazard_picker.js` and the picker catalog's category mapping is verified by `verification/test_whmis_hazard_picker.js`. It changes the **ingredient-entry experience only**; it does **not** implement additional hazard classes, change mixture calculation thresholds or modify EU CLP. Supplier evidence, national Schedule 4 prescribed classifications and scientific assessment remain the controlling inputs.
+
 ## Implementation
 
 - Browser pilot: `canada_whmis_calculator.html`.
