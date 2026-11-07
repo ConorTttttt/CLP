@@ -45,6 +45,25 @@ For skin/eye, below-1% ingredients enter additive sums **only when there is evid
 - Unknown toxicity is not an ATE of zero or evidence of safety. Explicit 'no acute hazard' input requires scientific evidence. Missing data are flagged.
 - Absence of an automated result must not be interpreted as a negative hazard assessment.
 
+## Health Canada interpretation guidance (uploaded 2026-11-07)
+
+Additional interpretive source: Health Canada, *Guidance on the WHMIS supplier requirements*, initially issued 2025-05-26, last modified **2026-03-31**. Uploaded HTML snapshot SHA-256: `82dea79000d521979c1126606e92c56efeadbc13225a0b708c33f7d78a1792b0`. Official page: https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html
+
+The guidance is explanatory. **If it differs from the Hazardous Products Act or Hazardous Products Regulations, the legislation prevails.**
+
+### Confirmed guidance-dependent fixes in the pilot
+
+1. **Acute ingredient below 1%:** HPR 8.1.2(2) normally includes ingredients at or above 1%. HPR 2.5(1), as explained in the guidance, requires considering a lower-concentration ingredient if it still presents acute toxicity at that concentration. The `relevantBelow1` flag for each exposure route now includes that ingredient in the corresponding ATE calculation and requires documented supporting evidence. An unmarked ingredient below 1% remains excluded under the normal rule.
+2. **Unknown acute toxicity disclosures:** If a route is classified under Acute Toxicity Categories 1–4 and at least 1% of the mixture consists of relevant unknown acute-toxicity ingredients for that route, HPR 3(1)(e) and Schedule 1 paragraph 2(b) require a supplemental disclosure. The calculator now returns separate route-specific English text for **review**, not as a completed Canadian label/SDS. Official bilingual wording still needs verification and implementation.
+3. **Critical distinction:** The formula's >10% unknown fraction adjustment (HPR 8.1.6) and the >=1% supplemental disclosure threshold are **different triggers**. Do not conflate them. Missing toxicity data are not treated as evidence of safety.
+4. The guiding legal order still requires evaluation of whole-mixture data and applicable bridging principles before the ingredient calculation (HPR 2.2 and 8.1.2).
+
+Automated checks: `verification/test_whmis_guidance.js`. Original HTML is preserved as a user-supplied regulatory research reference; the repository stores its source URL, modification date and SHA-256 rather than committing the full saved web page with unrelated scripts.
+
+### Still subject to verification
+
+The uploaded guidance explains the full HPR classification system, but this PR **does not** yet implement entire Parts 7 and 8. Unimplemented classes remain explicitly unassessed. Priority work includes complete mixture-evidence ordering, inhalation and water-activated toxicants, non-additive skin/eye rules, sensitisation, carcinogenicity, reproductive toxicity, STOT and aspiration, prescribed classifications, Canadian-specific physical hazard classes and compliant bilingual labelling.
+
 ## Next work
 
 1. Implement whole-mixture/bridging and section 2.4–2.6 evidence precedence.
