@@ -75,4 +75,17 @@ test("Unknown percentage and drafts are route-specific",()=>{
  assert.equal(docs.find(x=>x.route==="oral").unknownPct,20);
  assert.equal(docs.find(x=>x.route==="dermal").unknownPct,10);
 });
+test("0% ingredient marked relevant does not affect ATE or create missing data",()=>{
+ const r=W.classify({ingredients:[ingredient("zero",0,{relevantBelow1:true}),
+   ingredient("inert",100,{notAcute:true})]});
+ const c=r.calculations.find(x=>x.route==="oral");
+ assert.equal(c.unknownPct,0);assert.equal(c.missing.length,0);
+ assert.equal(c.status,"calculated");
+});
+test("No-acute evidence is not accidentally counted as relevant below 1%",()=>{
+ const r=W.classify({ingredients:[ingredient("negative evidence",0.5,{notAcute:true,relevantBelow1:true}),
+   ingredient("inert",99.5,{notAcute:true})]});
+ assert.equal(r.review.some(x=>/below 1% included/.test(x)),false);
+ assert.equal(r.calculations.find(x=>x.route==="oral").unknownPct,0);
+});
 console.log(passed+" Health Canada guidance regression checks passed");
