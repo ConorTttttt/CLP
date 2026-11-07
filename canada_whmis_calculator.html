@@ -1,27 +1,164 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Canada WHMIS 2022 — Classification pilot</title>
+<title>Canada WHMIS 2022 — Mixture Classification Calculator</title>
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;background:#f4f7fb;color:#152334}
-body{margin:0} main{max-width:1050px;margin:auto;padding:24px}h1{font-size:clamp(1.5rem,3vw,2.2rem);margin:5px 0}
-p{line-height:1.55}.muted{color:#52667d}.card{background:white;border:1px solid #d4dfe9;border-radius:12px;padding:18px;margin:14px 0}
-.tag{font-size:12px;font-weight:700;background:#eaf2fc;color:#163f73;border-radius:18px;padding:5px 9px;display:inline-block}
-.warning{border-left:4px solid #b36a0c;padding:11px;background:#fff6e5}.error{border-left:4px solid #b12b32}
-table{border-collapse:collapse;width:100%;min-width:700px}th,td{border-bottom:1px solid #e0e8f0;padding:8px;text-align:left}th{font-size:12px;text-transform:uppercase;color:#52667d}
-.scroller{overflow:auto}input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #bac9d7;border-radius:6px;font:inherit;min-width:60px}
-button{background:#164d8c;color:white;border:0;border-radius:7px;padding:11px 15px;font:inherit;cursor:pointer;margin:4px 6px 4px 0}
-button.secondary{background:#e8eef6;color:#183650}button:focus-visible,input:focus-visible{outline:3px solid #e5ad40}
-label{font-size:13px}details{margin-top:10px;border-top:1px solid #e2e9ee;padding-top:10px}summary{cursor:pointer;font-weight:700}
-.small{font-size:12px}.outcome{border-left:4px solid #215c96;padding:8px 12px;margin:10px 0;background:#eff6ff}
-</style></head><body><main>
-<span class="tag">CA · WHMIS 2022 · Early pilot</span><h1>Canadian hazard classification</h1>
-<p class="muted">Independent Canadian Hazardous Products Regulations (SOR/2015-17) calculations. This pilot covers oral/dermal acute toxicity ATE, additive skin/eye ingredient screening and HHNOC ingredient triggers. Tested-mixture/bridging evidence and non-additive special-ingredient routes require separate review. It is <strong>not a complete WHMIS classification</strong>.</p>
-<div class="warning">Check whole-mixture evidence and bridging principles before accepting ingredient-based results. Absence of a result for an unimplemented hazard does not mean the product is unclassified.</div>
-<section class="card"><h2>Ingredient formulation</h2><p class="small muted">ATE values are mg/kg. For an acute toxicity category without ATE, enter 1–4. Explicitly select “No acute hazard evidence” only with substantiation. Skin/eye categories use HPR 8.2.11 and 8.3.11 additive rules; tick “Special?” for non-additive chemistry requiring separate review.</p>
-<div class="scroller"><table><thead><tr><th>Name</th><th>Concentration %</th><th>Oral ATE</th><th>Oral category</th><th>Oral no acute hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no acute hazard</th><th>Skin category</th><th>Skin evidence below 1%</th><th>Skin special?</th><th>Eye category</th><th>Eye evidence below 1%</th><th>Eye special?</th><th>HHNOC</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
-<button id="add">Add ingredient</button><button id="example" class="secondary">Load example</button><button id="calculate">Calculate WHMIS pilot</button>
-</section><section class="card" id="results" aria-live="polite"><h2>Results</h2><p>Add ingredients and select Calculate.</p></section>
-<section class="card"><h2>Regulatory source</h2><p>Hazardous Products Regulations, sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4. Read the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">official Canadian regulation</a>.</p></section>
-</main><script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_engine.js"></script><script>
+
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1c1f23;--mute:#5d6570;--line:#dcdfe3;--accent:#0b5cad;--accent-ink:#fff;--warn-bg:#fff4d6;--warn-ink:#6b4a00;--ai:#5b3fa6;--ok:#1d7a3e;--bad:#b3261e;--red:#d1262b}
+@media (prefers-color-scheme:dark){:root{--bg:#14161a;--panel:#1c1f25;--ink:#e8eaed;--mute:#9aa3ad;--line:#333842;--accent:#5aa2f0;--accent-ink:#0b1320;--warn-bg:#3a2f10;--warn-ink:#f0d48a;--ai:#b9a2f5;--ok:#58c47e;--bad:#f2867f;--red:#ef5350}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+header h1{margin:0;font-size:18px}
+header .sub{color:var(--mute);font-size:12.5px}
+.banner{background:var(--warn-bg);color:var(--warn-ink);padding:8px 20px;font-size:13px;border-bottom:1px solid var(--line)}
+.wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:16px 20px;align-items:start}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
+[hidden]{display:none!important}
+#viewersettings>summary{cursor:pointer;font-weight:700;list-style:revert}
+.viewer-settings-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-top:10px}
+.viewer-settings-groups fieldset{border:1px solid var(--line);border-radius:8px;min-width:0;padding:8px 10px}
+.viewer-settings-groups legend{font-size:12px;font-weight:700;color:var(--mute);padding:0 5px}
+.viewer-settings-groups label{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:13px;margin:6px 0}
+.viewer-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+input,select,textarea,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-width:0}
+input[type=checkbox]{padding:0;width:auto;flex:none;margin:0}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ai{background:var(--ai);color:#fff;border-color:var(--ai);font-weight:600}
+button.small{padding:3px 9px;font-size:13px}
+button.x{color:var(--bad);padding:3px 8px}
+label{font-size:12px;color:var(--mute);display:block;margin:0 0 2px}
+.g{display:grid;gap:8px}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:620px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hint{color:var(--mute);font-size:12.5px}
+table{width:100%;border-collapse:collapse}
+th{font-size:12px;color:var(--mute);text-align:left;font-weight:600;padding:0 4px 4px}
+td{padding:3px 4px;vertical-align:top}
+td input{width:100%}
+tr.ing>td{border-top:1px solid var(--line)}
+.detail{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin:4px 0 8px}
+.detail fieldset{border:1px solid var(--line);border-radius:7px;margin:0 0 8px;padding:6px 10px 8px}
+.detail legend{font-size:12px;color:var(--mute);padding:0 4px}
+.chk{display:flex;gap:5px;align-items:center;font-size:13px;color:var(--ink);margin:0}
+.chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin:0 4px 4px 0}
+.chip.on{background:color-mix(in srgb,var(--accent) 16%,transparent);border-color:var(--accent)}
+.sig{font-weight:700;font-size:20px;letter-spacing:.03em}
+.sig.Danger{color:var(--red)}
+.sig.Warning{color:#b26a00}
+.pics{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+.pic{width:84px;text-align:center;font-size:11.5px}
+.pic .dia{width:56px;height:56px;margin:8px auto 10px;border:4px solid var(--red);transform:rotate(45deg);background:#fff;display:flex;align-items:center;justify-content:center}
+.pic .dia b{transform:rotate(-45deg);color:#111;font-size:12px}
+.hrow{display:grid;grid-template-columns:62px 1fr;gap:6px;padding:2px 0;font-size:13.5px}
+.hrow code{font-weight:600}
+.hrow small{color:var(--mute)}
+/* Combined precautionary codes (e.g. P305+P351+P338) must never overlap wording.
+   Let the code column take its natural width; constrain the text column, and
+   stack code above wording on small screens. Scope to P rows only. */
+.pstatement-row{grid-template-columns:max-content minmax(0,1fr);column-gap:18px;row-gap:3px;align-items:start;padding:7px 0}
+.pstatement-row>code{display:block;white-space:nowrap;font-weight:700}
+.pstatement-row>div{min-width:0;overflow-wrap:anywhere}
+@media(max-width:620px){
+  .pstatement-row{grid-template-columns:minmax(0,1fr);row-gap:2px}
+  .pstatement-row>code{white-space:normal;overflow-wrap:anywhere}
+}
+.badge{display:inline-block;font-size:11.5px;padding:0 7px;border-radius:99px;margin-left:6px;vertical-align:1px}
+.badge.classified{background:var(--accent);color:var(--accent-ink)}
+.badge.not{background:var(--line);color:var(--mute)}
+.badge.incomplete,.badge.nodata{background:var(--warn-bg);color:var(--warn-ink)}
+.alert{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:6px 10px;margin:0 0 8px;font-size:13px}
+.alert.bad{background:color-mix(in srgb,var(--bad) 16%,var(--panel));color:var(--ink)}
+details.h{border-top:1px solid var(--line);padding:5px 0}
+details.h>summary{cursor:pointer;font-weight:600;font-size:13.5px}
+details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
+.step{white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
+
+
+
+/* Canada WHMIS adopts the CLP calculator's shared palette, cards, typography and responsive grid. */
+:root{--ix-border:#d6e2f0;--ix-accent:#285fa7;--ix-tint:#edf4fd}
+@media(prefers-color-scheme:dark){:root{--ix-border:#394f68;--ix-accent:#79b6ef;--ix-tint:#27354a}}
+.workspace-nav{display:flex;gap:5px;align-items:center;overflow-x:auto;padding:8px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+.workspace-nav a{color:var(--mute);text-decoration:none;font-size:12px;font-weight:650;padding:5px 10px;border-radius:7px;white-space:nowrap}
+.workspace-nav a:hover,.workspace-nav a:focus-visible{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.banner details{display:inline-block;margin-left:7px}.banner details[open]{display:block;margin:7px 0 0}.banner summary{cursor:pointer;text-decoration:underline}
+.banner .scope-note{margin:8px 0 0;max-width:950px;line-height:1.6}
+.workspace-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.workspace-heading h2{margin:0}.mini-tag{font-size:11px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:99px;padding:2px 9px;background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
+.muted{color:var(--mute)}.small{font-size:12px}.total{color:var(--mute);font-size:12px;font-weight:700}.total.invalid{color:var(--bad)}
+.g{display:grid;gap:8px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+h2{color:var(--mute)}.row.justify{justify-content:space-between}
+a{color:var(--accent)}input,select{max-width:100%;width:100%}input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.warning{background:var(--warn-bg);color:var(--warn-ink);font-size:12.5px;padding:9px 11px;margin:10px 0;border-radius:7px}
+.error{background:color-mix(in srgb,var(--bad) 12%,var(--panel));border-left:3px solid var(--bad);padding:8px 10px;border-radius:6px}
+.outcome{background:color-mix(in srgb,var(--accent) 7%,var(--panel));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:11px 12px;margin:10px 0;font-size:13px}
+.outcome strong{font-weight:700}.outcome .small{color:var(--mute)}
+/* Turn the existing 16-field editor table into CLP-style outlined ingredient cards. */
+.scroller{overflow:visible}table,tbody{display:block;min-width:0;width:100%}thead{display:none}
+tbody tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:var(--panel);border:1px solid var(--ix-border);border-left:4px solid var(--ix-accent);border-radius:9px;margin:12px 0;padding:11px 13px;box-shadow:0 3px 14px rgba(24,59,91,.045)}
+td{display:flex;flex-direction:column;gap:3px;min-width:0;padding:0;border:0}
+td::before{font-size:11.5px;font-weight:600;color:var(--mute)}
+td:nth-child(1){grid-column:span 2}td:nth-child(2){grid-column:span 2}
+td:nth-child(1)::before{content:"Ingredient name"}td:nth-child(2)::before{content:"Concentration (% w/w)"}
+td:nth-child(3)::before{content:"Oral ATE (mg/kg)"}td:nth-child(4)::before{content:"Oral category"}td:nth-child(5)::before{content:"Oral: no acute hazard"}
+td:nth-child(6)::before{content:"Dermal ATE (mg/kg)"}td:nth-child(7)::before{content:"Dermal category"}td:nth-child(8)::before{content:"Dermal: no acute hazard"}
+td:nth-child(9)::before{content:"Skin class"}td:nth-child(10)::before{content:"Skin: evidence below 1%"}td:nth-child(11)::before{content:"Skin: special chemistry"}
+td:nth-child(12)::before{content:"Eye class"}td:nth-child(13)::before{content:"Eye: evidence below 1%"}td:nth-child(14)::before{content:"Eye: special chemistry"}
+td:nth-child(15)::before{content:"HHNOC"}td:nth-child(16){grid-column:1/-1;align-items:flex-end}
+td:nth-child(3),td:nth-child(6),td:nth-child(9),td:nth-child(12),td:nth-child(15){border-top:1px solid var(--line);padding-top:10px}
+td input,td select{width:100%;font-size:12px;padding:7px 8px}
+td input[type=checkbox]{width:18px;height:18px;margin:7px 0 0}
+td button{font-size:12px;padding:5px 10px;color:var(--bad)}
+td input[data-field=name]{font-weight:650}
+#rows tr:focus-within{border-color:var(--accent)}
+.calc-panel{border:1px solid var(--line);border-radius:9px;background:var(--panel);margin:10px 0;overflow:hidden}
+.calc-panel>summary{font-size:13px;font-weight:650;padding:10px 12px;cursor:pointer;background:var(--bg)}
+.calc-panel>p,.calc-panel>strong,.calc-panel>div{display:block;margin:8px 12px}
+.calc-panel .small p{font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border-left:3px solid var(--accent);padding:6px 9px;white-space:pre-wrap;overflow-wrap:anywhere}
+.calc-panel>.warning{margin:8px 12px}
+#results ul{padding-left:22px;font-size:12.5px}#results li{margin:6px 0}
+details.scope>summary{cursor:pointer;font-size:12.5px;font-weight:650;color:var(--accent);border-top:1px solid var(--line);padding-top:10px}
+footer{color:var(--mute);font-size:12px;padding:8px 20px 24px}
+@media(max-width:700px){tbody tr{grid-template-columns:repeat(2,minmax(0,1fr))}td:nth-child(3),td:nth-child(6),td:nth-child(9),td:nth-child(12),td:nth-child(15){border-top:0;padding-top:0}}
+@media(max-width:420px){.wrap{padding:12px}.workspace-nav{padding:7px 12px}.g2{grid-template-columns:1fr}tbody tr{grid-template-columns:minmax(0,1fr)}td:nth-child(1),td:nth-child(2),td:nth-child(16){grid-column:1}}
+@media print{.workspace-nav,.banner details,#add,#example,td:last-child{display:none!important}.wrap{grid-template-columns:1fr}.card{break-inside:avoid}}
+
+</style></head><body>
+
+<header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
+<nav class="workspace-nav" aria-label="Calculator sections"><a href="#mixture-card">Mixture</a><a href="#ingredients-card">Ingredients</a><a href="#results">Results</a><a href="#source-card">Regulatory scope</a></nav>
+<div class="banner" role="note"><b>Decision-support only — not a final classification or label.</b> This Canadian pilot covers selected health hazard pathways.
+ <details><summary>Read calculation scope and regulatory limitations</summary><div class="scope-note">Ingredient-based oral and dermal acute toxicity, skin/eye additive mixtures and HHNOC ingredient triggers are implemented. Whole-mixture data, bridging, inhalation, special non-additive chemistry, other health and physical hazard classes, Schedule 4 prescribed classifications and bilingual WHMIS labelling are not yet automated. A missing result does not establish that a product is non-hazardous.</div></details>
+</div>
+<main class="wrap">
+<section id="inputs" aria-label="Formulation inputs">
+ <div class="workspace-heading"><h2>Formulation</h2><span class="hint">Edit inputs &middot; calculate provisional results</span></div>
+ <div class="card" id="mixture-card"><h2>1. Mixture information</h2>
+  <div class="g g2"><div><label for="product-name">Name</label><input id="product-name" placeholder="Product / trade name" style="width:100%"></div><div><label>Concentration basis</label><div style="padding:6px 0"><span class="mini-tag">Mass % w/w</span> <span class="hint">Fixed in pilot</span></div></div></div>
+  <p class="hint" style="margin:8px 0 0">Ingredient concentrations must total 100%. This pilot does not implement gas volume-based calculations.</p>
+ </div>
+ <div class="card" id="ingredients-card">
+  <div class="row justify"><h2>2. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
+  <p class="hint">Enter ingredient concentrations and their individual oral, dermal, skin, eye and HHNOC information. Each ingredient appears in a compact, grouped editor. Blank acute toxicity fields are unknown, not evidence of safety.</p>
+  <div class="scroller"><table><thead><tr><th>Ingredient</th><th>% w/w</th><th>Oral ATE</th><th>Oral category</th><th>Oral no hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no hazard</th><th>Skin</th><th>Skin evidence below 1%</th><th>Skin special</th><th>Eye</th><th>Eye evidence below 1%</th><th>Eye special</th><th>HHNOC</th><th>Remove</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="small primary" type="button" id="calculate">Calculate WHMIS pilot</button></div>
+ </div>
+</section>
+<section aria-label="Classification results">
+ <div class="workspace-heading"><h2>Classification results</h2><span class="mini-tag">Canada &middot; WHMIS 2022</span></div>
+ <div class="card" id="results" aria-live="polite"><h2>3. WHMIS classification results</h2><p class="hint">Click Calculate to view classifications and audit trails.</p></div>
+ <div class="card" id="source-card"><h2>4. Regulatory scope</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Full tested-mixture assessments, bridging, special ingredient pathways and other classes remain outside the calculation scope.</p></div>
+</section>
+</main>
+<footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
+
+<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
