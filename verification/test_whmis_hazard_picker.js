@@ -96,6 +96,17 @@ t("Acute category picker leaves measured ATE unchanged as higher-priority eviden
  assert.equal(s.fields.oralCat,"3");
  assert.equal(s.fields.oralATE,"175");
 });
+t("Choosing an acute hazard clears conflicting negative evidence without losing ATE",()=>{
+ const sample={fields:{oralSafe:true,oralATE:"150",dermalSafe:true,inhSafe:true},manualPhysical:[]};
+ let x=pick(sample,"H301","3");
+ assert.equal(x.fields.oralSafe,false);
+ assert.equal(x.fields.oralATE,"150");
+ assert.equal(x.fields.dermalSafe,true);
+ x=pick(x,"H311","3");
+ assert.equal(x.fields.dermalSafe,false);
+ x=pick(x,"H331","3");
+ assert.equal(x.fields.inhSafe,false);
+});
 t("H335 and H336 can be selected concurrently and removed independently",()=>{
  let s=pick({fields:{},manualPhysical:[]},"H335","3 (respiratory)");
  s=pick(s,"H336","3 (narcotic)");
@@ -143,7 +154,7 @@ t("UI loads Canadian picker before core engine and preserves existing detail inp
  const p=ui.indexOf('verification/whmis_hazard_picker.js');
  const core=ui.indexOf('verification/whmis_engine.js');
  assert.ok(p>=0&&p<core);
- for(const id of ["hRespSens","hCarcinogen","hStot3Resp","oralCat","skin","eye"])
+ for(const id of ["hRespSens","hCarcinogen","hStot3Resp","route+\'Cat","skin","eye"])
   assert.ok(ui.includes(id),id);
 });
 t("UI provides CLP-style search + grouped filters + removable chips and keyboard selection",()=>{
