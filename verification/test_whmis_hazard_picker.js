@@ -181,4 +181,14 @@ t("Inline browser JavaScript remains parseable",()=>{
  const match=ui.match(/<script>([\s\S]*?)<\/script>/);
  assert.ok(match);assert.doesNotThrow(()=>new Function(match[1]));
 });
+t("CLP-like selected hazard chip opens original category editor for changes",()=>{
+ assert.ok(ui.includes('className="ca-hazard-chip-edit"'));
+ assert.ok(ui.includes('label.setAttribute("aria-label","Edit "+entry.label)'));
+ assert.ok(ui.includes('tr.dataset.expanded="true"'));
+ assert.ok(ui.includes('original?.focus()'));
+});
+t("ATE numerical evidence remains visible as priority over manually selected acute category",()=>{
+ assert.ok(ui.includes('ATE takes precedence over category'));
+ assert.ok(ui.includes('get(cat).value&&get(ate).value'));
+});
 console.log(count+" Canadian WHMIS hazard-picker verification checks passed");
