@@ -163,6 +163,12 @@ td.ing-extra .small-note{display:block;font-size:10px;color:var(--mute);margin-t
 .whmis-scope-status.warning-status{border-color:#b78930;background:var(--warn-bg)}
 .whmis-scope-status p{margin:4px 0;font-size:12px}
 @media(max-width:700px){td.ing-extra{grid-column:auto}}
+
+/* Keep extra inhalation fields in the CLP ingredient grid, including collapsed mode */
+tbody tr td.ing-extra{grid-column:auto}
+#coverage-list h3{font-size:12px;margin:12px 0 6px;color:var(--mute)}
+#coverage-list ul{padding-left:19px;font-size:12px}
+#coverage-list li{margin:5px 0}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -229,12 +235,12 @@ td.ing-extra .small-note{display:block;font-size:10px;color:var(--mute);margin-t
 <section aria-label="Classification results">
  <div class="workspace-heading"><h2>Classification results</h2><span class="mini-tag">Canada &middot; WHMIS 2022</span></div>
  <div class="card" id="results" aria-live="polite"><h2>3. WHMIS classification results</h2><p class="hint">Click Calculate to view classifications, HPA scope and regulatory audit trails.</p></div>
- <div class="card" id="source-card"><h2>Regulatory references and limitations</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Only inhalation has a limited tested-mixture/bridging input. Oral/dermal, skin/eye and special ingredient pathways still require additional evidence and review.</p></div>
+ <div class="card" id="source-card"><h2>Regulatory references and limitations</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Only inhalation has a limited tested-mixture/bridging input. Oral/dermal, skin/eye and special ingredient pathways still require additional evidence and review.</p><details class="scope" id="coverage-list"><summary>All 32 Canadian WHMIS hazard classes and implementation status</summary><p class="hint">Coverage list loads with the classification engine.</p></details></div>
 </section>
 </main>
 <footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
 
-<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_engine.js"></script><script>
+<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -335,10 +341,19 @@ html+=(c.notes||[]).map(s=>'<p class="warning">'+safe(s)+'</p>').join("")+'</det
 }
 html+='<h3>Required expert review</h3><ul>'+r.review.map(s=>'<li>'+safe(s)+'</li>').join("")+'</ul><details><summary>Hazards not yet calculated</summary><ul>'+r.notAssessed.map(x=>'<li>'+safe(x)+'</li>').join("")+'</ul></details>';
 results.innerHTML=html;
+const coverage=document.getElementById("coverage-list");
+if(coverage){
+ const classes=r.hazardCoverage||[];
+ const groups=["physical","health"];
+ coverage.innerHTML='<summary>All 32 Canadian WHMIS hazard classes — '+classes.filter(x=>x.status==="partial").length+' partially implemented, '+classes.filter(x=>x.status==="not_implemented").length+' not implemented</summary>'+
+ '<p class="hint">Source: Hazardous Products Act Schedule 2. These statuses describe this calculator, not legal exemptions or hazard severity. A non-implemented class has NOT been assessed.</p>'+
+ groups.map(group=>'<h3>'+safe(group==="physical"?"Physical hazards":"Health hazards")+'</h3><ul>'+
+ classes.filter(x=>x.group===group).map(x=>'<li><strong>'+safe(x.name)+'</strong> — '+safe(x.status.replace(/_/g," "))+' <span class="small">('+safe(x.rule)+')</span></li>').join("")+'</ul>').join("");
+}
 }
 document.getElementById("add").addEventListener("click",()=>add());
 document.getElementById("calculate").addEventListener("click",show);
-document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true,skin:"1A",eye:"1"});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true});show()});
+document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true,inhATE:0.4,inhHours:"4",skin:"1A",eye:"1"});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true,inhSafe:true});document.getElementById("inh-form").value="vapour";show()});
 function updateTotal(){const items=read(),total=items.reduce((n,i)=>n+(Number(i.pct)||0),0),gasTotal=items.reduce((n,i)=>n+(Number(i.volumePct)||0),0);
 const gas=document.getElementById("gas-total");gas.textContent=document.getElementById("inh-form").value==="gas"?"Gas components: "+Number(gasTotal.toFixed(4))+"% v/v (must total 100%)":"";
 const el=document.getElementById("tot");el.textContent="· "+Number(total.toFixed(4))+"% w/w";el.className="total"+(Math.abs(total-100)>0.01?" invalid":"");}
