@@ -37,10 +37,40 @@ HPA **sections 13–14** prescribe supplier label/SDS duties for covered sales/i
 
 - Browser pilot: `canada_whmis_calculator.html`.
 - Core engine: `verification/whmis_engine.js` — no EU CLP code reused.
+- Health hazard extension HPR 8.4–8.10: `verification/whmis_health.js` (12/32 classes now partially covered in aggregate).
 - Skin/eye additive module: `verification/whmis_skin_eye.js`.
 - New HPA scope, HPR 8.1 inhalation and HPR 7.21 Chemicals Under Pressure pilot: `verification/whmis_extended.js`.
 - The full list of 32 legally active classes and implementation status: `verification/whmis_hazard_catalog.js` (5 partially implemented; 27 unimplemented).
 - Verification: `verification/test_whmis.js`, `verification/test_whmis_skin_eye.js`, `verification/test_whmis_extended.js`, `verification/test_whmis_hpa_manifest.js`, `verification/test_whmis_guidance.js`, `verification/test_whmis_ui.js`; `npm test` executes these and existing EU CLP suites.
+
+## Health hazard expansion — HPR 8.4–8.10 (2026-11-07)
+
+**Provisional ingredient-based screening implemented. Not a complete WHMIS classification.** The supplied HPR XML is the legal basis; Health Canada's WHMIS supplier guidance and GHS Revision 7 inform interpretation where adopted.
+
+New module: `verification/whmis_health.js`; source-linked criteria: `data/canada/hpr_health_mix_rule_manifest.json`. New regression tests: `verification/test_whmis_health.js`.
+
+| Hazard | Source | Automatic ingredient candidate | Critical exceptions |
+| --- | --- | --- | --- |
+| Respiratory sensitisation | HPR 8.4.5(a) | Category 1/1A at ≥0.1%; Category 1B solids/liquids at ≥1.0%, gases at ≥0.2% | Physical state and %v/v for gases required; whole mixture / bridging precede ingredient use |
+| Skin sensitisation | HPR 8.4.5(b) | Category 1/1A at ≥0.1%, 1B at ≥1.0% | No 1B if 1A meets triggering threshold; whole mixture/bridging required |
+| Germ cell mutagenicity | HPR 8.5.3–8.5.5 | 1A/1B ≥0.1%, Cat 2 ≥1.0% | Scientifically conclusive whole-mixture test evidence may override; restricted bridging |
+| Carcinogenicity | HPR 8.6.3–8.6.5 | 1A/1B/2 ≥0.1% | Scientifically conclusive positive/negative whole-mixture studies and restricted bridging |
+| Reproductive toxicity | HPR 8.7.3–8.7.6 | 1A/1B/2 ≥0.1%, plus separate effects on or via lactation at ≥0.1% | Lactation can coexist with Cat 1/2; conclusive data / restricted bridging |
+| STOT — Single Exposure | HPR 8.8.5 | Cat 1/2 ingredient ≥1%; Cat 3 at ≥20%, or documented lower elicitation concentration, or ≥2 same-effect Cat 3 ingredients each ≥1% whose sum is ≥20% | Cat 3 summation cannot combine narcotic and respiratory effects. Cat 3 alongside Cat 1/2 requires **8.8.5(1)(c)** rather than only (1)(d) |
+| STOT — Repeated Exposure | HPR 8.9.5 | Cat 1/2 ingredient ≥1% | No generic ingredient summation rule; mixture/bridging science pending |
+| Aspiration hazard | HPR 8.10.5(a) | Category 1 if aspiration ingredients **each ≥1%** sum to **≥10%**, and homogeneous mixture viscosity is **≤20.5 mm²/s at 40°C** | Phase-separated layer rule HPR 8.10.5(b) not automated; requires layer-specific composition and viscosity |
+
+### Input and result workflow
+
+Each ingredient has new CMR, sensitisation, STOT and aspiration fields available using **Edit details**. For respiratory sensitisation, explicitly specify solid, liquid or gas; gas ingredients require their **volume %** rather than silently using mass %. A separate formulation panel records whether relevant whole-mixture or bridging evidence exists and the aspiration mixture's phase behaviour and measured bulk viscosity.
+
+When the user indicates relevant mixture evidence, the new module **withholds ingredient candidates** for expert review rather than issuing a final conflicting classification. The individual ingredient thresholds remain in the audit trail. A negative automated result means only that the limited ingredient method did not establish the class.
+
+The HPR **2(3)–(5) prescribed classifications in Schedule 4**, **2.4 synergy**, **2.5 lower concentration evidence**, **2.6 maximum concentration** and **2.9 biological availability** are not yet fully automated. In particular, HPR 2.5(1) can require classification **below the generic concentration limits** if there is evidence of actual hazard at the ingredient's concentration. These cases must be reviewed even if the new calculator reports no positive candidate.
+
+**Regulatory evidence precedence is hazard-specific:** HPR 8.4, 8.8, 8.9 and 8.10 generally use whole-mixture data and bridging before ingredient calculations. HPR 8.5–8.7 instead contain ingredient-first criteria with specifically defined scientific mixture-study exceptions and restricted bridging. A single global flag is a conservative review hold, not a substitute for the detailed rules.
+
+The complete HPA Schedule 2 list now identifies **12 partially implemented class families** and **20 not implemented**. All HPR 8.4–8.10 class results are provisional; none generates a legally compliant bilingual WHMIS label/SDS.
 
 ## New WHMIS 2022 classification work (2026-11-07)
 
@@ -162,7 +192,7 @@ The GHS source is section **2.3.2**, printed pages **61–63**, PDF pages **67�
 1. Implement whole-mixture/bridging for oral/dermal, skin/eye and other health hazards and verify HPR 2.4–2.6 evidence precedence; the inhalation panel currently accepts limited whole-mixture LC₅₀ and bridging candidates only.
 2. Complete HPR 8.1 inhalation beyond the implemented gas/vapour/dust-mist ATE, 1-hour to 4-hour conversion and limited tested-mixture/bridging routes, particularly water-contact release of toxic gases and further scientific evidence handling.
 3. Implement and test special chemistry under 8.2.11(3) and 8.3.11(3).
-4. Implement sensitisation, CMR, STOT, aspiration and the remaining physical hazards.
+4. Complete tested-mixture science and bridging under HPR 8.4–8.10, implement 2.5 lower-limit evidence and HPR 8.10.5(b) aspiration layers, then the remaining physical hazards.
 5. Integrate Canadian Schedule 4, labels, bilingual content and SDS requirements after rule validation.
 
 The extracted regulatory reference package was also created as a downloadable ZIP in this ChatGPT conversation. The raw XML and extracted section/table XML should be preserved as source material when implementing further rules.
