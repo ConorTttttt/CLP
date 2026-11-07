@@ -33,7 +33,7 @@
     2:{code:"H283",statement:"Flammable chemical under pressure: May explode if heated",signal:"Warning",symbols:["Flame","Gas cylinder"]},
     3:{code:"H284",statement:"Chemical under pressure: May explode if heated",signal:"Warning",symbols:["Gas cylinder"]}
   });
-  const finite = value => value !== "" && value !== null && value !== undefined &&
+  const finite = value => value !== "" && !(typeof value==="string" && !value.trim()) && value !== null && value !== undefined &&
     Number.isFinite(Number(value)) ? Number(value) : null;
   const countCategory = (ate,form) => {
     const d=INHALATION[form];
@@ -47,7 +47,7 @@
     const s=raw||{},activity=s.activity||"unknown",workplace=s.workplace||"unknown",exclusion=s.exclusion||"unknown";
     const result={status:"undetermined",reason:"HPA applicability has not been established.",ref:"HPA 2, 12–15, Schedules 1–2",
       notes:["This is a federal supplier Part II screen, not a conclusion that the product is safe or non-hazardous."]};
-    if(exclusion in EXCLUSIONS) {
+    if(Object.prototype.hasOwnProperty.call(EXCLUSIONS,exclusion)) {
       result.status="outside_part_ii_scope";
       result.ref=EXCLUSIONS[exclusion];
       result.reason="User has identified a product type excluded by HPA section 12 / Schedule 1.";
