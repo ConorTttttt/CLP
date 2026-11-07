@@ -372,12 +372,18 @@
   },
   "implementationRecommendations": [
     "Use the schedule2 active list as legally listed classes, NOT as proof the current pilot can assess each one.",
-    "Before a regulatory result, ask whether the user is evaluating supply/import for workplace use in Canada and whether section 12 or Schedule 1 excludes the product; allow an unknown/needing-legal-review status.",
+    "Runtime HPA scope screen asks for supplier activity, workplace intended use and explicitly reviewed exclusion status; expert legal assessment remains required.",
     "Do not call exempt products 'non-hazardous'; distinguish out of scope from not classified.",
     "Do not use simple name keyword matching to determine exemptions that refer to definitions in other Acts.",
     "Do not treat repealed Schedule 2 physical item 19 as an active hazard class.",
     "Preserve supporting evidence and applicability decisions for audit trail; keep classification engine code unchanged until individual HPR pathways are validated.",
     "Separate federal supplier HPA/HPR duties from provincial/territorial workplace obligations."
   ],
-  "extractionStatus": "Source XML parsed; Schedule 1 five entries and Schedule 2 33 entries crosschecked with current Justice Canada online Act. Source map is NOT a comprehensive independent legal review."
+  "extractionStatus": "Source XML parsed; Schedule 1 five entries and Schedule 2 33 entries crosschecked with current Justice Canada online Act. Source map is NOT a comprehensive independent legal review.",
+  "runtimeImplementation": {
+    "scopeScreen": "verification/whmis_extended.js: evaluateScope()",
+    "coverageCatalog": "verification/whmis_hazard_catalog.js: CATALOG",
+    "legalCaution": "Scope screen is based on user-declared facts; exclusion applicability often depends on definitions in referenced statutes and needs expert verification.",
+    "status": "Limited pilot, not a complete supplier compliance decision."
+  }
 }
