@@ -117,7 +117,17 @@
       "atOrBelow": "100/Σ(C_i/ATE_i)",
       "above": "(100-C_unknown)/Σ(C_i/ATE_i)"
     },
-    "rangeCrossingRule": "HPR 8.1.7(2): use lowest experimentally obtained value if range does not fit entirely within one row band"
+    "rangeCrossingRule": "HPR 8.1.7(2): use lowest experimentally obtained value if range does not fit entirely within one row band",
+    "belowOneRelevantException": {
+      "rule": "HPR 2.5(1); guidance HPR 8.1.2(2): relevant ingredient <1% must be included when evidence supports toxicity at actual concentration",
+      "inputProperty": "ingredient.acute[route].relevantBelow1",
+      "requiresEvidence": true
+    },
+    "unknownToxicitySupplement": {
+      "rule": "HPR 3(1)(e), Schedule 1 2(b); Health Canada guidance acute toxicity section",
+      "trigger": "Route classified and relevant unknown acute toxicity ingredient concentrations sum to >=1% of mixture",
+      "output": "supplementalStatements (English draft review prompt only; bilingual labels and SDS required)"
+    }
   },
   "skin": {
     "reference": "HPR 8.2.8–8.2.11",
@@ -194,6 +204,27 @@
       "mixture-tested data and bridging",
       "lower-concentration evidence",
       "all other HPR health and physical classes"
+    ]
+  },
+  "healthCanadaGuidance": {
+    "title": "Guidance on the WHMIS supplier requirements",
+    "issuingBody": "Health Canada",
+    "sourceUrl": "https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html",
+    "publishedDate": "2025-05-26",
+    "lastModifiedDate": "2026-03-31",
+    "uploadedSnapshotSHA256": "82dea79000d521979c1126606e92c56efeadbc13225a0b708c33f7d78a1792b0",
+    "sourceRole": "Interpretive guidance only; official HPA/HPR text prevails if discrepancy",
+    "appliedTo": [
+      "HPR 2.5(1) below-1% relevant ingredients in acute toxicity (guidance Part 8, Subpart 1)",
+      "HPR 3(1)(e), Schedule 1 2(b) unknown acute toxicity disclosures when classified"
+    ],
+    "reviewPending": [
+      "HPR 8.1 tested-mixture and bridging precedence",
+      "HPR 8.1 inhalation/water-activated toxicants",
+      "HPR 8.2 and 8.3 non-additive chemistry",
+      "HPR 8.4-8.12 remaining health classes",
+      "HPR Part 7 physical hazard classes",
+      "Label and SDS bilingual contents"
     ]
   }
 }
