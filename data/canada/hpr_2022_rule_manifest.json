@@ -179,5 +179,21 @@
     "biohazard 8.11",
     "full HHNOC 8.12",
     "label/SDS requirements"
-  ]
+  ],
+  "sourceFileSHA256": "5d1388299f7e0bf93f373b02d811e873a652614a82df1cc3601c5c715d01c504",
+  "sourceVerification": "The source is a 2023-01-01 consolidation; Justice Canada official site current to October 2026 still reports last amended 2022-12-15.",
+  "coverage": {
+    "automated": [
+      "HPR 8.1 oral/dermal ATE mixture pathway (limited)",
+      "HPR 8.2.11(1)-(2) additive skin route",
+      "HPR 8.3.11(1)-(2) additive eye route",
+      "HPR 8.12.4 HHNOC ingredient trigger"
+    ],
+    "underExpertReview": [
+      "HPR 8.2.11(3) and 8.3.11(3) special ingredients",
+      "mixture-tested data and bridging",
+      "lower-concentration evidence",
+      "all other HPR health and physical classes"
+    ]
+  }
 }
