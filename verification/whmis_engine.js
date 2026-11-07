@@ -24,7 +24,7 @@
   const UNSUPPORTED=Object.freeze([
     "Physical hazards (including combustible dust, simple asphyxiants, PHNOC and chemicals under pressure)",
     "Inhalation acute toxicity and water-activated toxicants",
-    "Skin/eye tested-mixture data, bridging, exceptional ingredients under HPR 8.2.11(3) and 8.3.11(3)",
+    "Skin/eye tested-mixture data, bridging, special-ingredient cases under HPR 8.2.11(3) and 8.3.11(3)",
     "Respiratory and skin sensitisation",
     "Germ cell mutagenicity, carcinogenicity, reproductive toxicity",
     "STOT SE/RE and aspiration hazard",
