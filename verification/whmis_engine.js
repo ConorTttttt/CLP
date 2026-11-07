@@ -14,6 +14,9 @@
   const EXTENDED=(typeof module==="object"&&module.exports)
     ? require("./whmis_extended.js")
     : (typeof globalThis!=="undefined" ? globalThis.WHMIS_EXTENDED : null);
+  const HEALTH=(typeof module==="object"&&module.exports)
+    ? require("./whmis_health.js")
+    : (typeof globalThis!=="undefined" ? globalThis.WHMIS_HEALTH : null);
   const HAZARD_CATALOG=(typeof module==="object"&&module.exports)
     ? require("./whmis_hazard_catalog.js")
     : (typeof globalThis!=="undefined" ? globalThis.WHMIS_HAZARD_CATALOG : null);
@@ -31,9 +34,9 @@
     "Physical hazards other than the limited Chemicals Under Pressure assessment, including combustible dust, simple asphyxiants, and PHNOC",
     "Inhalation toxic gas release on contact with water; unimplemented inhalation edge cases and scientific estimates",
     "Skin/eye tested-mixture data, bridging, special-ingredient cases under HPR 8.2.11(3) and 8.3.11(3)",
-    "Respiratory and skin sensitisation",
-    "Germ cell mutagenicity, carcinogenicity, reproductive toxicity",
-    "STOT SE/RE and aspiration hazard",
+    "Sensitisation and CMR: conclusive whole-mixture studies, applicable bridging, and evidence below generic thresholds",
+    "STOT SE/RE: mixture studies, bridging and specific target organ evidence outside implemented ingredient paths",
+    "Aspiration: phase-separated layer-specific evaluation, tested-mixture evidence, and bridging",
     "Biohazardous infectious materials and most HHNOC pathways",
     "Whole-mixture evidence, bridging principles and exemptions outside the limited acute inhalation route",
     "WHMIS hazard communication: pictograms, hazard and precautionary statements, bilingual labels and SDSs"
@@ -142,6 +145,15 @@
     }
     let scope=null;
     let extension=null;
+    let healthResult=null;
+    if(HEALTH){
+      if(valid){
+        healthResult=HEALTH.evaluate(input);
+        outcomes.push(...healthResult.outcomes);
+        calculations.push(...healthResult.calculations);
+        review.push(...healthResult.review);
+      }else review.push("Additional WHMIS health class calculations blocked: invalid ingredient percentages.");
+    }else review.push("Additional WHMIS health class module unavailable.");
     if(EXTENDED){
       if(valid){
         extension=EXTENDED.classify(input);
@@ -158,7 +170,7 @@
       review.push("Canadian inhalation, Chemicals Under Pressure and scope modules unavailable.");
     }
     review.push("Check whole-mixture data and bridging principles BEFORE using ingredient calculations (HPR 2.2, 8.1.2–8.1.6).");
-    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,
+    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,healthResult,
       hazardCoverage:HAZARD_CATALOG?HAZARD_CATALOG.CATALOG:[],
       outcomes,calculations,issues,review,supplementalStatements,
       notAssessed:[...UNSUPPORTED,...(extension?extension.notAssessed:[])],
