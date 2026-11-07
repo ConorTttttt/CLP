@@ -50,6 +50,14 @@ t("CMR search by category or text finds available classifications",()=>{
  assert.ok(q("genetic defects").some(x=>x.code==="H340"));
  assert.ok(q("lactation").some(x=>x.code==="H362"));
 });
+t("Full health class names search like CLP abbreviations and H-phrases",()=>{
+ assert.ok(q("skin corrosion").some(x=>x.code==="H314"));
+ assert.ok(q("respiratory sensitization").some(x=>x.code==="H334"));
+ assert.ok(q("germ cell mutagenicity").some(x=>x.code==="H340"));
+ assert.ok(q("reproductive toxicity").some(x=>x.code==="H360"));
+ assert.ok(q("specific target organ toxicity repeated exposure").some(x=>x.code==="H372"));
+ assert.ok(q("aspiration hazard").some(x=>x.code==="H304"));
+});
 t("Search does not treat partial H-code prefix as an exact different code",()=>{
  assert.ok(q("H350").every(x=>x.code==="H350"));
  assert.ok(q("H350 1A").every(x=>x.category==="1A"));
