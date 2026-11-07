@@ -38,4 +38,14 @@ t("inline browser JavaScript remains syntactically valid",()=>{
 const match=html.match(/<script>([\s\S]*?)<\/script>/);assert.ok(match);
 assert.doesNotThrow(()=>new Function(match[1]));
 });
+t("HPR sub-1% acute route evidence is available in the UI",()=>{
+ assert.ok(html.includes("route+'Below1"),"route-specific acute relevance checkbox missing");
+ assert.ok(html.includes('relevantBelow1=get(route+"Below1").checked'),"route-specific input not read");
+ assert.ok(html.includes("HPR 2.5(1)"),"evidence regulation not displayed");
+});
+t("Unknown acute toxicity disclosure prompts are displayed with bilingual caveat",()=>{
+ assert.ok(html.includes("r.supplementalStatements"));
+ assert.ok(html.includes("English drafts only"));
+ assert.ok(html.includes("English and French"));
+});
 console.log(passed+" WHMIS presentation checks passed");
