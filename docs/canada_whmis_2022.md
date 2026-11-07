@@ -1,20 +1,56 @@
-# Canada WHMIS 2022 classifier — first implementation
-This is a **limited, independent Canadian rules module**. Not a legally complete WHMIS classification or compliant label/SDS generator. Its negative results are not clearance of a product.
+# Canada WHMIS 2022 — source-linked classification pilot
 
-- Entry: `canada_whmis_calculator.html`
-- Engine: `verification/whmis_engine.js` (standalone browser/Node UMD; no EU CLP dependency)
-- Tests: `verification/test_whmis.js`, automatically picked up by `npm test`.
-- Automated: acute oral/dermal ATE categories, mixture formula HPR 8.1.5 and unknown component adjustment HPR 8.1.6 (above 10%), category-to-point estimates HPR 8.1.7; HHNOC ingredient >=1% (HPR 8.12.4).
-- All other hazard types explicitly listed as **not assessed**; no transfer of CLP classifications.
-- Mixture data / bridging takes priority under HPR 2.2 and 8.1.2. Until these are coded the results always require regulatory review.
-- ATE unavailable is not a value of zero, absence of toxicity or an automatic no-classification conclusion. User must explicitly record defensible evidence for non-acute ingredients.
-- Input currently assumes percentage mass concentrations, with no gas/v/v treatment. Inhalation is not implemented.
-- HHNOC whole-mixture test results under HPR 8.12.3 take precedence; review required.
-- Canadian label elements, bilingual content, special product exemptions, physical hazard criteria and all other health classes remain out of scope.
+**Status: limited, provisional decision-support module — not a complete WHMIS classification, label or SDS.** A hazard not reported by an incomplete module is **not** evidence that the product is non-hazardous.
 
-Official regulation: https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html
-Health Canada supplier guidance: https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html
+## Regulatory source and version
 
-**Regulatory data profile**: WHMIS 2022, GHS Rev 7 plus selected Rev 8; amended HPR came into force 2022-12-15, transition ended 2025-12-14. Regulatory evidence and criteria must be revalidated before production use.
+- Law: Hazardous Products Regulations (HPR), SOR/2015-17.
+- Uploaded source: `Canada .xml` (English official-format XML), consolidation **2023-01-01**, last amended **2022-12-15**.
+- SHA-256: `5d1388299f7e0bf93f373b02d811e873a652614a82df1cc3601c5c715d01c504`.
+- Justice Canada still reported last amended **2022-12-15** when checked on **2026-11-07**.
+- Regulatory data: `data/canada/hpr_2022_rule_manifest.json`; preserve original XML and extracted tables when evaluating rule changes.
+- Online reference: https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html
+- General law: HPR 2(2)-(9), 2.2–2.6. Schedule 4 contains prescribed classifications.
 
-Next priorities: general source-evidence / whole-mixture workflow, inhalation toxicity, skin/eye and sensitisation, CMR, STOT, aspiration, physical and additional Canadian classes, bilingual labels and SDSs, then shared-formulation jurisdiction comparison.
+## Implementation
+
+- Browser pilot: `canada_whmis_calculator.html`.
+- Core engine: `verification/whmis_engine.js` — no EU CLP code reused.
+- Skin/eye additive module: `verification/whmis_skin_eye.js`.
+- Verification: `verification/test_whmis.js` and `verification/test_whmis_skin_eye.js`; `npm test` executes both and all EU CLP tests.
+
+### Implemented ingredient-based provisional pathways
+
+| Hazard | Governing provisions | Implemented | Not yet addressed |
+| --- | --- | --- | --- |
+| Oral acute toxicity | HPR 8.1.1–8.1.7 | Oral category thresholds, category ATE point estimates, 1% ingredient cut-off, 10% unknown-data adjustment | Whole-mixture data, bridging, scientific-estimate route |
+| Dermal acute toxicity | HPR 8.1.1–8.1.7 | Same pattern with dermal-specific ATE table | Whole-mixture data, bridging |
+| Skin corrosion/irritation | HPR 8.2.11(1)–(2) | Additive sums, weighted irritation threshold, specific 1A/1B/1C where legally allowed, sub-1% evidence flag | 8.2.9 tested mixture; 8.2.10 bridging; 8.2.11(3) special-ingredient route |
+| Serious eye damage/irritation | HPR 8.3.11(1)–(2) | Severe and irritant additive sums, 2A/2B option, corrosion effects, sub-1% evidence flag | 8.3.9 tested mixture; 8.3.10 bridging; 8.3.11(3) special-ingredient route |
+| HHNOC | HPR 8.12.4 | Ingredient HHNOC >=1% trigger | Whole-mixture evidence (8.12.3), expert judgement |
+
+An ingredient flagged as requiring a special skin/eye mixture calculation **suppresses the additive candidate as a final hazard result** and triggers review. Additive totals remain in the calculation trail.
+
+HPR 8.2.11 and 8.3.11 are not identical to EU CLP. Mixed corrosion subcategories produce general Skin Corrosion Category 1; mixtures comprising exclusively one subcategory may be classified specifically in that subcategory when criteria are met. The same concept applies to 2A/2B eye irritation.
+
+For skin/eye, below-1% ingredients enter additive sums **only when there is evidence that the hazard occurs at the actual concentration**. The user must record this explicitly.
+
+## Important limitations
+
+- **The order of evidence is mandatory**: whole-mixture evidence, bridging (when indicated), then ingredient methods (HPR 2.2; each Part 8 subpart). The pilot does not yet accept full tested-mixture or bridging datasets and therefore does not produce a final legally defensible determination.
+- Sections 2.4 (synergistic effects), 2.5 (evidence above/below generic concentration limits) and 2.6 (maximum concentration) require regulatory review.
+- Special chemistry including acids, bases, inorganic salts, aldehydes, phenols and surfactants (HPR 8.2.11(3) / 8.3.11(3)) is **not calculated**. Checking 'special' only creates a review flag.
+- Inhalation toxicity (including water-activated toxicants), other health classes, all physical classes, Schedule 4 prescribed classifications, product exemptions, bilingual labelling and SDS content are not calculated.
+- Percentages in the pilot are mass-based. Do not use these pathways for gaseous volume concentration without implementation of HPR requirements.
+- Unknown toxicity is not an ATE of zero or evidence of safety. Explicit 'no acute hazard' input requires scientific evidence. Missing data are flagged.
+- Absence of an automated result must not be interpreted as a negative hazard assessment.
+
+## Next work
+
+1. Implement whole-mixture/bridging and section 2.4–2.6 evidence precedence.
+2. Implement HPR 8.1 inhalation, including form, units, four-hour LC50 conversion and water-activated toxicants.
+3. Implement and test special chemistry under 8.2.11(3) and 8.3.11(3).
+4. Implement sensitisation, CMR, STOT, aspiration and the remaining physical hazards.
+5. Integrate Canadian Schedule 4, labels, bilingual content and SDS requirements after rule validation.
+
+The extracted regulatory reference package was also created as a downloadable ZIP in this ChatGPT conversation. The raw XML and extracted section/table XML should be preserved as source material when implementing further rules.
