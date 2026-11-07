@@ -137,6 +137,16 @@ t("Whole-mixture valid LC50 precedes ingredient-based formula",()=>{
  assert.equal(r.status,"whole_mixture_candidate");assert.equal(r.category,3);assert.equal(r.ate,8);
  assert.equal(r.contributions.length,0);
 });
+t("Whole-mixture gas LC50 can be evaluated without ingredient volume percentages",()=>{
+ const r=calc([i("A",20,{ate:1},null),i("B",80,notAcute,null)],"gas",{wholeMixtureLC50:100,wholeMixtureHours:4});
+ assert.equal(r.status,"whole_mixture_candidate");assert.equal(r.category,1);
+ assert.equal(r.ate,100);
+});
+t("Evidence-backed gas bridging category does not require ingredient volume percentages",()=>{
+ const r=calc([i("A",20,{ate:1},null),i("B",80,notAcute,null)],"gas",
+  {bridgedCategory:"3",bridgingEvidence:"HPR 2.3 interpolation with documented mixtures"});
+ assert.equal(r.status,"bridging_candidate");assert.equal(r.category,3);
+});
 t("Bridging category requires evidence; precedence after whole mixture",()=>{
  const items=[i("A",20,{ate:1}),i("B",80,notAcute)];
  const bad=calc(items,"vapour",{bridgedCategory:"1"});assert.equal(bad.category,null);
