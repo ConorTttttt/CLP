@@ -48,4 +48,45 @@ t("Unknown acute toxicity disclosure prompts are displayed with bilingual caveat
  assert.ok(html.includes("English drafts only"));
  assert.ok(html.includes("English and French"));
 });
+t("HPA supplier-scope controls include explicit unknown and exemption handling",()=>{
+ for(const id of ["scope-activity","scope-workplace","scope-exclusion","scope-inputs"])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(html.includes('value="none_confirmed"'));
+ assert.ok(html.includes('value="manufactured_article"'));
+});
+t("Chemicals Under Pressure inputs include HPR physical definition and numerical evidence",()=>{
+ for(const id of ["pressure-assess","pressure-state","pressure-gas","pressure-aerosol","pressure-gup","pressure-kpa","pressure-flame","pressure-heat"])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(html.includes("200 or more"));
+});
+t("Inhalation inputs represent gases separately from vapour and dust/mist",()=>{
+ for(const mark of ['value="gas">Gas','value="vapour">Vapour','value="dustMist">Dust',
+ 'data-field="volumePct"','data-field="inhATE"','data-field="inhCat"','data-field="inhHours"','data-field="inhBelow1"'])
+ assert.ok(html.includes(mark),mark);
+});
+t("HPR inhalation precedence inputs for mixture-test and bridging are separate",()=>{
+ for(const id of ["inh-whole","inh-whole-hours","inh-bridge","inh-bridge-evidence"])
+  assert.ok(html.includes('id="'+id+'"'),id);
+});
+t("hazard coverage displays all 32 classes and separates statuses",()=>{
+ assert.ok(html.includes('id="coverage-list"'));
+ assert.ok(html.includes('r.hazardCoverage'));
+ assert.ok(html.includes("not_implemented"));
+});
+t("Extended module and HPA class catalogue precede core engine",()=>{
+ const p=html.indexOf("verification/whmis_extended.js");
+ const c=html.indexOf("verification/whmis_hazard_catalog.js");
+ const e=html.indexOf("verification/whmis_engine.js");
+ assert.ok(p>=0&&c>p&&e>c);
+});
+t("HPA scope result and extended classifications go through normal safe rendering",()=>{
+ assert.ok(html.includes("r.scope.status.replace"));
+ assert.ok(html.includes("safe(r.scope.reason)"));
+ assert.ok(html.includes("WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure})"));
+});
+t("All WHMIS preview text remains explicit about incomplete classification",()=>{
+ assert.match(html,/Decision-support only/);
+ assert.match(html,/not a final classification/);
+ assert.match(html,/no|not.*non-hazardous/i);
+});
 console.log(passed+" WHMIS presentation checks passed");
