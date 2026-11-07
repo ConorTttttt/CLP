@@ -145,6 +145,10 @@ tbody tr[data-expanded="true"]>td:nth-child(9),
 tbody tr[data-expanded="true"]>td:nth-child(12),
 tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-accent)}
 
+
+/* Route-specific evidence that an acute ingredient below 1% is relevant */
+.acute-below-one{display:flex;align-items:flex-start;gap:5px;color:var(--mute);font-size:11px;margin-top:6px;line-height:1.35;cursor:pointer}
+.acute-below-one input[type=checkbox]{width:15px;height:15px;flex:0 0 15px;margin:1px 0 0}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -179,7 +183,7 @@ tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-ac
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function add(i={}){const tr=document.createElement("tr");tr.innerHTML='<td><input aria-label="Ingredient name" data-field="name"></td><td><input aria-label="Concentration percentage" type="number" min="0" max="100" step="any" data-field="pct"></td>'+
-["oral","dermal"].map(route=>'<td><input aria-label="'+route+' ATE" type="number" min="0" step="any" data-field="'+route+'ATE"></td><td><input aria-label="'+route+' category" type="number" min="1" max="4" step="1" data-field="'+route+'Cat"></td><td><input type="checkbox" aria-label="'+route+' no acute hazard" data-field="'+route+'Safe"></td>').join("")+
+["oral","dermal"].map(route=>'<td><input aria-label="'+route+' ATE" type="number" min="0" step="any" data-field="'+route+'ATE"><label class="acute-below-one"><input type="checkbox" data-field="'+route+'Below1" aria-label="'+route+' acute hazard evidence below 1 percent"> Evidence of acute toxicity below 1% (HPR 2.5(1))</label></td><td><input aria-label="'+route+' category" type="number" min="1" max="4" step="1" data-field="'+route+'Cat"></td><td><input type="checkbox" aria-label="'+route+' no acute hazard" data-field="'+route+'Safe"></td>').join("")+
 
 '<td><select data-field="skin" aria-label="Skin classification"><option value="">Not supplied</option><option value="1">Skin Corr 1</option><option value="1A">Skin Corr 1A</option><option value="1B">Skin Corr 1B</option><option value="1C">Skin Corr 1C</option><option value="2">Skin Irrit 2</option></select></td>'+
 '<td><input type="checkbox" aria-label="Evidence of skin effects below 1 percent" data-field="skinEvidenceBelow1"></td>'+
@@ -233,13 +237,18 @@ function read(){return Array.from(rows.children).map(tr=>{
 const get=k=>tr.querySelector('[data-field="'+k+'"]');
 const acute={};for(const route of ["oral","dermal"]){
 const ate=get(route+"ATE").value,cat=get(route+"Cat").value;
-acute[route]=get(route+"Safe").checked?{notAcute:true}:ate!==""?{ate:Number(ate)}:cat!==""?{category:Number(cat)}:null;
+const relevantBelow1=get(route+"Below1").checked;
+acute[route]=get(route+"Safe").checked?{notAcute:true,relevantBelow1}:ate!==""?{ate:Number(ate),relevantBelow1}:cat!==""?{category:Number(cat),relevantBelow1}:relevantBelow1?{relevantBelow1}:null;
 }
 return {name:get("name").value,pct:get("pct").value,acute,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
 });}
 function show(){const ingredients=read();const r=WHMIS.classify({ingredients});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
 html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
+if(r.supplementalStatements&&r.supplementalStatements.length){
+html+='<div class="warning"><strong>Supplemental unknown acute toxicity disclosures — review required</strong><p class="small">HPR 3(1)(e), Schedule 1 paragraph 2(b). English drafts only; Canadian labels and SDSs require English and French.</p>'+
+r.supplementalStatements.map(x=>'<p><strong>'+safe(x.route)+':</strong> '+safe(x.english)+'</p>').join("")+'</div>';
+}
 for(const c of r.calculations){
 html+='<details class="calc-panel" open><summary>'+safe(c.label)+' — '+safe(c.status)+'</summary><p>'+safe(c.ref)+'</p>';
 if(c.ate!=null)html+='<strong>Mixture ATE: '+safe(c.ate.toPrecision(7))+' '+safe(c.unit)+'</strong>';
