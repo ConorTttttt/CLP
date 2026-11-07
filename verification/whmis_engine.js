@@ -64,7 +64,9 @@
       let divisor=0,unknown=0;
       if(valid)ingredients.forEach((i,index)=>{
         const pct=value(i.pct);
+        if(pct<=0)return;
         const raw=i.acute&&i.acute[route];
+        if(raw&&typeof raw==="object"&&raw.notAcute===true)return;
         // HPR 2.5(1), explained in Health Canada supplier guidance:
         // sub-1% ingredients must also be relevant when evidence shows
         // acute toxicity effects at their actual mixture concentration.
@@ -72,7 +74,6 @@
         if(pct<1 && !belowOneRelevant)return;
         if(belowOneRelevant)review.push((i.name||"Ingredient "+(index+1))+
           ": "+route+" acute toxicity below 1% included on recorded evidence (HPR 2.5(1)); verify supporting data.");
-        if(raw&&typeof raw==="object"&&raw.notAcute===true)return;
         const converted=resolveATE(raw,route);
         if(converted){
           if(converted.ate>5000 && route!=="dermal" && route!=="oral")return;
