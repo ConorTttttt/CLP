@@ -512,6 +512,21 @@ pre.rep{padding:14px}
   <div class="workspace-heading"><h2>Formulation</h2><span class="hint">Edit inputs &middot; results update automatically</span></div>
   <div class="card" id="mixture-card">
     <h2>1. Mixture information</h2>
+    <details class="disclosure-card" id="regulatory-version-controls" open>
+      <summary><strong>Regulatory version and assessment date</strong> <small>Stored per formulation</small></summary>
+      <div class="g g4">
+        <div style="grid-column:span 2"><label for="regProfile">Jurisdiction / ruleset</label>
+        <select id="regProfile" style="width:100%"><option value="eu-clp-2026-07-01">EU CLP — 1 July 2026 snapshot</option></select></div>
+        <div><label for="regDate">Assessment date</label><input type="date" id="regDate" style="width:100%"></div>
+        <div><label for="regPlacement">Market placement (new hazard classes)</label>
+        <select id="regPlacement" style="width:100%">
+        <option value="unknown">Not established</option>
+        <option value="new">First placed on market from 1 May 2026</option>
+        <option value="pre20260501">Already placed on market before 1 May 2026</option></select></div>
+      </div>
+      <p id="regVersionStatus" role="status" aria-live="polite" class="hint"></p>
+      <p class="hint">Records applicable-date evidence; does not switch historical classification rules. Check ATPs and transitions separately.</p>
+    </details>
     <div class="g g4">
       <div style="grid-column:span 2"><label for="mname">Name</label><input id="mname" style="width:100%" placeholder="Product / trade name"></div>
       <div><label for="mstate">Physical state</label><select id="mstate" style="width:100%"><option value="liquid">Liquid</option><option value="solid">Solid</option><option value="gas">Gas</option></select></div>
@@ -2169,6 +2184,33 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&":
 const STORE = "clp_calc_state_v1"; // Legacy single-formulation storage (migration only)
 const WORKSPACE_STORE = "clp_calc_workspaces_v1"; // Browser-local, no server or database
 const VIEWER_STORE = "clp_calc_viewer_settings_v1";
+/* BEGIN REGULATORY VERSIONING V1 */
+const REG_RULESET = Object.freeze({id:'eu-clp-2026-07-01',date:'2026-07-01',url:'https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01'});
+function assessRegulatoryVersion(m) {
+ const id=m.regulatoryProfile||REG_RULESET.id, date=m.assessmentDate||'', placement=m.marketPlacement||'unknown';
+ const valid=/^\d{4}-\d{2}-\d{2}$/.test(date)&&!Number.isNaN(Date.parse(date+'T00:00:00Z'))&&new Date(date+'T00:00:00Z').toISOString().slice(0,10)===date;
+ const warnings=[];
+ if(id!==REG_RULESET.id)warnings.push('Unknown ruleset: classification not version-validated.');
+ if(!valid)warnings.push('Missing or invalid assessment date. Legal applicability is unknown.');
+ if(valid&&date<REG_RULESET.date)warnings.push('Assessment predates the 1 July 2026 implemented rules snapshot; historical results are not supported.');
+ if(valid&&date>REG_RULESET.date)warnings.push('Classification still uses the 1 July 2026 rules snapshot. Later ATPs, Annex VI updates and amendments are NOT automatically applied.');
+ let newClasses='not-assessed';
+ if(valid){
+  if(date<'2026-05-01')newClasses='not-yet-mandatory';
+  else if(date>='2028-05-01')newClasses='mandatory';
+  else if(placement==='pre20260501')newClasses='derogation-possible';
+  else if(placement==='new')newClasses='mandatory';
+  else newClasses='placement-unknown';
+  if(newClasses==='derogation-possible')warnings.push('Regulation (EU) 2023/707: a mixture placed on the market before 1 May 2026 may qualify for the transition until 1 May 2028. Check documentary evidence and any early application; the engine does not suppress these classes.');
+  if(newClasses==='placement-unknown')warnings.push('Regulation (EU) 2023/707: confirm pre-1 May 2026 market placement to establish whether the transition to 1 May 2028 applies.');
+  if(newClasses==='not-yet-mandatory')warnings.push('Regulation (EU) 2023/707 new mixture classes were not yet mandatory; the present engine still assesses them.');
+ }
+ warnings.push('Version metadata is an audit aid, not an automatic historical ruleset or sign-off. Independently verify ATPs, Annex VI, and applicable transitional provisions.');
+ return {rulesetId:id,assessmentDate:valid?date:null,marketPlacement:placement,newClasses,
+  consolidation:REG_RULESET.date,source:REG_RULESET.url,
+  status:(!valid||id!==REG_RULESET.id||date<REG_RULESET.date)?'unsupported':'review-required',warnings};
+}
+/* END REGULATORY VERSIONING V1 */
 /* Display preferences are stored independently of formulation JSON: hiding
    a result never changes hazard classification, label selection or exports. */
 const VIEWER_OPTIONS = Object.freeze([
@@ -2238,7 +2280,7 @@ $("viewer-hide-audits").addEventListener("click", () => setViewerPreferences({ a
 $("viewer-defaults").addEventListener("click", () => setViewerPreferences({ ...VIEWER_DEFAULTS }));
 renderViewerControls();
 
-let mix = { name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
+let mix = { regulatoryProfile:"eu-clp-2026-07-01",assessmentDate:new Date().toISOString().slice(0,10),marketPlacement:"unknown",name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] };
 let open = new Set();      // ingredient ids with detail panel open
 const ingredientTabs = new Map(); // UI-only active category per ingredient
 const hazardPanelsOpen = new Set(); // per-ingredient hazards disclosure, UI-only
@@ -2253,7 +2295,7 @@ function newIng(p) { const i = CLP.blankIngredient(); i._id = uid++; return Obje
 function save() { saveWorkspaceState(); renderWorkspaceTabs(); }
 function loadSaved() { try { const s = localStorage.getItem(STORE); if (s) return JSON.parse(s); } catch (e) {} return null; }
 function adopt(obj) {
-  const m = Object.assign({ name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
+  const m = Object.assign({ regulatoryProfile:"eu-clp-2026-07-01",assessmentDate:"",marketPlacement:"unknown",name: "", state: "liquid", flashPoint: "", ibp: "", viscosity40: "", pH: "", pHReserveOk: false, article27Mode: "apply", article26Mode: "retainOptional", audience: "unknown", intendedUse: "", disposalDestination: "", ppeDescription: "", manualPExtra: "", manualPExcluded: "", manualPReason: "", ingredients: [], manual: [] }, obj || {});
   m.ingredients = (m.ingredients || []).map((r) => { const prepared = CLP.normalise({ ingredients: [{...r, pct: 100}] }).ings[0]; const i = newIng(prepared); i.pct = r.pct; i._id = uid++; return i; });
   m.manual = Array.isArray(m.manual) ? m.manual : [];
   mix = m; open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear();
@@ -2273,7 +2315,7 @@ function nextWorkspaceId(){
  return "formulation-"+Date.now().toString(36)+"-"+workspaceSequence.toString(36);
 }
 function newBlankMixture(){
- return { name:"",state:"liquid",flashPoint:"",ibp:"",viscosity40:"",pH:"",
+ return { regulatoryProfile:"eu-clp-2026-07-01",assessmentDate:new Date().toISOString().slice(0,10),marketPlacement:"unknown",name:"",state:"liquid",flashPoint:"",ibp:"",viscosity40:"",pH:"",
   pHReserveOk:false,article27Mode:"apply",article26Mode:"retainOptional",
   audience:"unknown",intendedUse:"",disposalDestination:"",ppeDescription:"",
   manualPExtra:"",manualPExcluded:"",manualPReason:"",ingredients:[],manual:[]};
@@ -2403,8 +2445,17 @@ $("workspace-duplicate").addEventListener("click",()=>addWorkspace(true));
 const MF = { mname: "name", mstate: "state", mfp: "flashPoint", mibp: "ibp", mvisc: "viscosity40", mph: "pH",
   maudience: "audience", muse: "intendedUse", mdisposal: "disposalDestination", mppe: "ppeDescription",
   mpextra: "manualPExtra", mpexclude: "manualPExcluded", mpreason: "manualPReason" };
-function syncMixInputs() { Object.entries(MF).forEach(([id, k]) => ($(id).value = mix[k] || "")); $("mres").checked = !!mix.pHReserveOk; $("mart27").checked = mix.article27Mode !== "keepAll"; $("mart26").checked = mix.article26Mode === "omitOptional"; }
+function syncMixInputs() {
+ Object.entries(MF).forEach(([id,k])=>($(id).value=mix[k]||""));
+ $("mres").checked=!!mix.pHReserveOk; $("mart27").checked=mix.article27Mode!=="keepAll";
+ $("mart26").checked=mix.article26Mode==="omitOptional";
+ $("regProfile").value=REG_RULESET.id;
+ $("regDate").value=mix.assessmentDate||"";
+ $("regPlacement").value=["unknown","new","pre20260501"].includes(mix.marketPlacement)?mix.marketPlacement:"unknown";
+}
 Object.entries(MF).forEach(([id, k]) => $(id).addEventListener("input", () => { mix[k] = $(id).value; update(); }));
+[["regProfile","regulatoryProfile"],["regDate","assessmentDate"],["regPlacement","marketPlacement"]].forEach(([id,key])=>
+ $(id).addEventListener("change",()=>{mix[key]=$(id).value;update();}));
 $("mres").addEventListener("change", () => { mix.pHReserveOk = $("mres").checked; update(); });
 $("mart27").addEventListener("change", () => { mix.article27Mode = $("mart27").checked ? "apply" : "keepAll"; update(); });
 $("mart26").addEventListener("change", () => { mix.article26Mode = $("mart26").checked ? "omitOptional" : "retainOptional"; update(); });
@@ -3623,6 +3674,14 @@ function renderIngredientInsightMarkers(r){
 function renderResult(r) {
   const L = [];
   const L0 = r.label;
+  const v=assessRegulatoryVersion(mix);
+  $("regVersionStatus").textContent="Ruleset: "+v.rulesetId+" · Assessment: "+(v.assessmentDate||"not recorded")+" · "+v.status;
+  L.push('<div class="card" id="regulatory-audit-result"><h2>Regulatory version audit</h2>'+
+   '<p>EU CLP · snapshot '+esc(v.consolidation)+' · assessed '+esc(v.assessmentDate||"not recorded")+
+   ' · placement '+esc(v.marketPlacement)+' · new classes '+esc(v.newClasses)+
+   ' · <b>legal applicability not verified</b></p>'+
+   v.warnings.map(w=>'<div class="alert">'+esc(w)+'</div>').join("")+
+   '<a href="'+esc(v.source)+'" target="_blank" rel="noopener">Official consolidated EU CLP reference</a></div>');
   const regulationChecks=(L0.article28?.review || []).filter(v=>v.severity==="blocker").length;
   $("result-overview").innerHTML = [
     {value:r.outcomes.length,label:"Classifications found"},
@@ -3751,7 +3810,14 @@ function update() { save(); clearTimeout(tm); tm = setTimeout(compute, 60); }
 function compute() {
   const tot = mix.ingredients.reduce((s, i) => { const n = CLP.num(i.pct); return s + (isFinite(n) ? n : 0); }, 0);
   $("tot").textContent = mix.ingredients.length ? `— ${CLP.fmt(tot)} % entered` : "";
-  try { last = CLP.classify(mix); renderResult(last); renderIngredientInsightMarkers(last); $("rep").textContent = CLP.report(mix, last, {}); }
+  try {
+ last=CLP.classify(mix);renderResult(last);renderIngredientInsightMarkers(last);
+ const v=assessRegulatoryVersion(mix);
+ $("rep").textContent="REGULATORY VERSION AUDIT (provisional)\nRuleset: "+v.rulesetId+
+  "; assessment date: "+(v.assessmentDate||"not recorded")+"; market placement: "+v.marketPlacement+
+  "; new classes: "+v.newClasses+"; status: "+v.status+"\n"+
+  v.warnings.map(w=>"REVIEW: "+w).join("\n")+"\n\n"+CLP.report(mix,last,{});
+}
   catch (e) { $("res").innerHTML = `<div class="alert bad">Calculation error: ${esc(e.message)}</div>`; last = null; }
 }
 function renderAll() {
@@ -3770,7 +3836,7 @@ function exampleMix() {
   const E = mk("Amine E", "", "5", "H318 H412");
   const F = mk("Preservative F", "", "1.0", "H317 H400 H410", { skinSens: "1B", mAcute: "10", mChronic: "10" });
   const W = newIng({ name: "Water", pct: "30" });
-  return { name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
+  return { regulatoryProfile:"eu-clp-2026-07-01",assessmentDate:new Date().toISOString().slice(0,10),marketPlacement:"unknown",name: "Degreaser (worked example)", state: "liquid", flashPoint: "27", ibp: "", viscosity40: "", pH: "10.9", pHReserveOk: false, ingredients: [A, B, C, D, E, F, W], manual: [] };
 }
 $("ex").onclick = () => { if (mix.ingredients.length && !confirm("Replace the current mixture with the example?")) return; mix = exampleMix(); open = new Set(); ingredientTabs.clear(); ingredientBreakdownsOpen.clear(); detailPanels.clear(); hazardPanelsOpen.clear(); $("parsenotes").innerHTML = ""; renderAll(); };
 
