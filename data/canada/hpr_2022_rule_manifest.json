@@ -1,0 +1,183 @@
+{
+  "jurisdiction": "CA",
+  "regulation": "SOR/2015-17",
+  "consolidationDate": "2023-01-01",
+  "lastAmended": "2022-12-15",
+  "source": "User-supplied Canada .xml (official-format HPR XML)",
+  "sourceUrl": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html",
+  "status": "Extracted thresholds; source must be applied with every exception, evidence condition and precedence rule",
+  "general": {
+    "severity": "HPR 2(2)",
+    "prescribedSchedule4": "HPR 2(3)-(5)",
+    "mixtureOrder": "HPR 2.2(2)-(3): follow first applicable provision in each subpart, except 8.1, 8.4, 8.7, 8.8",
+    "bridging": "HPR 2.3",
+    "synergy": "HPR 2.4",
+    "lowerLimitEvidence": "HPR 2.5",
+    "maximumConcentration": "HPR 2.6"
+  },
+  "acute": {
+    "reference": "HPR 8.1.1–8.1.7",
+    "ingredientCutoff": 1,
+    "ingredientCutoffSource": "HPR 8.1.2(2): w/w for solids/liquids/dusts/mists/vapours; v/v for gases",
+    "dataPriority": [
+      "8.1.3 whole mixture",
+      "8.1.4 bridging",
+      "8.1.5 known ingredient ATEs",
+      "8.1.6 unknown ATEs"
+    ],
+    "oral": {
+      "unit": "mg/kg",
+      "limits": [
+        5,
+        50,
+        300,
+        2000
+      ],
+      "categoryPoints": [
+        0.5,
+        5,
+        100,
+        500
+      ]
+    },
+    "dermal": {
+      "unit": "mg/kg",
+      "limits": [
+        50,
+        200,
+        1000,
+        2000
+      ],
+      "categoryPoints": [
+        5,
+        50,
+        300,
+        1100
+      ]
+    },
+    "inhalation": {
+      "gas": {
+        "unit": "ppmV",
+        "limits": [
+          100,
+          500,
+          2500,
+          20000
+        ],
+        "categoryPoints": [
+          10,
+          100,
+          700,
+          4500
+        ]
+      },
+      "vapour": {
+        "unit": "mg/L",
+        "limits": [
+          0.5,
+          2,
+          10,
+          20
+        ],
+        "categoryPoints": [
+          0.05,
+          0.5,
+          3,
+          11
+        ]
+      },
+      "dustMist": {
+        "unit": "mg/L",
+        "limits": [
+          0.05,
+          0.5,
+          1,
+          5
+        ],
+        "categoryPoints": [
+          0.005,
+          0.05,
+          0.5,
+          1.5
+        ]
+      },
+      "hoursBasis": 4,
+      "convertFromOneHour": {
+        "gasDivisor": 2,
+        "vapourDivisor": 2,
+        "dustMistDivisor": 4
+      }
+    },
+    "knownATEInclude": {
+      "oralDermalAboveCategory4UpTo": 5000,
+      "other": "HPR 8.1.5 comparable inhalation range; expert review if needed"
+    },
+    "unknownRule": {
+      "boundaryPct": 10,
+      "atOrBelow": "100/Σ(C_i/ATE_i)",
+      "above": "(100-C_unknown)/Σ(C_i/ATE_i)"
+    },
+    "rangeCrossingRule": "HPR 8.1.7(2): use lowest experimentally obtained value if range does not fit entirely within one row band"
+  },
+  "skin": {
+    "reference": "HPR 8.2.8–8.2.11",
+    "evidenceBelowOnePercent": "8.2.11(1)(b) requires evidence the ingredient is corrosive/irritant at its present concentration",
+    "additive": {
+      "corrosiveTotalPct": 5,
+      "irritationFromCorrosivesPct": [
+        1,
+        5
+      ],
+      "irritationPct": 10,
+      "irritationWeightedPct": 10,
+      "subtypeRule": "8.2.11(2)(a.1)-(a.3) permits matching subcategory 1A/1B/1C only if no other corrosive subcategories or generic 1 are present; mixed corrosives => general Category 1 under (a.4)"
+    },
+    "specialMixtures": "HPR 8.2.11(3) separate table: acid pH≤2, base pH≥11.5, other nonadditive corrosive≥1% => 1, irritant≥3% => 2; requires qualifying chemistry",
+    "mixturePriority": [
+      "8.2.9 tested mixture",
+      "8.2.10 bridging",
+      "8.2.11 ingredients"
+    ]
+  },
+  "eye": {
+    "reference": "HPR 8.3.8–8.3.11",
+    "evidenceBelowOnePercent": "8.3.11(1)(b) requires evidence damage or irritation at present concentration",
+    "additive": {
+      "severePct": 3,
+      "irritationFromSeverePct": [
+        1,
+        3
+      ],
+      "irritationPct": 10,
+      "weightedPct": 10,
+      "subtypeRule": "8.3.11(2)(c.1)-(c.3) permits 2A/2B only if the other irritant categories are absent; mixed subtypes => Category 2"
+    },
+    "specialMixtures": "HPR 8.3.11(3): special ingredient table, damage 1% or irritation 3% if qualifying chemistry",
+    "mixturePriority": [
+      "8.3.9 tested mixture",
+      "8.3.10 bridging",
+      "8.3.11 ingredients"
+    ]
+  },
+  "hhnoc": {
+    "section": "8.12.4",
+    "ingredientCutoffPct": 1,
+    "wholeMixtureFirst": "8.12.3",
+    "category": 1
+  },
+  "unimplementedRuleGroups": [
+    "physical 7.2-7.21",
+    "acute inhalation 8.1",
+    "skin and eye special ingredient exceptions",
+    "sensitisation 8.4",
+    "mutagenicity 8.5",
+    "carcinogenicity 8.6",
+    "reproductive toxicity 8.7",
+    "STOT SE 8.8",
+    "STOT RE 8.9",
+    "aspiration 8.10",
+    "biohazard 8.11",
+    "full HHNOC 8.12",
+    "label/SDS requirements"
+  ]
+}
