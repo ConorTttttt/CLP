@@ -1,6 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
 const hpa=require("../data/canada/hpa_2023_source_map.json");
+const catalog=require("./whmis_hazard_catalog.js");
 let passed=0;
 const check=(name,fn)=>{fn();passed++;console.log("PASS "+name)};
 check("HPA source and versions are recorded",()=>{
@@ -50,5 +51,22 @@ check("classes have unique stable IDs and ordering",()=>{
  assert.equal(new Set(a.map(x=>x.code)).size,a.length);
  assert.equal(hpa.schedule2.physical.at(-1).item,21);
  assert.equal(hpa.schedule2.health.at(-1).item,12);
+});
+check("Runtime catalog lists all 32 HPA active classes with identical names",()=>{
+ const expected=[...hpa.schedule2.physical,...hpa.schedule2.health].filter(x=>x.status==="active");
+ assert.deepEqual(catalog.CATALOG.map(x=>x.name).sort(),expected.map(x=>x.name).sort());
+ assert.equal(catalog.COUNTS.total,32);
+});
+check("Partial statuses match only five implemented hazard family pilots",()=>{
+ const partial=catalog.CATALOG.filter(x=>x.status==="partial").map(x=>x.name).sort();
+ assert.deepEqual(partial,["Acute toxicity","Chemicals under pressure",
+  "Health hazards not otherwise classified","Serious eye damage/eye irritation",
+  "Skin corrosion/irritation"].sort());
+ assert.equal(catalog.COUNTS.notImplemented,27);
+});
+check("No environmental or repealed class appears as active",()=>{
+ assert.ok(!catalog.CATALOG.some(x=>x.name===null));
+ assert.ok(!catalog.CATALOG.some(x=>/environment/i.test(x.name)));
+ assert.ok(!catalog.CATALOG.some(x=>x.id==="HPA-S2-P19"));
 });
 console.log(passed+" HPA source manifest checks passed");
