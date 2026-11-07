@@ -11,6 +11,9 @@
   const SURFACE=(typeof module==="object"&&module.exports)
     ? require("./whmis_skin_eye.js")
     : (typeof globalThis!=="undefined" ? globalThis.WHMIS_SURFACE : null);
+  const EXTENDED=(typeof module==="object"&&module.exports)
+    ? require("./whmis_extended.js")
+    : (typeof globalThis!=="undefined" ? globalThis.WHMIS_EXTENDED : null);
   const PROFILE=Object.freeze({id:"CA-WHMIS-2022",country:"Canada",
     regulation:"Hazardous Products Regulations (SOR/2015-17)",
     effective:"2022-12-15",transitionEnded:"2025-12-14",
@@ -22,14 +25,14 @@
     dermal:{label:"Dermal",unit:"mg/kg",limits:[50,200,1000,2000],point:[5,50,300,1100],ref:"HPR 8.1.1 Table 2; 8.1.7"}
   });
   const UNSUPPORTED=Object.freeze([
-    "Physical hazards (including combustible dust, simple asphyxiants, PHNOC and chemicals under pressure)",
-    "Inhalation acute toxicity and water-activated toxicants",
+    "Physical hazards other than the limited Chemicals Under Pressure assessment, including combustible dust, simple asphyxiants, and PHNOC",
+    "Inhalation toxic gas release on contact with water; unimplemented inhalation edge cases and scientific estimates",
     "Skin/eye tested-mixture data, bridging, special-ingredient cases under HPR 8.2.11(3) and 8.3.11(3)",
     "Respiratory and skin sensitisation",
     "Germ cell mutagenicity, carcinogenicity, reproductive toxicity",
     "STOT SE/RE and aspiration hazard",
     "Biohazardous infectious materials and most HHNOC pathways",
-    "Whole-mixture evidence, bridging principles and applicable exemptions",
+    "Whole-mixture evidence, bridging principles and exemptions outside the limited acute inhalation route",
     "WHMIS hazard communication: pictograms, hazard and precautionary statements, bilingual labels and SDSs"
   ]);
   function value(n){if(n===""||n===null||n===undefined)return NaN;const x=Number(n);return Number.isFinite(x)?x:NaN;}
@@ -134,9 +137,27 @@
           ["Confirm the ingredient's HHNOC classification and check whole-mixture data under HPR 8.12.3 first."]});
       }
     }
+    let scope=null;
+    let extension=null;
+    if(EXTENDED){
+      if(valid){
+        extension=EXTENDED.classify(input);
+        scope=extension.scope;
+        outcomes.push(...extension.outcomes);
+        calculations.push(...extension.calculations);
+        review.push(...extension.review);
+        supplementalStatements.push(...extension.supplementalStatements);
+      } else {
+        scope=EXTENDED.evaluateScope(input&&input.scope);
+        review.push("Extended WHMIS calculations not run because ingredient concentrations are invalid.");
+      }
+    }else{
+      review.push("Canadian inhalation, Chemicals Under Pressure and scope modules unavailable.");
+    }
     review.push("Check whole-mixture data and bridging principles BEFORE using ingredient calculations (HPR 2.2, 8.1.2–8.1.6).");
-    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,
-      outcomes,calculations,issues,review,supplementalStatements,notAssessed:[...UNSUPPORTED],
+    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,
+      outcomes,calculations,issues,review,supplementalStatements,
+      notAssessed:[...UNSUPPORTED,...(extension?extension.notAssessed:[])],
       note:"Not a complete WHMIS classification, SDS or label decision. No CLP output is reused."};
   }
   return {PROFILE,ROUTES,UNSUPPORTED,category,resolveATE,classify};
