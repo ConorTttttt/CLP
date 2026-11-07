@@ -1,0 +1,159 @@
+{
+  "id": "UN-GHS-REV7-2017",
+  "title": "Globally Harmonized System of Classification and Labelling of Chemicals, Seventh revised edition",
+  "publicationCode": "ST/SG/AC.10/30/Rev.7",
+  "year": 2017,
+  "userUploadedFile": "GHS7.pdf",
+  "fileSHA256": "1994b72088920a3ec997c9bb1c2cfc0a99def1ad9128676367c53ac9a5ff8f2c",
+  "sourceKind": "UN model system — supporting technical source, not directly binding Canada WHMIS law",
+  "legalPrecedence": "Canadian Hazardous Products Act and Hazardous Products Regulations (HPR SOR/2015-17) take precedence. Health Canada supplier guidance is interpretive. UN GHS is supporting technical context.",
+  "pdfPageCount": 534,
+  "sourceStatus": "Identity, contents and selected mixture principles checked. Individual criteria/decision trees NOT yet independently validated against Canadian HPR.",
+  "keySources": [
+    {
+      "id": "1.3",
+      "title": "Classification of hazardous substances and mixtures",
+      "printedPageStart": 17,
+      "use": "Data precedence, evidence, mixture classification and expert judgement"
+    },
+    {
+      "id": "2.1–2.17",
+      "title": "Physical hazards",
+      "printedPageStart": 43,
+      "use": "Technical reference for Canadian HPR Part 7; individual Canadian adoption must be checked"
+    },
+    {
+      "id": "3.1",
+      "title": "Acute toxicity",
+      "printedPageStart": 115,
+      "canadianHPR": "8.1",
+      "use": "Inhalation, oral, dermal, ATE estimates, route-specific unknown toxicity"
+    },
+    {
+      "id": "3.2",
+      "title": "Skin corrosion/irritation",
+      "printedPageStart": 127,
+      "canadianHPR": "8.2",
+      "use": "Mixed additive/non-additive route scientific interpretation"
+    },
+    {
+      "id": "3.3",
+      "title": "Serious eye damage/irritation",
+      "printedPageStart": 139,
+      "canadianHPR": "8.3",
+      "use": "Ingredient addition and special cases"
+    },
+    {
+      "id": "3.4",
+      "title": "Respiratory/skin sensitisation",
+      "printedPageStart": 153,
+      "canadianHPR": "8.4",
+      "use": "Sensitisation classification"
+    },
+    {
+      "id": "3.5",
+      "title": "Germ cell mutagenicity",
+      "printedPageStart": 163,
+      "canadianHPR": "8.5",
+      "use": "Mixture and ingredient hazard thresholds"
+    },
+    {
+      "id": "3.6",
+      "title": "Carcinogenicity",
+      "printedPageStart": 171,
+      "canadianHPR": "8.6",
+      "use": "Mixture cutoffs and evidence"
+    },
+    {
+      "id": "3.7",
+      "title": "Reproductive toxicity",
+      "printedPageStart": 181,
+      "canadianHPR": "8.7",
+      "use": "Mixture cutoffs and effects on or via lactation"
+    },
+    {
+      "id": "3.8",
+      "title": "STOT single exposure",
+      "printedPageStart": 191,
+      "canadianHPR": "8.8",
+      "use": "Mixture criteria"
+    },
+    {
+      "id": "3.9",
+      "title": "STOT repeated exposure",
+      "printedPageStart": 201,
+      "canadianHPR": "8.9",
+      "use": "Mixture criteria"
+    },
+    {
+      "id": "3.10",
+      "title": "Aspiration hazard",
+      "printedPageStart": 211,
+      "canadianHPR": "8.10",
+      "use": "Viscosity/mixture criteria"
+    },
+    {
+      "id": "4.1–4.2",
+      "title": "Environmental hazards",
+      "printedPageStart": 219,
+      "whmisApplicable": false,
+      "use": "Do NOT treat as adopted Canadian WHMIS hazard classes"
+    },
+    {
+      "id": "Annex 1",
+      "title": "Classification and labelling summary tables",
+      "printedPageStart": 247,
+      "use": "Cross-reference after checking Canadian HPR"
+    },
+    {
+      "id": "Annex 3",
+      "title": "Hazard and precautionary statements and pictograms",
+      "printedPageStart": 267,
+      "use": "Supporting communication text; Canadian label/supplemental rules prevail"
+    },
+    {
+      "id": "Annex 4",
+      "title": "SDS guidance",
+      "printedPageStart": 375,
+      "use": "Technical SDS reference; Canadian HPR SDS and bilingual rules prevail"
+    },
+    {
+      "id": "Annex 8",
+      "title": "GHS classification example",
+      "printedPageStart": 437,
+      "use": "Illustrative test case, must cross-check Canadian criteria"
+    }
+  ],
+  "verifiedPrinciples": [
+    {
+      "id": "1.3.2.3.1",
+      "summary": "Use full-mixture data first, bridging where mixture test data absent, and ingredient method where neither applies.",
+      "status": "source verified; Canadian HPR comparison still required"
+    },
+    {
+      "id": "1.3.2.4.8–1.3.2.4.9",
+      "summary": "Expert judgement and weight of evidence apply to qualitative classifications."
+    },
+    {
+      "id": "3.1.3.3(a)",
+      "summary": "Acute toxicity ingredients normally >=1%; relevant <1% ingredients can still count."
+    },
+    {
+      "id": "3.1.3.6.2.2–3.1.3.6.2.3",
+      "summary": "Separate unknown-ingredient disclosure and >10% formula correction."
+    }
+  ],
+  "NOTautomaticImports": [
+    "GHS acute toxicity Category 5",
+    "GHS environmental hazards",
+    "UN labeling requirements without Canadian modifications",
+    "Chemicals Under Pressure (requires separate GHS Rev.8 chapter)"
+  ],
+  "todo": [
+    "Verify each HPR hazard class building block and precise thresholds against 2017 Rev.7",
+    "Resolve physical test-method editions actually incorporated by Canadian law",
+    "Use GHS 8 for Canadian Chemicals Under Pressure",
+    "Do not treat the presence of an UN GHS hazard class as proof of Canadian WHMIS adoption",
+    "Render and validate visually each source table/footnote before coding"
+  ]
+}
