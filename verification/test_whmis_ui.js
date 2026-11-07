@@ -23,7 +23,7 @@ for(const mark of ["data-field=\"name\"","data-field=\"pct\"","route+'ATE","rout
 });
 t("clear provisional message and regulatory scope remain",()=>{
 assert.match(html,/Decision-support only/);assert.match(html,/not a final classification/);
-assert.match(html,/not yet automated/);assert.match(html,/SOR-2015-17/);
+assert.match(html,/still require review/);assert.match(html,/SOR-2015-17/);
 });
 t("calculation panels and total concentration update",()=>{
 assert.ok(html.includes("calc-panel"));assert.ok(html.includes('function updateTotal()'));
@@ -82,11 +82,22 @@ t("Extended module and HPA class catalogue precede core engine",()=>{
 t("HPA scope result and extended classifications go through normal safe rendering",()=>{
  assert.ok(html.includes("r.scope.status.replace"));
  assert.ok(html.includes("safe(r.scope.reason)"));
- assert.ok(html.includes("WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure})"));
+ assert.ok(html.includes("WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture})"));
 });
 t("All WHMIS preview text remains explicit about incomplete classification",()=>{
  assert.match(html,/Decision-support only/);
  assert.match(html,/not a final classification/);
  assert.match(html,/no|not.*non-hazardous/i);
+});
+t("new health classification controls are present and source-linked",()=>{
+ for(const field of ["hRespSens","hSkinSens","hMutagen","hCarcinogen","hRepro","hLactation","hStotSE","hStotRE","hStot3Narcotic","hStot3Resp","hStot3Elicit","hAspiration","hState"])
+   assert.ok(html.includes('data-field="'+field+'"'),field);
+ for(const id of ["health-mixture-inputs","health-other-evidence","asp-viscosity","asp-phase"])
+   assert.ok(html.includes('id="'+id+'"'),id);
+});
+t("WHMIS additional health engine loads before core engine",()=>{
+ const p=html.indexOf("verification/whmis_health.js"),c=html.indexOf("verification/whmis_engine.js");
+ assert.ok(p>=0&&c>p);
+ assert.ok(html.includes("healthMixture"));
 });
 console.log(passed+" WHMIS presentation checks passed");
