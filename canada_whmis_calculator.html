@@ -169,12 +169,18 @@ tbody tr td.ing-extra{grid-column:auto}
 #coverage-list h3{font-size:12px;margin:12px 0 6px;color:var(--mute)}
 #coverage-list ul{padding-left:19px;font-size:12px}
 #coverage-list li{margin:5px 0}
+
+/* Additional Canadian health class inputs follow CLP compact ingredient cards */
+#health-mixture-inputs input,#health-mixture-inputs select{max-width:100%;width:100%}
+#health-mixture-inputs label.check{display:flex;gap:7px;align-items:flex-start;margin:9px 0}
+#health-mixture-inputs label.check input{width:17px;height:17px;flex:0 0 17px}
+tbody tr[data-expanded=true] td.health-field{border-top:1px solid var(--line)}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
 <nav class="workspace-nav" aria-label="Calculator sections"><a href="#mixture-card">Mixture</a><a href="#ingredients-card">Ingredients</a><a href="#results">Results</a><a href="#source-card">Regulatory scope</a></nav>
 <div class="banner" role="note"><b>Decision-support only — not a final classification or label.</b> This Canadian pilot covers selected health hazard pathways.
- <details><summary>Read calculation scope and regulatory limitations</summary><div class="scope-note">Ingredient-based oral and dermal acute toxicity, skin/eye additive mixtures and HHNOC ingredient triggers are implemented. Whole-mixture data, bridging, inhalation, special non-additive chemistry, other health and physical hazard classes, Schedule 4 prescribed classifications and bilingual WHMIS labelling are not yet automated. A missing result does not establish that a product is non-hazardous.</div></details>
+ <details><summary>Read calculation scope and regulatory limitations</summary><div class="scope-note">Selected acute, skin/eye additive, sensitisation, CMR, STOT, aspiration and Chemicals Under Pressure paths are provisionally implemented. Whole-mixture studies and bridging are not fully automated for most classes; special non-additive chemistry, biohazards, remaining physical hazards, Schedule 4 prescribed classifications and bilingual WHMIS labelling still require review. A missing result does not establish that a product is non-hazardous.</div></details>
 </div>
 <main class="wrap">
 <section id="inputs" aria-label="Formulation inputs">
@@ -225,9 +231,21 @@ tbody tr td.ing-extra{grid-column:auto}
  </div>
  <p class="hint">Requires defensible package and composition evidence. A GHS Rev.8 category is only proposed if the HPR eligibility conditions and data are complete.</p>
 </div>
- <div class="card" id="ingredients-card">
-  <div class="row justify"><h2>5. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
-  <p class="hint">Enter ingredient concentrations and their individual oral, dermal, skin, eye and HHNOC information. Each ingredient has a compact hazard overview. Select Edit details for grouped fields. Blank acute toxicity fields are unknown, not evidence of safety.</p>
+ 
+<div class="card" id="health-mixture-inputs">
+ <h2>5. Additional health hazard evidence (HPR 8.4–8.10)</h2>
+ <p class="hint">New sensitisation, CMR, STOT and aspiration calculations are ingredient-based candidates. Whole-mixture evidence, bridging principles, HPR 2.5 and Schedule 4 need expert review.</p>
+ <label class="check"><input id="health-other-evidence" type="checkbox"> Relevant whole-mixture test or bridging evidence exists for these new hazard classes — withhold ingredient candidates pending scientific review</label>
+ <div class="g g2">
+  <div><label for="asp-phase">Aspiration: does the mixture separate into layers?</label><select id="asp-phase"><option value="unknown">Not established — requires review</option><option value="no">No — confirmed homogeneous</option><option value="yes">Yes — HPR 8.10.5(b) layer review required</option></select></div>
+  <div><label for="asp-viscosity">Aspiration: bulk kinematic viscosity at 40°C (mm²/s)</label><input id="asp-viscosity" type="number" min="0" step="any" placeholder="Measured value (required for homogeneous route)"></div>
+ </div>
+ <p class="hint">Aspiration Category 1 ingredient thresholds require ≥10% aspiration ingredients (each present ≥1%) and viscosity ≤20.5 mm²/s. Layer-specific calculations are not automated.</p>
+</div>
+
+<div class="card" id="ingredients-card">
+  <div class="row justify"><h2>6. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
+  <p class="hint">Enter ingredient concentrations and individual oral, dermal, inhalation, skin, eye, sensitisation, CMR, STOT, aspiration and HHNOC information. Each ingredient has a compact hazard overview. Select Edit details for grouped fields. Blank acute toxicity fields are unknown, not evidence of safety.</p>
   <div class="scroller"><table><thead><tr><th>Ingredient</th><th>% w/w</th><th>Oral ATE</th><th>Oral category</th><th>Oral no hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no hazard</th><th>Skin</th><th>Skin evidence below 1%</th><th>Skin special</th><th>Eye</th><th>Eye evidence below 1%</th><th>Eye special</th><th>HHNOC</th><th>Remove</th></tr></thead><tbody id="rows"></tbody></table></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="small primary" type="button" id="calculate">Calculate WHMIS pilot</button></div>
  </div>
@@ -240,7 +258,7 @@ tbody tr td.ing-extra{grid-column:auto}
 </main>
 <footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
 
-<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_engine.js"></script><script>
+<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_health.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -264,6 +282,27 @@ const extraCells=[
  ['Inhalation evidence','<label class="acute-below-one"><input type="checkbox" data-field="inhSafe" aria-label="Evidence for no acute inhalation hazard"> No acute inhalation hazard — evidence-backed</label><label class="acute-below-one"><input type="checkbox" data-field="inhBelow1" aria-label="Inhalation effect evidence below 1 percent"> Relevant inhalation effects below 1%</label>']
 ];
 extraCells.forEach(([label,inner])=>{const td=document.createElement("td");td.className="ing-extra";td.dataset.displayLabel=label;td.innerHTML=inner;tr.insertBefore(td,tr.lastElementChild);});
+const healthChoices=(field,label,options)=>{
+ const choices=options.map(v=>'<option value="'+v+'">Category '+v+'</option>').join("");
+ return [label,'<select data-field="'+field+'" aria-label="'+label+'"><option value="">No classification supplied</option>'+choices+'</select>'];
+};
+const healthExtra=[
+ healthChoices("hRespSens","Respiratory sensitisation",["1","1A","1B"]),
+ healthChoices("hSkinSens","Skin sensitisation",["1","1A","1B"]),
+ healthChoices("hMutagen","Germ cell mutagenicity",["1","1A","1B","2"]),
+ healthChoices("hCarcinogen","Carcinogenicity",["1","1A","1B","2"]),
+ healthChoices("hRepro","Reproductive toxicity (fertility/development)",["1","1A","1B","2"]),
+ healthChoices("hStotSE","STOT — Single Exposure",["1","2"]),
+ healthChoices("hStotRE","STOT — Repeated Exposure",["1","2"]),
+ ["Ingredient physical state",'<select data-field="hState" aria-label="Ingredient physical state"><option value="">Not established</option><option value="solid">Solid</option><option value="liquid">Liquid</option><option value="gas">Gas — requires % v/v</option></select>'],
+ ["Reproductive toxicity — lactation",'<label class="acute-below-one"><input type="checkbox" data-field="hLactation"> Effects on or via lactation (HPR 8.7.5)</label>'],
+ ["STOT SE 3 — narcotic",'<label class="acute-below-one"><input type="checkbox" data-field="hStot3Narcotic"> Transient narcotic effects</label>'],
+ ["STOT SE 3 — respiratory",'<label class="acute-below-one"><input type="checkbox" data-field="hStot3Resp"> Transient respiratory tract irritation</label>'],
+ ["STOT SE 3 — eliciting concentration",'<input type="number" min="0" max="100" step="any" data-field="hStot3Elicit" aria-label="STOT Category 3 known effect concentration" placeholder="Only when scientifically known; otherwise 20%">'],
+ ["Aspiration Hazard",'<label class="acute-below-one"><input type="checkbox" data-field="hAspiration"> Aspiration hazard Category 1</label>']
+];
+healthExtra.forEach(([label,inner])=>{const td=document.createElement("td");td.className="ing-extra health-field";td.dataset.displayLabel=label;td.innerHTML=inner;tr.insertBefore(td,tr.lastElementChild);});
+
 for(const [k,v] of Object.entries(i)){const el=tr.querySelector('[data-field="'+k+'"]');if(el){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
 
 const overview=document.createElement("td");
@@ -298,6 +337,12 @@ function displayChips(){
  if(get("skin").value)chips.push("Skin "+get("skin").value);
  if(get("eye").value)chips.push("Eye "+get("eye").value);
  if(get("hhnoc").checked)chips.push("HHNOC");
+ for(const [field,label] of [["hRespSens","Resp. Sens."],["hSkinSens","Skin Sens."],["hMutagen","Muta."],["hCarcinogen","Carc."],["hRepro","Repr."],["hStotSE","STOT SE"],["hStotRE","STOT RE"]]){
+ if(get(field).value)chips.push(label+" "+get(field).value);
+ }
+ if(get("hLactation").checked)chips.push("Lactation");
+ if(get("hAspiration").checked)chips.push("Aspiration 1");
+ if(get("hStot3Narcotic").checked||get("hStot3Resp").checked)chips.push("STOT SE 3");
  if(get("specialSkin").checked||get("specialEye").checked)chips.push("Special chemistry — review");
  overview.textContent="";
  if(!chips.length){const span=document.createElement("span");span.className="hint";span.textContent="No hazards entered · Edit details to add";overview.appendChild(span)}
@@ -317,14 +362,24 @@ acute[route]=get(route+"Safe").checked?{notAcute:true,relevantBelow1}:ate!==""?{
 }
 const inhATE=get("inhATE").value,inhCat=get("inhCat").value,inhHours=get("inhHours").value;
 acute.inhalation=get("inhSafe").checked?{notAcute:true}:inhATE!==""?{ate:Number(inhATE),hours:Number(inhHours),relevantBelow1:get("inhBelow1").checked}:inhCat!==""?{category:Number(inhCat),relevantBelow1:get("inhBelow1").checked}:get("inhBelow1").checked?{relevantBelow1:true}:null;
-return {name:get("name").value,pct:get("pct").value,volumePct:get("volumePct").value,acute,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
+const health={
+ ingredientState:get("hState").value,respSens:get("hRespSens").value,skinSens:get("hSkinSens").value,
+ mutagen:get("hMutagen").value,carcinogen:get("hCarcinogen").value,repro:get("hRepro").value,
+ reproLactation:get("hLactation").checked,stotSE:get("hStotSE").value,stotRE:get("hStotRE").value,
+ stotSE3Narcotic:get("hStot3Narcotic").checked,stotSE3Respiratory:get("hStot3Resp").checked,
+ stotSE3EffectPct:get("hStot3Elicit").value,aspiration:get("hAspiration").checked
+};
+return {name:get("name").value,pct:get("pct").value,volumePct:get("volumePct").value,acute,health,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
 });}
 function show(){const ingredients=read();const bool=id=>{const v=document.getElementById(id).value;return v==="yes"?true:v==="no"?false:null;};
 const num=id=>{const v=document.getElementById(id).value;return v===""?null:Number(v);};
 const scope={activity:document.getElementById("scope-activity").value,workplace:document.getElementById("scope-workplace").value,exclusion:document.getElementById("scope-exclusion").value};
 const inhalation={form:document.getElementById("inh-form").value,wholeMixtureLC50:num("inh-whole"),wholeMixtureHours:Number(document.getElementById("inh-whole-hours").value),bridgedCategory:document.getElementById("inh-bridge").value,bridgingEvidence:document.getElementById("inh-bridge-evidence").value};
 const chemicalsUnderPressure={assess:document.getElementById("pressure-assess").checked,physicalState:document.getElementById("pressure-state").value,pressurisedWithGas:bool("pressure-gas"),aerosolDispenser:bool("pressure-aerosol"),gasUnderPressure:bool("pressure-gup"),pressureKPa:num("pressure-kpa"),flammablePct:num("pressure-flame"),heatCombustionKJg:num("pressure-heat")};
-const r=WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
+const healthMixture={otherEvidence:document.getElementById("health-other-evidence").checked,
+  phaseSeparated:document.getElementById("asp-phase").value,
+  aspirationViscosity40:num("asp-viscosity")};
+const r=WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
 if(r.scope){const klass=r.scope.status==="potentially_in_scope"?"whmis-scope-status":"whmis-scope-status warning-status";
 html+='<div class="'+klass+'"><strong>HPA Part II scope: '+safe(r.scope.status.replace(/_/g," "))+'</strong><p>'+safe(r.scope.reason)+'</p><p class="small">'+safe(r.scope.ref)+'</p></div>';}
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
@@ -358,7 +413,7 @@ function updateTotal(){const items=read(),total=items.reduce((n,i)=>n+(Number(i.
 const gas=document.getElementById("gas-total");gas.textContent=document.getElementById("inh-form").value==="gas"?"Gas components: "+Number(gasTotal.toFixed(4))+"% v/v (must total 100%)":"";
 const el=document.getElementById("tot");el.textContent="· "+Number(total.toFixed(4))+"% w/w";el.className="total"+(Math.abs(total-100)>0.01?" invalid":"");}
 let refreshTimer;
-document.querySelectorAll("#scope-inputs input,#scope-inputs select,#inhalation-inputs input,#inhalation-inputs select,#pressure-inputs input,#pressure-inputs select").forEach(el=>{
+document.querySelectorAll("#scope-inputs input,#scope-inputs select,#inhalation-inputs input,#inhalation-inputs select,#pressure-inputs input,#pressure-inputs select,#health-mixture-inputs input,#health-mixture-inputs select").forEach(el=>{
  el.addEventListener("input",()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(show,170)});
  el.addEventListener("change",()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(show,170)});
 });
