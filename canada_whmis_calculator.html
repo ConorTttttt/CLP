@@ -177,6 +177,36 @@ tbody tr td.ing-extra{grid-column:auto}
 tbody tr[data-expanded=true] td.health-field{border-top:1px solid var(--line)}
 /* Prevent legacy sixteenth-column styling from widening the first appended inhalation field. */
 tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
+
+/* CLP-matched WHMIS raw material H-code picker: visible even with details collapsed. */
+#ingredients-card .ca-picker{display:block!important;grid-column:1/-1;min-width:0;padding:4px 2px 9px;border:0!important;background:transparent!important}
+#ingredients-card .ca-picker::before{display:none!important}
+#ingredients-card .ca-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:2px 0 6px}
+#ingredients-card .ca-picker-head strong{font-size:12px;color:var(--ix-accent)}
+#ingredients-card .ca-picker-tabs{display:flex;gap:5px}
+#ingredients-card .ca-picker-tabs button{font-size:11px;min-width:46px;min-height:29px;padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--mute);font-weight:650}
+#ingredients-card .ca-picker-tabs button[aria-pressed="true"]{color:#fff;background:var(--ix-accent);border-color:var(--ix-accent)}
+#ingredients-card .ca-search-wrap{position:relative}
+#ingredients-card .ca-search-wrap>input{width:100%;padding:9px 10px;min-height:35px;border:1px solid #aac5e7;background:var(--bg);border-radius:7px;font-size:12px}
+#ingredients-card .ca-search-wrap>input:focus{border-color:var(--ix-accent);box-shadow:0 0 0 2px rgba(40,95,167,.12)}
+#ingredients-card .ca-hazard-suggestions{position:fixed;z-index:9999;min-width:245px;max-height:290px;overflow-y:auto;background:var(--panel);border:1px solid var(--accent);border-radius:9px;box-shadow:0 8px 22px rgba(0,0,0,.16);padding:4px}
+#ingredients-card .ca-hazard-suggestions[hidden]{display:none!important}
+#ingredients-card .ca-option{display:grid;grid-template-columns:50px minmax(0,1fr);gap:8px;min-height:43px;align-items:start;text-align:left;border:0;border-radius:6px;background:var(--panel);width:100%;padding:7px;font-weight:400}
+#ingredients-card .ca-option:hover,#ingredients-card .ca-option[aria-selected="true"]{background:var(--soft)}
+#ingredients-card .ca-option code{color:var(--accent);font-weight:700}
+#ingredients-card .ca-option b{display:block;font-size:12px}
+#ingredients-card .ca-option small{display:block;font-size:11px;color:var(--mute);overflow-wrap:anywhere}
+#ingredients-card .ca-hazard-chip{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;background:var(--soft);border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:7px;padding:2px 3px 2px 7px;color:var(--ink);font-size:11.5px}
+#ingredients-card .ca-hazard-chip strong{color:var(--accent);flex:none}
+#ingredients-card .ca-hazard-chip span{overflow-wrap:anywhere}
+#ingredients-card .ca-hazard-chip button{min-width:24px;min-height:23px;border:0;padding:1px 5px;border-radius:5px;background:transparent;color:var(--bad);font-size:17px;font-weight:700;line-height:1}
+#ingredients-card .ca-hazard-chip button:hover{background:var(--panel)}
+#ingredients-card .ca-hazard-chip.manual{border-style:dashed}
+#ingredients-card .ing-overview{gap:6px}
+#ingredients-card .ca-picker .hint{font-size:11.5px;margin:5px 0;display:block}
+#ingredients-card .ca-picker .ca-physical-note{font-size:11px;color:var(--mute)}
+@media(max-width:490px){#ingredients-card .ca-picker-head{align-items:start}#ingredients-card .ca-picker-tabs{width:100%}#ingredients-card .ca-picker-tabs button{flex:1}}
+
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -247,7 +277,7 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 
 <div class="card" id="ingredients-card">
   <div class="row justify"><h2>6. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
-  <p class="hint">Enter ingredient concentrations and individual oral, dermal, inhalation, skin, eye, sensitisation, CMR, STOT, aspiration and HHNOC information. Each ingredient has a compact hazard overview. Select Edit details for grouped fields. Blank acute toxicity fields are unknown, not evidence of safety.</p>
+  <p class="hint">Enter ingredient concentrations and individual oral, dermal, inhalation, skin, eye, sensitisation, CMR, STOT, aspiration and HHNOC information. Use the CLP-style hazard picker to search an H-code, classification or phrase, then select the exact category. Remove a selection with ×. Edit details remains available for ATEs, evidence and other parameters. Blank acute toxicity fields are unknown, not evidence of safety.</p>
   <div class="scroller"><table><thead><tr><th>Ingredient</th><th>% w/w</th><th>Oral ATE</th><th>Oral category</th><th>Oral no hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no hazard</th><th>Skin</th><th>Skin evidence below 1%</th><th>Skin special</th><th>Eye</th><th>Eye evidence below 1%</th><th>Eye special</th><th>HHNOC</th><th>Remove</th></tr></thead><tbody id="rows"></tbody></table></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="small primary" type="button" id="calculate">Calculate WHMIS pilot</button></div>
  </div>
@@ -260,9 +290,11 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 </main>
 <footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
 
-<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_health.js"></script><script src="verification/whmis_engine.js"></script><script>
+<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_health.js"></script><script src="verification/whmis_hazard_picker.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
+const PICKER=window.WHMIS_HAZARD_PICKER;
+let pickerCounter=0;
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function add(i={}){const tr=document.createElement("tr");tr.innerHTML='<td><input aria-label="Ingredient name" data-field="name"></td><td><input aria-label="Concentration percentage" type="number" min="0" max="100" step="any" data-field="pct"></td>'+
 ["oral","dermal"].map(route=>'<td><input aria-label="'+route+' ATE" type="number" min="0" step="any" data-field="'+route+'ATE"><label class="acute-below-one"><input type="checkbox" data-field="'+route+'Below1" aria-label="'+route+' acute hazard evidence below 1 percent"> Evidence of acute toxicity below 1% (HPR 2.5(1))</label></td><td><input aria-label="'+route+' category" type="number" min="1" max="4" step="1" data-field="'+route+'Cat"></td><td><input type="checkbox" aria-label="'+route+' no acute hazard" data-field="'+route+'Safe"></td>').join("")+
@@ -325,31 +357,158 @@ toggle.addEventListener("click",()=>{
  toggle.setAttribute("aria-expanded",String(expand));
  toggle.textContent=expand?"Close details ▾":"Edit details ▸";
 });
-function displayChips(){
- const get=k=>tr.querySelector('[data-field="'+k+'"]');
- const chips=[];
- for(const route of ["oral","dermal"]){
-  if(get(route+"Safe").checked)chips.push(route+" — no acute hazard evidence");
-  else if(get(route+"ATE").value!=="")chips.push(route+" ATE "+get(route+"ATE").value);
-  else if(get(route+"Cat").value!=="")chips.push(route+" Cat. "+get(route+"Cat").value);
+
+const pickerTd=document.createElement("td");
+pickerTd.className="ca-picker";
+const optId="ca-picker-options-"+(++pickerCounter);
+pickerTd.innerHTML='<div class="ca-picker-head"><strong>+ Add hazard classification</strong>'+
+ '<div class="ca-picker-tabs" role="group" aria-label="Hazard classification filter">'+
+ '<button type="button" data-ca-group="all" aria-pressed="true">All</button>'+
+ '<button type="button" data-ca-group="health" aria-pressed="false">Health</button>'+
+ '<button type="button" data-ca-group="physical" aria-pressed="false">Physical</button></div></div>'+
+ '<div class="ca-search-wrap"><input type="text" data-ca-query role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="'+optId+'" autocomplete="off" '+
+ 'aria-label="Add a Canadian raw material hazard by H code or classification" placeholder="+ Search H314, H317, H350, STOT, flammable...">'+
+ '<div class="ca-hazard-suggestions" role="listbox" id="'+optId+'" hidden></div></div>'+
+ '<span class="hint">Select a specific category, even when several categories share an H-code (e.g. H314).</span>'+
+ '<span class="ca-physical-note">Physical entries are recorded as ingredient declarations only; they do not classify the finished mixture. Environmental GHS classes are not WHMIS hazard classes.</span>';
+tr.insertBefore(pickerTd,tr.lastElementChild);
+tr.dataset.caPhysical=JSON.stringify(Array.isArray(i.declaredPhysicalHazards)?i.declaredPhysicalHazards:[]);
+const query=pickerTd.querySelector("[data-ca-query]");
+const suggestionList=pickerTd.querySelector("[role=listbox]");
+let pickerGroup="all",visibleChoices=[],activeOption=-1;
+function readPickerState(){
+ const fields={};
+ for(const key of PICKER.FIELDS){
+  const el=tr.querySelector('[data-field="'+key+'"]');
+  if(el)fields[key]=el.type==="checkbox"?el.checked:el.value;
  }
- if(get("inhSafe").checked)chips.push("Inhalation — no acute hazard evidence");
- else if(get("inhATE").value!=="")chips.push("Inhalation LC50 "+get("inhATE").value);
- else if(get("inhCat").value!=="")chips.push("Inhalation Cat. "+get("inhCat").value);
- if(get("skin").value)chips.push("Skin "+get("skin").value);
- if(get("eye").value)chips.push("Eye "+get("eye").value);
- if(get("hhnoc").checked)chips.push("HHNOC");
- for(const [field,label] of [["hRespSens","Resp. Sens."],["hSkinSens","Skin Sens."],["hMutagen","Muta."],["hCarcinogen","Carc."],["hRepro","Repr."],["hStotSE","STOT SE"],["hStotRE","STOT RE"]]){
- if(get(field).value)chips.push(label+" "+get(field).value);
- }
- if(get("hLactation").checked)chips.push("Lactation");
- if(get("hAspiration").checked)chips.push("Aspiration 1");
- if(get("hStot3Narcotic").checked||get("hStot3Resp").checked)chips.push("STOT SE 3");
- if(get("specialSkin").checked||get("specialEye").checked)chips.push("Special chemistry — review");
- overview.textContent="";
- if(!chips.length){const span=document.createElement("span");span.className="hint";span.textContent="No hazards entered · Edit details to add";overview.appendChild(span)}
- chips.forEach(label=>{const span=document.createElement("span");span.className="ing-chip"+(/review/.test(label)?" review":"");span.textContent=label;overview.appendChild(span)});
+ let manualPhysical=[];
+ try{manualPhysical=JSON.parse(tr.dataset.caPhysical||"[]")}catch(_){}
+ return {fields,manualPhysical};
 }
+function writePickerState(next){
+ for(const [key,value] of Object.entries(next.fields)){
+  const el=tr.querySelector('[data-field="'+key+'"]');
+  if(!el)continue;
+  if(el.type==="checkbox")el.checked=!!value;
+  else el.value=value===null||value===undefined?"":String(value);
+ }
+ tr.dataset.caPhysical=JSON.stringify(next.manualPhysical);
+}
+function displayChips(){
+ const state=readPickerState(),entries=PICKER.selected(state.fields,state.manualPhysical);
+ overview.textContent="";
+ entries.forEach(entry=>{
+  const chip=document.createElement("span");
+  chip.className="ca-hazard-chip"+(entry.group==="physical"?" manual":"");
+  if(entry.group==="physical")chip.title="Raw material declaration only — finished mixture physical classification not calculated";
+  const code=document.createElement("strong");code.textContent=entry.code||"CA";
+  const label=document.createElement("span");label.textContent=entry.label;
+  const remove=document.createElement("button");remove.type="button";remove.textContent="×";
+  remove.setAttribute("aria-label","Remove "+entry.label+(entry.code?" "+entry.code:""));
+  remove.title="Remove "+entry.label;
+  remove.addEventListener("click",()=>{
+   writePickerState(PICKER.remove(readPickerState(),entry.id));
+   displayChips();
+   show();
+  });
+  chip.append(code,label,remove);overview.appendChild(chip);
+ });
+ const get=k=>tr.querySelector('[data-field="'+k+'"]');
+ const evidence=[];
+ for(const route of ["oral","dermal"]){
+  if(get(route+"Safe").checked)evidence.push(route+" — evidenced not acute");
+  else if(get(route+"ATE").value!=="")evidence.push(route+" ATE "+get(route+"ATE").value);
+ }
+ if(get("inhSafe").checked)evidence.push("Inhalation — evidenced not acute");
+ else if(get("inhATE").value!=="")evidence.push("Inhalation LC50 "+get("inhATE").value);
+ if(get("specialSkin").checked||get("specialEye").checked)evidence.push("Special chemistry — review");
+ evidence.forEach(label=>{
+  const span=document.createElement("span");span.className="ing-chip"+(/review/.test(label)?" review":"");
+  span.textContent=label;overview.appendChild(span);
+ });
+ if(!entries.length&&!evidence.length){
+  const span=document.createElement("span");span.className="hint";
+  span.textContent="No hazard classifications selected";overview.appendChild(span);
+ }
+ const count=pickerTd.querySelector(".ca-picker-head>strong");
+ count.textContent="+ Add hazard classification ("+entries.length+" selected)";
+}
+function closeSuggestions(){
+ suggestionList.hidden=true;query.setAttribute("aria-expanded","false");
+ query.removeAttribute("aria-activedescendant");
+ visibleChoices=[];activeOption=-1;
+}
+function positionSuggestions(){
+ const rect=query.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight;
+ const width=Math.min(Math.max(rect.width,320),Math.max(245,vw-16));
+ const left=Math.max(8,Math.min(rect.left,vw-width-8));
+ const below=Math.max(0,vh-rect.bottom-12),above=Math.max(0,rect.top-12),useAbove=below<195&&above>below;
+ const maxHeight=Math.min(290,Math.max(80,(useAbove?above:below)-5));
+ suggestionList.style.left=left+"px";suggestionList.style.width=width+"px";
+ suggestionList.style.maxHeight=maxHeight+"px";
+ suggestionList.style.top=(useAbove?Math.max(8,rect.top-Math.min(suggestionList.scrollHeight,maxHeight)-5):rect.bottom+4)+"px";
+}
+function activateOption(index){
+ if(!visibleChoices.length)return;
+ activeOption=(index+visibleChoices.length)%visibleChoices.length;
+ suggestionList.querySelectorAll("[role=option]").forEach((el,i)=>{
+  const active=i===activeOption;el.setAttribute("aria-selected",String(active));
+  if(active){query.setAttribute("aria-activedescendant",el.id);el.scrollIntoView({block:"nearest"});}
+ });
+}
+function chooseClassification(id){
+ const entry=PICKER.byId(id);if(!entry)return;
+ writePickerState(PICKER.apply(readPickerState(),id));
+ displayChips();
+ query.value="";closeSuggestions();show();query.focus();
+}
+function renderSuggestions(){
+ const q=query.value.trim();
+ suggestionList.textContent="";activeOption=-1;visibleChoices=[];
+ if(!q){closeSuggestions();return;}
+ const selectedIds=PICKER.selected(readPickerState().fields,readPickerState().manualPhysical).map(x=>x.id);
+ visibleChoices=PICKER.search(q,pickerGroup,selectedIds);
+ for(const [index,entry] of visibleChoices.entries()){
+  const button=document.createElement("button");button.type="button";
+  button.className="ca-option";button.id=optId+"-opt-"+index;
+  button.setAttribute("role","option");button.setAttribute("aria-selected","false");
+  const code=document.createElement("code");code.textContent=entry.code||"CA";
+  const info=document.createElement("span"),title=document.createElement("b"),phrase=document.createElement("small");
+  title.textContent=entry.label;phrase.textContent=entry.phrase+
+    (entry.group==="physical"?" · ingredient record only":"");
+  info.append(title,phrase);button.append(code,info);
+  button.addEventListener("mousedown",event=>event.preventDefault());
+  button.addEventListener("click",()=>chooseClassification(entry.id));
+  suggestionList.appendChild(button);
+ }
+ if(!visibleChoices.length){
+  const msg=document.createElement("div");msg.className="hint";
+  msg.style.padding="9px";
+  msg.textContent="No matching Canadian WHMIS classification. Environmental H-codes are not adopted here.";
+  suggestionList.appendChild(msg);
+ }
+ suggestionList.hidden=false;query.setAttribute("aria-expanded","true");
+ query.removeAttribute("aria-activedescendant");positionSuggestions();
+}
+query.addEventListener("input",event=>{event.stopPropagation();renderSuggestions()});
+query.addEventListener("keydown",event=>{
+ if(event.key==="Escape"){closeSuggestions();return;}
+ if(event.key==="ArrowDown"||event.key==="ArrowUp"){
+  event.preventDefault();if(suggestionList.hidden)renderSuggestions();
+  activateOption(event.key==="ArrowDown"?activeOption+1:activeOption-1);return;
+ }
+ if(event.key==="Enter"&&!suggestionList.hidden&&visibleChoices.length){
+  event.preventDefault();chooseClassification(visibleChoices[activeOption>=0?activeOption:0].id);
+ }
+});
+query.addEventListener("blur",()=>setTimeout(closeSuggestions,130));
+pickerTd.querySelectorAll("[data-ca-group]").forEach(btn=>btn.addEventListener("click",()=>{
+ pickerGroup=btn.dataset.caGroup;
+ pickerTd.querySelectorAll("[data-ca-group]").forEach(other=>other.setAttribute("aria-pressed",String(other===btn)));
+ if(query.value.trim())renderSuggestions();
+ query.focus();
+}));
 tr.addEventListener("input",displayChips);
 tr.addEventListener("change",displayChips);
 displayChips();
@@ -371,7 +530,7 @@ const health={
  stotSE3Narcotic:get("hStot3Narcotic").checked,stotSE3Respiratory:get("hStot3Resp").checked,
  stotSE3EffectPct:get("hStot3Elicit").value,aspiration:get("hAspiration").checked
 };
-return {name:get("name").value,pct:get("pct").value,volumePct:get("volumePct").value,acute,health,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
+return {name:get("name").value,pct:get("pct").value,volumePct:get("volumePct").value,declaredPhysicalHazards:JSON.parse(tr.dataset.caPhysical||"[]"),acute,health,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
 });}
 function show(){const ingredients=read();const bool=id=>{const v=document.getElementById(id).value;return v==="yes"?true:v==="no"?false:null;};
 const num=id=>{const v=document.getElementById(id).value;return v===""?null:Number(v);};
@@ -386,6 +545,12 @@ if(r.scope){const klass=r.scope.status==="potentially_in_scope"?"whmis-scope-sta
 html+='<div class="'+klass+'"><strong>HPA Part II scope: '+safe(r.scope.status.replace(/_/g," "))+'</strong><p>'+safe(r.scope.reason)+'</p><p class="small">'+safe(r.scope.ref)+'</p></div>';}
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
 html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
+const manualPhysical=ingredients.flatMap(i=>(i.declaredPhysicalHazards||[]).map(id=>({name:i.name||"Unnamed ingredient",choice:PICKER.byId(id)}))).filter(x=>x.choice);
+if(manualPhysical.length){
+ html+='<div class="warning"><strong>Raw-material physical classifications recorded — not used as mixture results.</strong>'+
+  '<p class="small">The HPA physical hazard class of a finished mixture requires a separate assessment under the HPR. Recorded ingredient classifications do not automatically classify it.</p>'+
+  '<ul>'+manualPhysical.map(x=>'<li>'+safe(x.name)+': '+safe(x.choice.label)+(x.choice.code?' ('+safe(x.choice.code)+')':'')+'</li>').join("")+'</ul></div>';
+}
 if(r.supplementalStatements&&r.supplementalStatements.length){
 html+='<div class="warning"><strong>Supplemental unknown acute toxicity disclosures — review required</strong><p class="small">HPR 3(1)(e), Schedule 1 paragraph 2(b). English drafts only; Canadian labels and SDSs require English and French.</p>'+
 r.supplementalStatements.map(x=>'<p><strong>'+safe(x.route)+':</strong> '+safe(x.english)+'</p>').join("")+'</div>';
