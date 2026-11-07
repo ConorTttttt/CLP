@@ -87,6 +87,35 @@ for(const [family,cat,code,phrase] of [
  ["PHNOC","","","Physical hazards not otherwise classified — Canadian hazard"]
 ])choose("physical",family,cat,code,phrase,null,null,true);
 
+// Search terms use familiar full classification names as well as CLP-style abbreviations.
+const ALIASES=Object.freeze({
+ "Acute Tox. Oral":"acute toxicity oral swallowed",
+ "Acute Tox. Dermal":"acute toxicity dermal skin contact",
+ "Acute Tox. Inhalation":"acute toxicity inhalation gas vapour dust mist",
+ "Skin Corr.":"skin corrosion corrosive",
+ "Skin Irrit.":"skin irritation irritant",
+ "Eye Dam.":"serious eye damage",
+ "Eye Irrit.":"eye irritation",
+ "Resp. Sens.":"respiratory sensitisation respiratory sensitization asthma",
+ "Skin Sens.":"skin sensitisation skin sensitization allergy",
+ "Muta.":"germ cell mutagenicity mutagenic",
+ "Carc.":"carcinogenicity carcinogenic cancer",
+ "Repr.":"reproductive toxicity fertility development",
+ "Lactation":"effects on or via lactation breast feeding",
+ "STOT SE":"specific target organ toxicity single exposure",
+ "STOT RE":"specific target organ toxicity repeated exposure",
+ "Asp. Tox.":"aspiration hazard",
+ "HHNOC":"health hazards not otherwise classified",
+ "Flam. Gas":"flammable gases",
+ "Flam. Liq.":"flammable liquids",
+ "Flam. Sol.":"flammable solids",
+ "Ox. Gas":"oxidizing gases",
+ "Ox. Liq.":"oxidizing liquids",
+ "Ox. Sol.":"oxidizing solids",
+ "Met. Corr.":"corrosive to metals",
+ "PHNOC":"physical hazards not otherwise classified",
+ "Chem. Under Pressure":"chemicals under pressure"
+});
 const BY_ID=new Map(CHOICES.map(x=>[x.id,x]));
 if(BY_ID.size!==CHOICES.length)throw new Error("WHMIS picker choice IDs must be unique");
 const FIELDS=Object.freeze([...new Set(CHOICES.filter(x=>x.field).map(x=>x.field))]);
@@ -108,7 +137,7 @@ function search(query,group="all",selectedIds=[],limit=12){
    if(qualified)return x.code.toLowerCase()===qualified[1] &&
       x.category.toLowerCase()===qualified[2].toLowerCase();
    if(isExactCode)return x.code.toLowerCase()===q;
-   return [x.code,x.label,x.phrase,x.group,x.family].join(" ").toLowerCase().includes(q);
+   return [x.code,x.label,x.phrase,x.group,x.family,ALIASES[x.family]||""].join(" ").toLowerCase().includes(q);
  })
  .sort((a,b)=>{
    const score=x=>x.code.toLowerCase()===q?0:x.code.toLowerCase().startsWith(q)?1:
