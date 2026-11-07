@@ -149,6 +149,20 @@ tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-ac
 /* Route-specific evidence that an acute ingredient below 1% is relevant */
 .acute-below-one{display:flex;align-items:flex-start;gap:5px;color:var(--mute);font-size:11px;margin-top:6px;line-height:1.35;cursor:pointer}
 .acute-below-one input[type=checkbox]{width:15px;height:15px;flex:0 0 15px;margin:1px 0 0}
+
+/* WHMIS 2022 HPA scope, inhalation and pressure inputs use CLP card styling */
+#scope-inputs select,#inhalation-inputs select,#pressure-inputs select,#scope-inputs input,#inhalation-inputs input,#pressure-inputs input{width:100%;max-width:100%}
+#scope-inputs .g>div,#inhalation-inputs .g>div,#pressure-inputs .g>div{min-width:0}
+#pressure-inputs .check{display:flex;gap:8px;align-items:center;margin:8px 0 13px}
+#pressure-inputs .check input{flex:0 0 auto;width:17px;height:17px}
+tbody tr[data-expanded=false] td.ing-extra{display:none}
+tbody tr[data-expanded=true] td.ing-extra{background:var(--panel);padding:8px;border-radius:7px}
+td.ing-extra::before{content:attr(data-display-label);font-size:11px;font-weight:650;color:var(--mute)}
+td.ing-extra .small-note{display:block;font-size:10px;color:var(--mute);margin-top:3px}
+.whmis-scope-status{border-left:3px solid var(--accent);background:var(--bg);padding:10px 12px;margin:10px 0;border-radius:5px}
+.whmis-scope-status.warning-status{border-color:#b78930;background:var(--warn-bg)}
+.whmis-scope-status p{margin:4px 0;font-size:12px}
+@media(max-width:700px){td.ing-extra{grid-column:auto}}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -161,10 +175,52 @@ tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-ac
  <div class="workspace-heading"><h2>Formulation</h2><span class="hint">Edit inputs &middot; calculate provisional results</span></div>
  <div class="card" id="mixture-card"><h2>1. Mixture information</h2>
   <div class="g g2"><div><label for="product-name">Name</label><input id="product-name" placeholder="Product / trade name" style="width:100%"></div><div><label>Concentration basis</label><div style="padding:6px 0"><span class="mini-tag">Mass % w/w</span> <span class="hint">Fixed in pilot</span></div></div></div>
-  <p class="hint" style="margin:8px 0 0">Ingredient concentrations must total 100%. This pilot does not implement gas volume-based calculations.</p>
+  <p class="hint" style="margin:8px 0 0">Ingredient concentrations must total 100%. Gas inhalation uses a separate % v/v field for each ingredient; other implemented health pathways use % w/w.</p>
  </div>
+
+<div class="card" id="scope-inputs">
+  <h2>2. Canadian HPA supplier scope</h2>
+  <p class="hint">Preliminary federal supplier applicability screen. Exclusions must be supported by evidence; an excluded product may still be hazardous or subject to other rules.</p>
+  <div class="g g2">
+    <div><label for="scope-activity">Activity</label><select id="scope-activity"><option value="unknown">Not established</option><option value="sell">Sell / distribute in Canada</option><option value="import">Import into Canada</option><option value="sell_import">Sell and import</option><option value="internal_use">Internal use only / no sale or import specified</option></select></div>
+    <div><label for="scope-workplace">Intended for use, handling or storage in a Canadian workplace?</label><select id="scope-workplace"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No — verified</option></select></div>
+    <div style="grid-column:1/-1"><label for="scope-exclusion">Section 12 or Schedule 1 exemption (supplier declaration)</label>
+      <select id="scope-exclusion">
+        <option value="unknown">Not reviewed — require scope review</option>
+        <option value="none_confirmed">Reviewed — no listed exclusion identified</option>
+        <optgroup label="HPA section 12"><option value="radioactive_nuclear_substance">12(d) Radioactive nuclear substance</option><option value="hazardous_waste">12(e) Hazardous waste sold for recovery or intended for disposal</option><option value="tobacco_or_tobacco_product">12(h) Tobacco or tobacco product</option><option value="manufactured_article">12(i) Manufactured article</option></optgroup>
+        <optgroup label="HPA Schedule 1"><option value="pest_control_product">Item 1 — Pest control product</option><option value="explosive_product">Item 2 — Explosive</option><option value="food_drug_cosmetic_device">Item 3 — Cosmetic, device, drug or food</option><option value="consumer_product">Item 4 — Consumer product</option><option value="wood_product">Item 5 — Wood or wood product</option></optgroup>
+      </select></div>
+  </div>
+</div>
+<div class="card" id="inhalation-inputs">
+ <h2>3. Acute toxicity — inhalation (HPR 8.1)</h2>
+ <p class="hint">Select gas, vapour or dust/mist. The substance LC₅₀ is entered per ingredient under Edit details. Tested-mixture data take precedence over bridging and ingredient additivity.</p>
+ <div class="g g2">
+  <div><label for="inh-form">Exposure form</label><select id="inh-form"><option value="">Not assessed</option><option value="gas">Gas (ppmV; % v/v concentrations)</option><option value="vapour">Vapour (mg/L; % w/w)</option><option value="dustMist">Dust or mist (mg/L; % w/w)</option></select></div>
+  <div><label for="inh-whole">Whole-mixture LC₅₀ (optional)</label><input id="inh-whole" type="number" min="0" step="any" placeholder="Test result"></div>
+  <div><label for="inh-whole-hours">Whole-mixture LC₅₀ test duration</label><select id="inh-whole-hours"><option value="4">4 hours</option><option value="1">1 hour — convert to 4-hour basis</option></select></div>
+  <div><label for="inh-bridge">Bridging candidate (only with documentary evidence)</label><select id="inh-bridge"><option value="">None entered</option><option value="1">Category 1</option><option value="2">Category 2</option><option value="3">Category 3</option><option value="4">Category 4</option></select></div>
+  <div style="grid-column:1/-1"><label for="inh-bridge-evidence">Bridging principle and supporting evidence reference</label><input id="inh-bridge-evidence" placeholder="e.g. HPR 2.3 dilution with tested mixture study ID"></div>
+ </div>
+ <p class="hint">Other inhalation exceptions, including toxic gases released on contact with water, still require expert review.</p>
+</div>
+<div class="card" id="pressure-inputs">
+ <h2>4. Chemicals Under Pressure (HPR 7.21)</h2>
+ <label class="check"><input id="pressure-assess" type="checkbox"> Evaluate Chemicals Under Pressure using package and physical-property data</label>
+ <div class="g g2">
+  <div><label for="pressure-state">Physical state of contents</label><select id="pressure-state"><option value="">Unknown</option><option value="liquid">Liquid</option><option value="solid">Solid / paste / powder</option><option value="gas">Gas (not eligible for this class)</option></select></div>
+  <div><label for="pressure-gas">Pressurised with gas?</label><select id="pressure-gas"><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+  <div><label for="pressure-aerosol">Aerosol dispenser?</label><select id="pressure-aerosol"><option value="">Unknown</option><option value="yes">Yes — HPR 7.3 applies</option><option value="no">No</option></select></div>
+  <div><label for="pressure-gup">Classified as gas under pressure (HPR 7.5)?</label><select id="pressure-gup"><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+  <div><label for="pressure-kpa">Gauge pressure at 20°C (kPa)</label><input id="pressure-kpa" type="number" min="0" step="any" placeholder="200 or more"></div>
+  <div><label for="pressure-flame">Flammable components (% by mass)</label><input id="pressure-flame" type="number" min="0" max="100" step="any" placeholder="0–100"></div>
+  <div><label for="pressure-heat">Mixture heat of combustion (kJ/g)</label><input id="pressure-heat" type="number" min="0" step="any" placeholder="Tested / derived value"></div>
+ </div>
+ <p class="hint">Requires defensible package and composition evidence. A GHS Rev.8 category is only proposed if the HPR eligibility conditions and data are complete.</p>
+</div>
  <div class="card" id="ingredients-card">
-  <div class="row justify"><h2>2. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
+  <div class="row justify"><h2>5. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
   <p class="hint">Enter ingredient concentrations and their individual oral, dermal, skin, eye and HHNOC information. Each ingredient has a compact hazard overview. Select Edit details for grouped fields. Blank acute toxicity fields are unknown, not evidence of safety.</p>
   <div class="scroller"><table><thead><tr><th>Ingredient</th><th>% w/w</th><th>Oral ATE</th><th>Oral category</th><th>Oral no hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no hazard</th><th>Skin</th><th>Skin evidence below 1%</th><th>Skin special</th><th>Eye</th><th>Eye evidence below 1%</th><th>Eye special</th><th>HHNOC</th><th>Remove</th></tr></thead><tbody id="rows"></tbody></table></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="small primary" type="button" id="calculate">Calculate WHMIS pilot</button></div>
@@ -172,8 +228,8 @@ tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-ac
 </section>
 <section aria-label="Classification results">
  <div class="workspace-heading"><h2>Classification results</h2><span class="mini-tag">Canada &middot; WHMIS 2022</span></div>
- <div class="card" id="results" aria-live="polite"><h2>3. WHMIS classification results</h2><p class="hint">Click Calculate to view classifications and audit trails.</p></div>
- <div class="card" id="source-card"><h2>4. Regulatory scope</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Full tested-mixture assessments, bridging, special ingredient pathways and other classes remain outside the calculation scope.</p></div>
+ <div class="card" id="results" aria-live="polite"><h2>3. WHMIS classification results</h2><p class="hint">Click Calculate to view classifications, HPA scope and regulatory audit trails.</p></div>
+ <div class="card" id="source-card"><h2>Regulatory references and limitations</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Only inhalation has a limited tested-mixture/bridging input. Oral/dermal, skin/eye and special ingredient pathways still require additional evidence and review.</p></div>
 </section>
 </main>
 <footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
