@@ -207,6 +207,8 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 #ingredients-card .ca-picker .ca-physical-note{font-size:11px;color:var(--mute)}
 @media(max-width:490px){#ingredients-card .ca-picker-head{align-items:start}#ingredients-card .ca-picker-tabs{width:100%}#ingredients-card .ca-picker-tabs button{flex:1}}
 
+.ca-hazard-chip-edit{color:var(--accent)!important;font-size:11.5px!important;padding:0 3px!important;min-height:22px!important;min-width:0!important;font-weight:650!important;line-height:1.25!important;text-align:left!important}
+#ingredients-card .ca-hazard-chip-edit:hover{text-decoration:underline;background:transparent!important}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -403,7 +405,21 @@ function displayChips(){
   chip.className="ca-hazard-chip"+(entry.group==="physical"?" manual":"");
   if(entry.group==="physical")chip.title="Raw material declaration only — finished mixture physical classification not calculated";
   const code=document.createElement("strong");code.textContent=entry.code||"CA";
-  const label=document.createElement("span");label.textContent=entry.label;
+  const label=document.createElement("button");label.type="button";label.className="ca-hazard-chip-edit";
+  label.textContent=entry.label;label.title="Edit "+entry.label;
+  label.setAttribute("aria-label","Edit "+entry.label);
+  label.addEventListener("click",()=>{
+   if(entry.field){
+    tr.dataset.expanded="true";toggle.setAttribute("aria-expanded","true");
+    toggle.textContent="Close details ▾";
+    const original=tr.querySelector('[data-field="'+entry.field+'"]');
+    original?.focus();original?.scrollIntoView({block:"nearest"});
+   }else{
+    pickerGroup="physical";
+    pickerTd.querySelectorAll("[data-ca-group]").forEach(other=>other.setAttribute("aria-pressed",String(other.dataset.caGroup==="physical")));
+    query.value=entry.family;renderSuggestions();query.focus();
+   }
+  });
   const remove=document.createElement("button");remove.type="button";remove.textContent="×";
   remove.setAttribute("aria-label","Remove "+entry.label+(entry.code?" "+entry.code:""));
   remove.title="Remove "+entry.label;
@@ -422,6 +438,9 @@ function displayChips(){
  }
  if(get("inhSafe").checked)evidence.push("Inhalation — evidenced not acute");
  else if(get("inhATE").value!=="")evidence.push("Inhalation LC50 "+get("inhATE").value);
+ for(const [name,cat,ate] of [["oral","oralCat","oralATE"],["dermal","dermalCat","dermalATE"],["inhalation","inhCat","inhATE"]]){
+  if(get(cat).value&&get(ate).value)evidence.push(name+" ATE takes precedence over category — verify");
+ }
  if(get("specialSkin").checked||get("specialEye").checked)evidence.push("Special chemistry — review");
  evidence.forEach(label=>{
   const span=document.createElement("span");span.className="ing-chip"+(/review/.test(label)?" review":"");
