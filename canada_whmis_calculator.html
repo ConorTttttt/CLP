@@ -175,6 +175,8 @@ tbody tr td.ing-extra{grid-column:auto}
 #health-mixture-inputs label.check{display:flex;gap:7px;align-items:flex-start;margin:9px 0}
 #health-mixture-inputs label.check input{width:17px;height:17px;flex:0 0 17px}
 tbody tr[data-expanded=true] td.health-field{border-top:1px solid var(--line)}
+/* Prevent legacy sixteenth-column styling from widening the first appended inhalation field. */
+tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
