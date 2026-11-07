@@ -31,14 +31,62 @@ A scope exclusion is **not** evidence that a chemical is non-hazardous, and does
 
 HPA **sections 13–14** prescribe supplier label/SDS duties for covered sales/imports. **Section 14.2** prohibits false or misleading hazard information; **section 14.3** requires copies of labels/SDS and other supplier records, normally retained for six years after the end of the relevant year. Preserve classification evidence and version provenance for these workflows.
 
-**Status:** source manifest and regression checks added; **no new runtime applicability or classification logic** yet. Complete the HPR classification pathways before generating final compliance claims.
+**Implementation:** a user-declaration-based federal supplier Part II scope screen is now available in `verification/whmis_extended.js`. Its status is separate from the mixture hazard result; it does not decide legal scope definitively or establish absence of hazards.
 
 ## Implementation
 
 - Browser pilot: `canada_whmis_calculator.html`.
 - Core engine: `verification/whmis_engine.js` — no EU CLP code reused.
 - Skin/eye additive module: `verification/whmis_skin_eye.js`.
-- Verification: `verification/test_whmis.js` and `verification/test_whmis_skin_eye.js`; `npm test` executes both and all EU CLP tests.
+- New HPA scope, HPR 8.1 inhalation and HPR 7.21 Chemicals Under Pressure pilot: `verification/whmis_extended.js`.
+- The full list of 32 legally active classes and implementation status: `verification/whmis_hazard_catalog.js` (5 partially implemented; 27 unimplemented).
+- Verification: `verification/test_whmis.js`, `verification/test_whmis_skin_eye.js`, `verification/test_whmis_extended.js`, `verification/test_whmis_hpa_manifest.js`, `verification/test_whmis_guidance.js`, `verification/test_whmis_ui.js`; `npm test` executes these and existing EU CLP suites.
+
+## New WHMIS 2022 classification work (2026-11-07)
+
+### Canadian supplier applicability (HPA 2, 12, 13–15, Schedules 1–2)
+
+The calculator now accepts **supplier action** (sell/import/internal use), **Canadian workplace intended use**, and a **reviewed exclusion declaration**. It returns one of several *supplier-scope screening* statuses. The results remain separate from the chemical hazard assessments. The user must verify product definitions in other federal Acts and provincial/territorial duties; no algorithm automatically decides legal exemption.
+
+The browser catalogue lists 20 active HPA physical hazard classes plus 12 health classes and marks each **partial** or **not implemented**. The repealed physical item 19 is omitted.
+
+### Acute inhalation toxicity (HPR 8.1.1–8.1.7)
+
+New route-specific candidate classifications for gas, vapour and dust/mist:
+
+| Form | Category 1 ≤ | Category 2 ≤ | Category 3 ≤ | Category 4 ≤ | Unit |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Gases | 100 | 500 | 2500 | 20000 | ppmV |
+| Vapours | 0.5 | 2 | 10 | 20 | mg/L |
+| Dusts/mists | 0.05 | 0.5 | 1 | 5 | mg/L |
+
+Values are four-hour LC₅₀ (or four-hour equivalents). Under HPR 8.1.1(4), one-hour gas/vapour LC₅₀ is divided by 2 and one-hour dust/mist LC₅₀ by 4. HPR 8.1.7 category-to-point estimates apply where an ingredient is category-only. Ingredient addition follows HPR 8.1.5/8.1.6 including the **>10% unknown** numerator adjustment; HPR 3(1)(e) unknown-toxicity supplemental wording remains **English review text only**, not a complete label/SDS.
+
+**Concentration bases are distinct:** gas inhalation mixture ATE calculations require a separately entered **% v/v** for every gas component; vapour/dust/mist use ingredient **% w/w**. The calculator never reuses mass percentages as gas volume percentages.
+
+When a user supplies whole-mixture LC₅₀, that provisional candidate is evaluated **before** bridging or ingredient additivity (HPR 8.1.3). A bridging category is only accepted if a supporting evidence reference is entered (HPR 8.1.4). The software does not itself validate study quality or test all applicable bridging conditions, so expert review remains required.
+
+**Not implemented:** water-reactive toxic gas pathways (HPR 8.1.1(2), 3(1)(f)–(g)), inhalation point estimates requiring scientific extrapolation beyond established input methods, inhalation LC₅₀ above category 4 requiring application of the HPR 8.1.5 comparable-range rule, and complete label/SDS selection. The engine returns no negative hazard clearance when data are incomplete.
+
+### Chemicals Under Pressure (HPR 7.21–7.21.1)
+
+The evaluator requires a **liquid or solid**, gas pressurisation, a **non-aerosol receptacle**, confirmation the product is **not a gas under pressure** under HPR 7.5, and a **gauge pressure ≥200 kPa at 20°C**. Category 1/2/3 is assessed from user-entered **flammable component % by mass** and **specific heat of combustion (kJ/g)** according to the exact legal table.
+
+Aerosol and gas-under-pressure exclusions suppress this hazard class; other independent health hazards remain assessable. Missing input yields **requires_data**, never an invented category. Provisional hazard codes H282/H283/H284 and signal words are shown as **reference previews**, not a legally complete bilingual supplier label.
+
+**Tests:** `verification/test_whmis_extended.js` exercises the 200 kPa, 1%, 85%, 20 kJ/g boundaries and exclusion cases, inhalation 1-hour conversions, source HPR category points, whole-mixture/bridging precedence, HPA scope and missing-data safeguards.
+
+### How to run this branch
+
+```bash
+git fetch origin
+git switch feature/canada-whmis-2022-foundation
+git pull --ff-only origin feature/canada-whmis-2022-foundation
+npm test
+python3 -m http.server 8081
+```
+
+Open `http://localhost:8081/canada_whmis_calculator.html`. Use **Load example** for an illustrative vapour inhalation calculation, then expand individual ingredients to enter inhalation LC₅₀ or category. To assess Chemicals Under Pressure, tick its evaluation checkbox and enter *all* relevant package conditions and physical-property evidence. Results remain provisional until legally and scientifically verified.
 
 ### Implemented ingredient-based provisional pathways
 
@@ -91,7 +139,7 @@ The uploaded guidance explains the full HPR classification system, but this PR *
 - **GHS Revision 8 (2019)**: UN publication `ST/SG/AC.10/30/Rev.8`, 570 PDF pages. Uploaded `GHS8.pdf` SHA-256: `fea9464415289f17a3ca55b27fdea350bb078c25192523bc425cbc7039dd88a8`. Source map: `data/canada/ghs_rev8_source_map.json`.
 - Canada adopted the Revision 8 **Chemicals Under Pressure** provisions; other Revision 8 changes are **not automatically Canadian requirements**. Authority: HPR **7.21–7.21.1**, and Health Canada's WHMIS supplier guidance.
 
-### Chemicals Under Pressure — reference crosswalk (not implemented)
+### Chemicals Under Pressure — rule crosswalk and provisional implementation
 
 The GHS source is section **2.3.2**, printed pages **61–63**, PDF pages **67–69**:
 
@@ -107,12 +155,12 @@ The GHS source is section **2.3.2**, printed pages **61–63**, PDF pages **67�
 
 **Source anomalies worth preserving:** GHS 2.3.2.2.1 refers to Table 2.3.2 even though the actual criteria appear in **Table 2.3.3**. Its diagram 2.3.2 has a **>200 kPa** test, conflicting with the GHS's own **>=200 kPa** definition and HPR 7.21; **Canadian HPR >=200 kPa governs**. The GHS's typical 50% liquids/solids comment is non-binding explanatory guidance, not an extra criterion.
 
-**Implementation safeguard:** Do not classify a product when required pressure, mass percentages or heat-of-combustion evidence is missing; return **undetermined / needs review**. Also check all HPR hazard-class exclusions rather than assuming mutual exclusion with unrelated health hazards. The current pilot does **not** yet classify chemicals under pressure.
+**Implementation safeguard:** Do not classify a product when required pressure, mass percentages or heat-of-combustion evidence is missing; return **undetermined / needs review**. Also check all HPR hazard-class exclusions rather than assuming mutual exclusion with unrelated health hazards. The current pilot **provisionally assesses** Chemicals Under Pressure on explicit user-entered packaging, pressure, flammable fraction and heat data (`verification/whmis_extended.js`). The calculator does not itself measure those parameters, calculate heat from an ingredient list, or generate fully compliant bilingual labels.
 
 ## Next work
 
-1. Implement whole-mixture/bridging and section 2.4–2.6 evidence precedence.
-2. Implement HPR 8.1 inhalation, including form, units, four-hour LC50 conversion and water-activated toxicants.
+1. Implement whole-mixture/bridging for oral/dermal, skin/eye and other health hazards and verify HPR 2.4–2.6 evidence precedence; the inhalation panel currently accepts limited whole-mixture LC₅₀ and bridging candidates only.
+2. Complete HPR 8.1 inhalation beyond the implemented gas/vapour/dust-mist ATE, 1-hour to 4-hour conversion and limited tested-mixture/bridging routes, particularly water-contact release of toxic gases and further scientific evidence handling.
 3. Implement and test special chemistry under 8.2.11(3) and 8.3.11(3).
 4. Implement sensitisation, CMR, STOT, aspiration and the remaining physical hazards.
 5. Integrate Canadian Schedule 4, labels, bilingual content and SDS requirements after rule validation.
