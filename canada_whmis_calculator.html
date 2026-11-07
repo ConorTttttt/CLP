@@ -183,11 +183,11 @@ acute[route]=get(route+"Safe").checked?{notAcute:true}:ate!==""?{ate:Number(ate)
 }
 return {name:get("name").value,pct:get("pct").value,acute,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
 });}
-function show(){const r=WHMIS.classify({ingredients:read()});let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
+function show(){const ingredients=read();const r=WHMIS.classify({ingredients});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
 html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
 for(const c of r.calculations){
-html+='<details open><summary>'+safe(c.label)+' — '+safe(c.status)+'</summary><p>'+safe(c.ref)+'</p>';
+html+='<details class="calc-panel" open><summary>'+safe(c.label)+' — '+safe(c.status)+'</summary><p>'+safe(c.ref)+'</p>';
 if(c.ate!=null)html+='<strong>Mixture ATE: '+safe(c.ate.toPrecision(7))+' '+safe(c.unit)+'</strong>';
 html+='<div class="small">'+(c.steps||[]).map(s=>'<p>'+safe(s)+'</p>').join("")+'</div>';
 html+=(c.notes||[]).map(s=>'<p class="warning">'+safe(s)+'</p>').join("")+'</details>';
@@ -198,6 +198,11 @@ results.innerHTML=html;
 document.getElementById("add").addEventListener("click",()=>add());
 document.getElementById("calculate").addEventListener("click",show);
 document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true,skin:"1A",eye:"1"});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true});show()});
-add({name:"Ingredient 1",pct:100});
+function updateTotal(){const total=read().reduce((n,i)=>n+(Number(i.pct)||0),0);const el=document.getElementById("tot");el.textContent="· "+Number(total.toFixed(4))+"% w/w";el.className="total"+(Math.abs(total-100)>0.01?" invalid":"");}
+let refreshTimer;
+rows.addEventListener("input",()=>{updateTotal();clearTimeout(refreshTimer);refreshTimer=setTimeout(show,170)});
+rows.addEventListener("change",()=>{updateTotal();clearTimeout(refreshTimer);refreshTimer=setTimeout(show,170)});
+document.getElementById("product-name").addEventListener("input",()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(show,170)});
+add({name:"Ingredient 1",pct:100});updateTotal();
 })();
 </script></body></html>
