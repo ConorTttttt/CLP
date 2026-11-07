@@ -47,8 +47,12 @@ function evaluate(input){
  function triggers(key,allowed,limit){
    const out=[];
    ingredients.forEach((i,idx)=>{
-     const cat=category(h(i)[key]),mass=pct(i);
-     if(!cat||!allowed.includes(cat)||mass===null||mass<=0)return;
+     const cat=category(h(i)[key]);
+     if(!cat||!allowed.includes(cat))return;
+     const isGas=h(i).ingredientState==="gas";
+     const mass=isGas?number(i.volumePct):pct(i);
+     if(isGas&&mass===null)review.push(labelFor(key)+": "+sourceName(i,idx)+" requires gas % v/v, not mass % w/w.");
+     if(mass===null||mass<=0)return;
      const min=typeof limit==="function"?limit(i,cat):limit[cat]??limit;
      if(min===null){
        review.push(labelFor(key)+": "+sourceName(i,idx)+" ("+cat+") requires concentration-basis verification.");
@@ -81,7 +85,12 @@ function evaluate(input){
    const matches=[],missingBasis=[];
    ingredients.forEach((i,ix)=>{
      const cat=category(h(i)[key]);if(!["1","1A","1B"].includes(cat))return;
-     const gas=h(i).ingredientState==="gas";
+     const state=h(i).ingredientState;
+     if(!["gas","liquid","solid"].includes(state)){
+       missingBasis.push(sourceName(i,ix)+": confirm physical state (gas, liquid or solid) before applying sensitiser cut-offs.");
+       return;
+     }
+     const gas=state==="gas";
      const conc=gas?number(i.volumePct):pct(i);
      if(conc===null){
        missingBasis.push(sourceName(i,ix)+": a gas sensitizer requires % v/v; no % w/w substitution.");
@@ -164,7 +173,7 @@ function evaluate(input){
  // ingredients EACH present >=1%, plus measured 40°C viscosity <=20.5.
  // Separated layers follow HPR 8.10.5(b) and are withheld unless a
  // complete, separately verified layer-composition workflow exists.
- const asp=ingredients.flatMap((i,ix)=>h(i).aspiration===true&&meets(pct(i),1)?
+ const asp=ingredients.flatMap((i,ix)=>h(i).aspiration===true&&h(i).ingredientState!=="gas"&&meets(pct(i),1)?
   [{ingredient:sourceName(i,ix),pct:pct(i),detail:"aspiration Cat 1 ingredient ≥1%"}]:[]);
  const total=asp.reduce((v,x)=>v+x.pct,0);
  const viscosity=number(opts.aspirationViscosity40);
