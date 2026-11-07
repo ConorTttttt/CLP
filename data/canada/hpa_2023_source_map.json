@@ -1,0 +1,383 @@
+{
+  "id": "CA-HPA-RSC1985-CH3",
+  "title": "Hazardous Products Act",
+  "citations": [
+    "R.S.C. 1985, c. H-3",
+    "HPA sections 2, 12–15, 18, Schedules 1–2"
+  ],
+  "jurisdiction": "CA",
+  "documentType": "federal_statute",
+  "sourceLanguage": "en",
+  "userUploadedFile": "Hazardous products.xml",
+  "fileSHA256": "88c99885aa0869c611accb6265d834e744508e72d7562a2acb252eb045a96a6c",
+  "sourceBytes": 146055,
+  "xmlMetadata": {
+    "pitDate": "2023-01-14",
+    "currentDate": "2023-01-25",
+    "lastAmendedDate": "2023-01-14",
+    "consolidationBillDate": "2023-01-26"
+  },
+  "officialOnlineCheck": {
+    "checkedDate": "2026-11-07",
+    "officialPageLastAmended": "2023-01-14",
+    "officialPageCurrentTo": "2026-09-30",
+    "result": "No later amendment reported. Schedule 1 exclusions and Schedule 2 class names match official online text.",
+    "sourceUrl": "https://laws-lois.justice.gc.ca/eng/acts/H-3/FullText.html"
+  },
+  "sourceHierarchy": "This Act defines federally regulated hazardous products and the recognized classes. Hazardous Products Regulations SOR/2015-17 govern classification categories, criteria and hazard communication. UN GHS Rev.7 and adopted Rev.8 provisions are supporting technical sources; do not import unadopted classes.",
+  "importantSections": [
+    {
+      "section": "2",
+      "use": "Definition of hazardous product (classified in a category/subcategory listed in Schedule 2 according to regulations); substance, mixture, manufactured article, sell, import, supplier, container and label."
+    },
+    {
+      "section": "12",
+      "use": "Limits application of HPA Part II to sale or import of specified product types (also refers to Schedule 1)."
+    },
+    {
+      "section": "13",
+      "use": "Selling covered hazardous products generally requires a compliant supplier label and SDS, subject to specific legal exceptions."
+    },
+    {
+      "section": "14",
+      "use": "Importing covered hazardous products generally requires a compliant supplier label and SDS, subject to specific legal exceptions."
+    },
+    {
+      "section": "14.1",
+      "use": "Additional restrictions on sale/import of asbestos-containing hazardous products."
+    },
+    {
+      "section": "14.2",
+      "use": "Prohibits misleading or false hazard labels, SDSs or other relevant hazard information."
+    },
+    {
+      "section": "14.3",
+      "use": "Specified supplier records: true copies of label and SDS, acquisition/sales information; retention normally six years after the year to which they relate."
+    },
+    {
+      "section": "15(1)",
+      "use": "Regulatory power to establish categories and subcategories and prescribe classification, labels, SDS and exemptions."
+    },
+    {
+      "section": "15(3)–(7)",
+      "use": "Rules for incorporation of external materials, including incorporation as amended from time to time; verify incorporation language in each HPR rule."
+    },
+    {
+      "section": "18",
+      "use": "Schedule 1 exclusions and Schedule 2 hazard classes may be amended by order."
+    },
+    {
+      "section": "Schedule 1",
+      "use": "Five groups to which Part II does not apply via section 12(j)."
+    },
+    {
+      "section": "Schedule 2",
+      "use": "20 active physical and 12 active health hazard classes; one repealed physical entry 19."
+    }
+  ],
+  "scopeExclusions": {
+    "interpretation": "Exclusions relate to application of HPA Part II to the sale or importation of the described products. They do NOT prove a product is non-hazardous and do not determine unrelated occupational, transport or provincial duties.",
+    "section12Direct": [
+      {
+        "section": "12(d)",
+        "type": "radioactive_nuclear_substance",
+        "wording": "nuclear substance within the meaning of the Nuclear Safety and Control Act that is radioactive",
+        "needsExternalDefinition": true
+      },
+      {
+        "section": "12(e)",
+        "type": "hazardous_waste",
+        "wording": "hazardous product sold for recycling or recovery or intended for disposal"
+      },
+      {
+        "section": "12(h)",
+        "type": "tobacco_or_tobacco_product",
+        "wording": "tobacco or a tobacco product as defined in section 2 of the Tobacco and Vaping Products Act",
+        "needsExternalDefinition": true
+      },
+      {
+        "section": "12(i)",
+        "type": "manufactured_article",
+        "wording": "manufactured article",
+        "definition": "HPA section 2; article formed to a specific shape/design, intended use depends in whole or part on that form, and no hazardous-product exposure under installation/normal use"
+      }
+    ],
+    "schedule1": [
+      {
+        "item": 1,
+        "type": "pest_control_product",
+        "wording": "Any pest control product as defined in subsection 2(1) of the Pest Control Products Act",
+        "needsExternalDefinition": true
+      },
+      {
+        "item": 2,
+        "type": "explosive_product",
+        "wording": "Any explosive as defined in section 2 of the Explosives Act",
+        "needsExternalDefinition": true
+      },
+      {
+        "item": 3,
+        "type": "food_drug_cosmetic_device",
+        "wording": "Any cosmetic, device, drug or food, as defined in section 2 of the Food and Drugs Act",
+        "needsExternalDefinition": true
+      },
+      {
+        "item": 4,
+        "type": "consumer_product",
+        "wording": "Any consumer product as defined in section 2 of the Canada Consumer Product Safety Act",
+        "needsExternalDefinition": true
+      },
+      {
+        "item": 5,
+        "type": "wood_product",
+        "wording": "Any wood or product made of wood"
+      }
+    ]
+  },
+  "schedule2": {
+    "physical": [
+      {
+        "item": 1,
+        "code": "HPA-S2-P01",
+        "name": "Explosives",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 2,
+        "code": "HPA-S2-P02",
+        "name": "Flammable gases",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 3,
+        "code": "HPA-S2-P03",
+        "name": "Aerosols",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 4,
+        "code": "HPA-S2-P04",
+        "name": "Oxidizing gases",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 5,
+        "code": "HPA-S2-P05",
+        "name": "Gases under pressure",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 6,
+        "code": "HPA-S2-P06",
+        "name": "Flammable liquids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 7,
+        "code": "HPA-S2-P07",
+        "name": "Flammable solids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 8,
+        "code": "HPA-S2-P08",
+        "name": "Self-reactive substances and mixtures",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 9,
+        "code": "HPA-S2-P09",
+        "name": "Pyrophoric liquids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 10,
+        "code": "HPA-S2-P10",
+        "name": "Pyrophoric solids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 11,
+        "code": "HPA-S2-P11",
+        "name": "Self-heating substances and mixtures",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 12,
+        "code": "HPA-S2-P12",
+        "name": "Substances and mixtures which, in contact with water, emit flammable gases",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 13,
+        "code": "HPA-S2-P13",
+        "name": "Oxidizing liquids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 14,
+        "code": "HPA-S2-P14",
+        "name": "Oxidizing solids",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 15,
+        "code": "HPA-S2-P15",
+        "name": "Organic peroxides",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 16,
+        "code": "HPA-S2-P16",
+        "name": "Corrosive to metals",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 17,
+        "code": "HPA-S2-P17",
+        "name": "Combustible dusts",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 18,
+        "code": "HPA-S2-P18",
+        "name": "Simple asphyxiants",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 19,
+        "code": "HPA-S2-P19",
+        "name": null,
+        "status": "repealed",
+        "repealReference": "SOR/2022-273, s. 2"
+      },
+      {
+        "item": 20,
+        "code": "HPA-S2-P20",
+        "name": "Physical hazards not otherwise classified",
+        "status": "active",
+        "repealReference": null
+      },
+      {
+        "item": 21,
+        "code": "HPA-S2-P21",
+        "name": "Chemicals under pressure",
+        "status": "active",
+        "repealReference": null
+      }
+    ],
+    "health": [
+      {
+        "item": 1,
+        "code": "HPA-S2-H01",
+        "name": "Acute toxicity",
+        "status": "active"
+      },
+      {
+        "item": 2,
+        "code": "HPA-S2-H02",
+        "name": "Skin corrosion/irritation",
+        "status": "active"
+      },
+      {
+        "item": 3,
+        "code": "HPA-S2-H03",
+        "name": "Serious eye damage/eye irritation",
+        "status": "active"
+      },
+      {
+        "item": 4,
+        "code": "HPA-S2-H04",
+        "name": "Respiratory or skin sensitization",
+        "status": "active"
+      },
+      {
+        "item": 5,
+        "code": "HPA-S2-H05",
+        "name": "Germ cell mutagenicity",
+        "status": "active"
+      },
+      {
+        "item": 6,
+        "code": "HPA-S2-H06",
+        "name": "Carcinogenicity",
+        "status": "active"
+      },
+      {
+        "item": 7,
+        "code": "HPA-S2-H07",
+        "name": "Reproductive toxicity",
+        "status": "active"
+      },
+      {
+        "item": 8,
+        "code": "HPA-S2-H08",
+        "name": "Specific target organ toxicity — single exposure",
+        "status": "active"
+      },
+      {
+        "item": 9,
+        "code": "HPA-S2-H09",
+        "name": "Specific target organ toxicity — repeated exposure",
+        "status": "active"
+      },
+      {
+        "item": 10,
+        "code": "HPA-S2-H10",
+        "name": "Aspiration hazard",
+        "status": "active"
+      },
+      {
+        "item": 11,
+        "code": "HPA-S2-H11",
+        "name": "Biohazardous infectious materials",
+        "status": "active"
+      },
+      {
+        "item": 12,
+        "code": "HPA-S2-H12",
+        "name": "Health hazards not otherwise classified",
+        "status": "active"
+      }
+    ],
+    "counts": {
+      "physicalActive": 20,
+      "physicalRepealed": 1,
+      "healthActive": 12,
+      "activeTotal": 32
+    },
+    "notListedInSchedule2": [
+      "Hazardous to the aquatic environment",
+      "Hazardous to the ozone layer"
+    ],
+    "note": "Schedule 2 lists classes only; adopted subcategories, cutoff values, evidence routes and classification methods must be sourced from the HPR. Explicit absence from HPA Schedule 2 is not an instruction to exclude environmental information from every SDS."
+  },
+  "implementationRecommendations": [
+    "Use the schedule2 active list as legally listed classes, NOT as proof the current pilot can assess each one.",
+    "Before a regulatory result, ask whether the user is evaluating supply/import for workplace use in Canada and whether section 12 or Schedule 1 excludes the product; allow an unknown/needing-legal-review status.",
+    "Do not call exempt products 'non-hazardous'; distinguish out of scope from not classified.",
+    "Do not use simple name keyword matching to determine exemptions that refer to definitions in other Acts.",
+    "Do not treat repealed Schedule 2 physical item 19 as an active hazard class.",
+    "Preserve supporting evidence and applicability decisions for audit trail; keep classification engine code unchanged until individual HPR pathways are validated.",
+    "Separate federal supplier HPA/HPR duties from provincial/territorial workplace obligations."
+  ],
+  "extractionStatus": "Source XML parsed; Schedule 1 five entries and Schedule 2 33 entries crosschecked with current Justice Canada online Act. Source map is NOT a comprehensive independent legal review."
+}
