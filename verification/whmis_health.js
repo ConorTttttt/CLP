@@ -26,6 +26,14 @@ function evaluate(input){
  const ingredients=Array.isArray(input&&input.ingredients)?input.ingredients:[],
        opts=input&&input.healthMixture||{},
        outcomes=[],calculations=[],review=[];
+ const healthConcentration=(i,ix,endpoint)=>{
+   if(h(i).ingredientState==="gas"){
+     const value=number(i.volumePct);
+     if(value===null)review.push(endpoint+": "+sourceName(i,ix)+" is a gas and requires % v/v; mass % was not used.");
+     return value;
+   }
+   return pct(i);
+ };
  const blocked=opts.otherEvidence===true;
  if(blocked)review.push("User marked relevant whole-mixture or bridging evidence: ingredient-rule candidates are held for expert review; HPR evidence-order requirements must be applied per hazard class.");
  function report(key,label,ref,chosen,triggered,notes=[],details=[]){
@@ -123,8 +131,11 @@ function evaluate(input){
  // HPR 8.7.5(2) requires separate effects on or via lactation,
  // even if classified in Category 1A/1B/2 for fertility/development.
  const repro=standardCMR("repro","Reproductive Toxicity","HPR 8.7.3–8.7.4",0.1);
- const lactation=ingredients.flatMap((i,ix)=>h(i).reproLactation===true&&meets(pct(i),0.1)?
-   [{ingredient:sourceName(i,ix),pct:pct(i),detail:"effects on or via lactation (≥0.1%)"}]:[]);
+ const lactation=ingredients.flatMap((i,ix)=>{
+   if(h(i).reproLactation!==true)return [];
+   const concentration=healthConcentration(i,ix,"Lactation");
+   return meets(concentration,0.1)?[{ingredient:sourceName(i,ix),pct:concentration,detail:"effects on or via lactation (≥0.1%)"}]:[];
+ });
  report("repro-lactation","Reproductive Toxicity","HPR 8.7.5(1)–(2)",lactation.length?"Lactation":null,lactation,
   ["Lactation is a separate classification that may coexist with reproductive toxicity Category 1 or 2.",
    "HPR 8.7.5 mixture evidence exceptions and bridging provisions remain subject to review."]);
@@ -141,13 +152,15 @@ function evaluate(input){
  effects.forEach(effect=>{
    const flag=effect==="narcotic"?"stotSE3Narcotic":"stotSE3Respiratory";
    const eligible=ingredients.flatMap((i,ix)=>{
-     if(h(i)[flag]!==true||pct(i)===null||pct(i)<=0)return[];
+     if(h(i)[flag]!==true)return[];
+     const concentration=healthConcentration(i,ix,"STOT SE 3");
+     if(concentration===null||concentration<=0)return[];
      const elicitation=number(h(i).stotSE3EffectPct);
      if(elicitation!==null&&!(elicitation>0&&elicitation<=100)){
        review.push("STOT SE Category 3: invalid effect-eliciting concentration on "+sourceName(i,ix)+".");
        return[];
      }
-     return[{ingredient:sourceName(i,ix),pct:pct(i),cat:"3",effect,elicitation}];
+     return[{ingredient:sourceName(i,ix),pct:concentration,cat:"3",effect,elicitation}];
    });
    const singly=eligible.filter(x=>meets(x.pct,x.elicitation===null?20:x.elicitation));
    if(singly.length)direct.push(...singly.map(x=>({...x,detail:effect+" at ≥"+(x.elicitation===null?20:x.elicitation)+"% (8.8.5(1)(c))"})));
