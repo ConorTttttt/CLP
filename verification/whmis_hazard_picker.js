@@ -123,7 +123,16 @@ function apply(state,id){
  const fields={...(state?.fields||{})},manualPhysical=[...(state?.manualPhysical||[])];
  if(x.manual){
    if(x.group==="physical"&&!manualPhysical.includes(id))manualPhysical.push(id);
- }else if(x.field)fields[x.field]=x.value;
+ }else if(x.field){
+   fields[x.field]=x.value;
+   // Explicitly selecting an acute category contradicts any previously
+   // ticked "evidence of no acute hazard" checkbox for the same route.
+   // Keep measured ATEs unchanged: HPR uses those in preference to the
+   // category-point estimate, and the user must reconcile both sources.
+   if(x.field==="oralCat")fields.oralSafe=false;
+   if(x.field==="dermalCat")fields.dermalSafe=false;
+   if(x.field==="inhCat")fields.inhSafe=false;
+ }
  return {fields,manualPhysical};
 }
 function remove(state,id){
