@@ -12,6 +12,27 @@
 - Online reference: https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html
 - General law: HPR 2(2)-(9), 2.2–2.6. Schedule 4 contains prescribed classifications.
 
+## Hazardous Products Act — verified legal scope (uploaded 2026-11-07)
+
+- Source: **Hazardous Products Act**, R.S.C. 1985, c. H-3. User upload `Hazardous products.xml` (English Canada Justice XML), SHA-256 `88c99885aa0869c611accb6265d834e744508e72d7562a2acb252eb045a96a6c`, 146055 bytes; XML compilation `current-date=2023-01-25`, last amended **2023-01-14**.
+- Justice Canada website still reports last amended **2023-01-14** (official Schedule 1/2 cross-check on 2026-11-07; official page observed current to 2026-09-30).
+- Machine-readable **HPA source map**: `data/canada/hpa_2023_source_map.json`; verified by `verification/test_whmis_hpa_manifest.js`.
+- Official Act: https://laws-lois.justice.gc.ca/eng/acts/H-3/FullText.html
+
+### Scope and classification architecture
+
+The HPA **section 2** definition of “hazardous product” depends on classification under the HPR in a category/subcategory of a class listed in **Schedule 2**. **Section 15** authorizes category, classification and label/SDS regulations; these details belong in **SOR/2015-17**, not simply in the HPA master class list.
+
+The uploaded Schedule 2 has **20 active physical** and **12 active health** classes. Physical class item **19 is repealed**, not a selectable classification. Canadian-specific physical classes include *combustible dusts*, *simple asphyxiants*, *physical hazards not otherwise classified* and *chemicals under pressure*. Canadian-specific health classes include *biohazardous infectious materials* and *health hazards not otherwise classified*. UN environmental classes are not included in HPA Schedule 2 and must not be added as Canadian WHMIS hazard classifications simply because they appear in GHS Rev.7/8.
+
+**Section 12** excludes specified product types from **HPA Part II in respect of sale or importation**: radioactive nuclear substances, hazardous waste intended for disposal or sold for recycling/recovery, tobacco/tobacco products, manufactured articles, and the Schedule 1 products. **Schedule 1** has five entries: pest control products; explosives (within the *Explosives Act* definition); cosmetics/devices/drugs/food; consumer products (within the *Canada Consumer Product Safety Act* definition); and wood/wood products. Many entries rely on definitions in other Acts, which must be verified before an automated scope decision.
+
+A scope exclusion is **not** evidence that a chemical is non-hazardous, and does not automatically determine provincial/territorial workplace, transport or other regulatory duties. The classification UI should ultimately distinguish **out of federal supplier scope**, **in federal supplier scope**, and **undetermined/requires review** from **hazard classified**, **not classified** and **hazard not assessed**.
+
+HPA **sections 13–14** prescribe supplier label/SDS duties for covered sales/imports. **Section 14.2** prohibits false or misleading hazard information; **section 14.3** requires copies of labels/SDS and other supplier records, normally retained for six years after the end of the relevant year. Preserve classification evidence and version provenance for these workflows.
+
+**Status:** source manifest and regression checks added; **no new runtime applicability or classification logic** yet. Complete the HPR classification pathways before generating final compliance claims.
+
 ## Implementation
 
 - Browser pilot: `canada_whmis_calculator.html`.
