@@ -93,7 +93,7 @@ t("Crossing two inhalation category ranges uses minimum LC50",()=>{
 });
 t("Mixture vapour acute Cat 4 calculation using mass %",()=>{
  const r=calc([i("A",20,{ate:4}),i("B",80,notAcute)]);
- assert.equal(r.ate,80);assert.equal(r.category,null);
+ assert.equal(r.ate,20);assert.equal(r.category,4);
  const s=calc([i("A",50,{ate:1}),i("B",50,notAcute)]);
  assert.equal(s.ate,2);assert.equal(s.category,2);
 });
