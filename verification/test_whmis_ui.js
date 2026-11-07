@@ -18,7 +18,7 @@ t("formulation editor groups the existing 16 inputs in ingredient cards",()=>{
 for(const mark of ["tbody tr{display:grid","--ix-accent","td:nth-child(16)","id=\"rows\""])assert.ok(html.includes(mark),mark);
 });
 t("all WHMIS input fields are preserved for engine",()=>{
-for(const mark of ["data-field=\"name\"","data-field=\"pct\"","route+'ATE'","route+'Cat'","route+'Safe'","data-field=\"skin\"","data-field=\"eye\"",
+for(const mark of ["data-field=\"name\"","data-field=\"pct\"","route+'ATE","route+'Cat","route+'Safe","data-field=\"skin\"","data-field=\"eye\"",
 "data-field=\"skinEvidenceBelow1\"","data-field=\"eyeEvidenceBelow1\"","data-field=\"specialSkin\"","data-field=\"specialEye\"","data-field=\"hhnoc\""])assert.ok(html.includes(mark),"field "+mark);
 });
 t("clear provisional message and regulatory scope remain",()=>{
