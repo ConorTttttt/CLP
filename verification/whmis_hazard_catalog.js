@@ -220,63 +220,63 @@
     "name": "Respiratory or skin sensitization",
     "group": "health",
     "reference": "HPA Schedule 2 health item 4",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Ingredient-specific 1/1A/1B cut-offs; gas concentration basis and missing data require review.",
+    "rule": "HPR 8.4"
   },
   {
     "id": "HPA-S2-H05",
     "name": "Germ cell mutagenicity",
     "group": "health",
     "reference": "HPA Schedule 2 health item 5",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Category 1A/1B at 0.1% and Category 2 at 1% per ingredient; conclusive mixture evidence may override.",
+    "rule": "HPR 8.5"
   },
   {
     "id": "HPA-S2-H06",
     "name": "Carcinogenicity",
     "group": "health",
     "reference": "HPA Schedule 2 health item 6",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Category 1A/1B/2 at 0.1% per ingredient; conclusive mixture evidence may override.",
+    "rule": "HPR 8.6"
   },
   {
     "id": "HPA-S2-H07",
     "name": "Reproductive toxicity",
     "group": "health",
     "reference": "HPA Schedule 2 health item 7",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Category 1A/1B/2 at 0.1% per ingredient, with separately retained effects on/via lactation.",
+    "rule": "HPR 8.7"
   },
   {
     "id": "HPA-S2-H08",
     "name": "Specific target organ toxicity — single exposure",
     "group": "health",
     "reference": "HPA Schedule 2 health item 8",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Category 1/2 per ingredient and Category 3 direct/same-effect combination paths; provisional.",
+    "rule": "HPR 8.8"
   },
   {
     "id": "HPA-S2-H09",
     "name": "Specific target organ toxicity — repeated exposure",
     "group": "health",
     "reference": "HPA Schedule 2 health item 9",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Category 1/2 1% per ingredient, without invented summation.",
+    "rule": "HPR 8.9"
   },
   {
     "id": "HPA-S2-H10",
     "name": "Aspiration hazard",
     "group": "health",
     "reference": "HPA Schedule 2 health item 10",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 8"
+    "status": "partial",
+    "detail": "Ingredient cut-off sum and bulk viscosity at 40°C route; separated layers not implemented.",
+    "rule": "HPR 8.10"
   },
   {
     "id": "HPA-S2-H11",
