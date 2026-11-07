@@ -179,13 +179,13 @@
     "physical hazard classes except limited HPR 7.21",
     "HPR 8.1 water-reactive inhalation toxicants and special data/evidence pathways",
     "skin and eye special ingredient exceptions",
-    "sensitisation 8.4",
-    "mutagenicity 8.5",
-    "carcinogenicity 8.6",
-    "reproductive toxicity 8.7",
-    "STOT SE 8.8",
-    "STOT RE 8.9",
-    "aspiration 8.10",
+    "sensitisation 8.4 whole-mixture/bridging and evidence exceptions; ingredient cut-offs implemented",
+    "mutagenicity 8.5 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "carcinogenicity 8.6 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "reproductive toxicity 8.7 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "STOT SE 8.8 mixture data/bridging; ingredient paths implemented",
+    "STOT RE 8.9 mixture data/bridging; ingredient paths implemented",
+    "aspiration 8.10 phase-separated layer-specific route and tested-mixture/bridging; homogeneous ingredient route implemented",
     "biohazard 8.11",
     "full HHNOC 8.12",
     "label/SDS requirements"
@@ -199,7 +199,12 @@
       "HPR 8.3.11(1)-(2) additive eye route",
       "HPR 8.12.4 HHNOC ingredient trigger",
       "HPR 8.1.1/8.1.3–8.1.7: gas, vapour and dust/mist inhalation categories, LC50 1-hour conversion, mixture ATE and limited whole-mixture/bridging evidence",
-      "HPR 7.21–7.21.1: Chemicals Under Pressure category 1–3 assessment on explicit product/package evidence"
+      "HPR 7.21–7.21.1: Chemicals Under Pressure category 1–3 assessment on explicit product/package evidence",
+      "HPR 8.4.5: provisional respiratory and skin sensitisation ingredient cut-off screening, including 1A/1B and gas concentration distinction",
+      "HPR 8.5–8.7: provisional ingredient-trigger CMR screening and separate lactation classification",
+      "HPR 8.8.5: STOT SE Categories 1/2 and same-effect Category 3 direct/summation conditions",
+      "HPR 8.9.5: STOT RE Categories 1/2 ingredient triggers",
+      "HPR 8.10.5(a): homogeneous mixture aspiration Category 1 requiring 10% relevant ingredients and viscosity ≤20.5 at 40°C"
     ],
     "underExpertReview": [
       "HPR 8.2.11(3) and 8.3.11(3) special ingredients",
@@ -208,7 +213,11 @@
       "all other HPR health and physical classes",
       "HPR 8.1.1(2) water-reactive toxic gas release and supplemental labelling",
       "HPR 8.1.5 inhalation LC50 values above Category 4 comparable range",
-      "HPA section 12 supplier scope and Schedule 1 exclusions depend on declared product use"
+      "HPA section 12 supplier scope and Schedule 1 exclusions depend on declared product use",
+      "HPR 8.4–8.10 applicable whole-mixture evidence, restricted bridging, conclusive scientific exceptions, and HPR 2.4–2.9",
+      "HPR 8.10.5(b) phase-separated layers and layer-specific viscosity/composition",
+      "HPR 2(3)–(5) Schedule 4 prescribed classifications",
+      "Ingredient-specific lower concentration positive evidence under HPR 2.5(1)"
     ]
   },
   "healthCanadaGuidance": {
@@ -254,7 +263,15 @@
     "verification/whmis_engine.js",
     "verification/whmis_extended.js",
     "verification/whmis_hazard_catalog.js",
-    "verification/whmis_skin_eye.js"
+    "verification/whmis_skin_eye.js",
+    "verification/whmis_health.js"
   ],
-  "scopeStatus": "HPA scope screening is provisional, separate from HPR hazard classification and dependent on declared activity/intended workplace use/exclusions."
+  "scopeStatus": "HPA scope screening is provisional, separate from HPR hazard classification and dependent on declared activity/intended workplace use/exclusions.",
+  "healthMixtureRuleSource": "data/canada/hpr_health_mix_rule_manifest.json",
+  "hazardCoverageSummary": {
+    "totalHPAClasses": 32,
+    "partiallyAutomatedHazardFamilies": 12,
+    "notAutomatedHazardFamilies": 20,
+    "reference": "verification/whmis_hazard_catalog.js"
+  }
 }
