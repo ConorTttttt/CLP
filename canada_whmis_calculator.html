@@ -14,19 +14,26 @@ label{font-size:13px}details{margin-top:10px;border-top:1px solid #e2e9ee;paddin
 .small{font-size:12px}.outcome{border-left:4px solid #215c96;padding:8px 12px;margin:10px 0;background:#eff6ff}
 </style></head><body><main>
 <span class="tag">CA · WHMIS 2022 · Early pilot</span><h1>Canadian hazard classification</h1>
-<p class="muted">Independent Canadian Hazardous Products Regulations (SOR/2015-17) calculations. This pilot covers oral/dermal acute toxicity ATE and HHNOC ingredient triggers only. It is <strong>not a complete WHMIS classification</strong>.</p>
+<p class="muted">Independent Canadian Hazardous Products Regulations (SOR/2015-17) calculations. This pilot covers oral/dermal acute toxicity ATE, additive skin/eye ingredient screening and HHNOC ingredient triggers. Tested-mixture/bridging evidence and non-additive special-ingredient routes require separate review. It is <strong>not a complete WHMIS classification</strong>.</p>
 <div class="warning">Check whole-mixture evidence and bridging principles before accepting ingredient-based results. Absence of a result for an unimplemented hazard does not mean the product is unclassified.</div>
-<section class="card"><h2>Ingredient formulation</h2><p class="small muted">ATE values are mg/kg. For a substance with only an acute toxicity category, enter 1–4. Explicitly select “No acute hazard evidence” only when supported by data.</p>
-<div class="scroller"><table><thead><tr><th>Name</th><th>Concentration %</th><th>Oral ATE</th><th>Oral category</th><th>Oral no acute hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no acute hazard</th><th>HHNOC</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<section class="card"><h2>Ingredient formulation</h2><p class="small muted">ATE values are mg/kg. For an acute toxicity category without ATE, enter 1–4. Explicitly select “No acute hazard evidence” only with substantiation. Skin/eye categories use HPR 8.2.11 and 8.3.11 additive rules; tick “Special?” for non-additive chemistry requiring separate review.</p>
+<div class="scroller"><table><thead><tr><th>Name</th><th>Concentration %</th><th>Oral ATE</th><th>Oral category</th><th>Oral no acute hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no acute hazard</th><th>Skin category</th><th>Skin evidence below 1%</th><th>Skin special?</th><th>Eye category</th><th>Eye evidence below 1%</th><th>Eye special?</th><th>HHNOC</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 <button id="add">Add ingredient</button><button id="example" class="secondary">Load example</button><button id="calculate">Calculate WHMIS pilot</button>
 </section><section class="card" id="results" aria-live="polite"><h2>Results</h2><p>Add ingredients and select Calculate.</p></section>
-<section class="card"><h2>Regulatory source</h2><p>Hazardous Products Regulations, sections 2.2, 8.1.1–8.1.7 and 8.12.4. Read the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">official Canadian regulation</a>.</p></section>
-</main><script src="verification/whmis_engine.js"></script><script>
+<section class="card"><h2>Regulatory source</h2><p>Hazardous Products Regulations, sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4. Read the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">official Canadian regulation</a>.</p></section>
+</main><script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const safe=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function add(i={}){const tr=document.createElement("tr");tr.innerHTML='<td><input aria-label="Ingredient name" data-field="name"></td><td><input aria-label="Concentration percentage" type="number" min="0" max="100" step="any" data-field="pct"></td>'+
 ["oral","dermal"].map(route=>'<td><input aria-label="'+route+' ATE" type="number" min="0" step="any" data-field="'+route+'ATE"></td><td><input aria-label="'+route+' category" type="number" min="1" max="4" step="1" data-field="'+route+'Cat"></td><td><input type="checkbox" aria-label="'+route+' no acute hazard" data-field="'+route+'Safe"></td>').join("")+
+
+'<td><select data-field="skin" aria-label="Skin classification"><option value="">Not supplied</option><option value="1">Skin Corr 1</option><option value="1A">Skin Corr 1A</option><option value="1B">Skin Corr 1B</option><option value="1C">Skin Corr 1C</option><option value="2">Skin Irrit 2</option></select></td>'+
+'<td><input type="checkbox" aria-label="Evidence of skin effects below 1 percent" data-field="skinEvidenceBelow1"></td>'+
+'<td><input type="checkbox" aria-label="Special skin chemistry or non-additivity requires review" data-field="specialSkin"></td>'+
+'<td><select data-field="eye" aria-label="Eye classification"><option value="">Not supplied</option><option value="1">Eye Dam 1</option><option value="2">Eye Irrit 2</option><option value="2A">Eye Irrit 2A</option><option value="2B">Eye Irrit 2B</option></select></td>'+
+'<td><input type="checkbox" aria-label="Evidence of eye effects below 1 percent" data-field="eyeEvidenceBelow1"></td>'+
+'<td><input type="checkbox" aria-label="Special eye chemistry or non-additivity requires review" data-field="specialEye"></td>'+
 '<td><input type="checkbox" aria-label="HHNOC classified ingredient" data-field="hhnoc"></td><td><button type="button" class="secondary" data-remove>Remove</button></td>';
 rows.appendChild(tr);for(const [k,v] of Object.entries(i)){const el=tr.querySelector('[data-field="'+k+'"]');if(el){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
 tr.querySelector("[data-remove]").addEventListener("click",()=>tr.remove());
@@ -37,7 +44,7 @@ const acute={};for(const route of ["oral","dermal"]){
 const ate=get(route+"ATE").value,cat=get(route+"Cat").value;
 acute[route]=get(route+"Safe").checked?{notAcute:true}:ate!==""?{ate:Number(ate)}:cat!==""?{category:Number(cat)}:null;
 }
-return {name:get("name").value,pct:get("pct").value,acute,hhnoc:get("hhnoc").checked};
+return {name:get("name").value,pct:get("pct").value,acute,skin:get("skin").value,eye:get("eye").value,skinEvidenceBelow1:get("skinEvidenceBelow1").checked,eyeEvidenceBelow1:get("eyeEvidenceBelow1").checked,specialSkin:get("specialSkin").checked,specialEye:get("specialEye").checked,hhnoc:get("hhnoc").checked};
 });}
 function show(){const r=WHMIS.classify({ingredients:read()});let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
@@ -53,7 +60,7 @@ results.innerHTML=html;
 }
 document.getElementById("add").addEventListener("click",()=>add());
 document.getElementById("calculate").addEventListener("click",show);
-document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true});show()});
+document.getElementById("example").addEventListener("click",()=>{rows.innerHTML="";add({name:"Toxic ingredient",pct:20,oralATE:200,dermalSafe:true,skin:"1A",eye:"1"});add({name:"Unknown oral data",pct:15,dermalSafe:true});add({name:"Inert (assessed)",pct:65,oralSafe:true,dermalSafe:true});show()});
 add({name:"Ingredient 1",pct:100});
 })();
 </script></body></html>
