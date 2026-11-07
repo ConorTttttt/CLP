@@ -129,6 +129,22 @@ footer{color:var(--mute);font-size:12px;padding:8px 20px 24px}
 @media(max-width:420px){.wrap{padding:12px}.workspace-nav{padding:7px 12px}.g2{grid-template-columns:1fr}tbody tr{grid-template-columns:minmax(0,1fr)}td:nth-child(1),td:nth-child(2),td:nth-child(16){grid-column:1}}
 @media print{.workspace-nav,.banner details,#add,#example,td:last-child{display:none!important}.wrap{grid-template-columns:1fr}.card{break-inside:avoid}}
 
+
+/* Compact ingredient overview with per-ingredient expandable editing, as in CLP. */
+tbody tr[data-expanded="false"] td:nth-child(n+3):nth-child(-n+15){display:none}
+tbody tr>.ing-overview{grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:5px}
+tbody tr>.ing-overview::before{display:none}
+tbody tr>td:last-child{grid-column:1/-1;display:flex;flex-direction:row;gap:8px;justify-content:flex-end;align-items:center}
+.ing-chip{display:inline-block;font-size:11px;padding:3px 8px;border-radius:7px;border:1px solid var(--ix-border);background:color-mix(in srgb,var(--ix-accent) 10%,var(--panel));color:var(--ix-accent);font-weight:650}
+.ing-chip.review{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--line)}
+tbody tr[data-expanded="true"]{background:var(--ix-tint)}
+tbody tr[data-expanded="true"]>td:nth-child(n+3):nth-child(-n+15){background:var(--panel);padding:7px 8px;border-radius:7px}
+tbody tr[data-expanded="true"]>td:nth-child(3),
+tbody tr[data-expanded="true"]>td:nth-child(6),
+tbody tr[data-expanded="true"]>td:nth-child(9),
+tbody tr[data-expanded="true"]>td:nth-child(12),
+tbody tr[data-expanded="true"]>td:nth-child(15){border-top:3px solid var(--ix-accent)}
+
 </style></head><body>
 
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
@@ -145,7 +161,7 @@ footer{color:var(--mute);font-size:12px;padding:8px 20px 24px}
  </div>
  <div class="card" id="ingredients-card">
   <div class="row justify"><h2>2. Ingredients <span id="tot" class="total" aria-live="polite"></span></h2><div class="row"><button type="button" class="small primary" id="add">+ Add ingredient</button><button class="small" type="button" id="example">Load example</button></div></div>
-  <p class="hint">Enter ingredient concentrations and their individual oral, dermal, skin, eye and HHNOC information. Each ingredient appears in a compact, grouped editor. Blank acute toxicity fields are unknown, not evidence of safety.</p>
+  <p class="hint">Enter ingredient concentrations and their individual oral, dermal, skin, eye and HHNOC information. Each ingredient has a compact hazard overview. Select Edit details for grouped fields. Blank acute toxicity fields are unknown, not evidence of safety.</p>
   <div class="scroller"><table><thead><tr><th>Ingredient</th><th>% w/w</th><th>Oral ATE</th><th>Oral category</th><th>Oral no hazard</th><th>Dermal ATE</th><th>Dermal category</th><th>Dermal no hazard</th><th>Skin</th><th>Skin evidence below 1%</th><th>Skin special</th><th>Eye</th><th>Eye evidence below 1%</th><th>Eye special</th><th>HHNOC</th><th>Remove</th></tr></thead><tbody id="rows"></tbody></table></div>
   <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="small primary" type="button" id="calculate">Calculate WHMIS pilot</button></div>
  </div>
@@ -173,7 +189,45 @@ function add(i={}){const tr=document.createElement("tr");tr.innerHTML='<td><inpu
 '<td><input type="checkbox" aria-label="Special eye chemistry or non-additivity requires review" data-field="specialEye"></td>'+
 '<td><input type="checkbox" aria-label="HHNOC classified ingredient" data-field="hhnoc"></td><td><button type="button" class="secondary" data-remove>Remove</button></td>';
 rows.appendChild(tr);for(const [k,v] of Object.entries(i)){const el=tr.querySelector('[data-field="'+k+'"]');if(el){if(el.type==="checkbox")el.checked=!!v;else el.value=v}}
-tr.querySelector("[data-remove]").addEventListener("click",()=>tr.remove());
+
+const overview=document.createElement("td");
+overview.className="ing-overview";
+overview.setAttribute("aria-live","polite");
+tr.insertBefore(overview,tr.lastElementChild);
+tr.dataset.expanded="false";
+const actions=tr.lastElementChild;
+const toggle=document.createElement("button");
+toggle.type="button";
+toggle.className="small";
+toggle.textContent="Edit details ▸";
+toggle.setAttribute("aria-expanded","false");
+actions.insertBefore(toggle,actions.firstChild);
+toggle.addEventListener("click",()=>{
+ const expand=tr.dataset.expanded!=="true";
+ tr.dataset.expanded=String(expand);
+ toggle.setAttribute("aria-expanded",String(expand));
+ toggle.textContent=expand?"Close details ▾":"Edit details ▸";
+});
+function displayChips(){
+ const get=k=>tr.querySelector('[data-field="'+k+'"]');
+ const chips=[];
+ for(const route of ["oral","dermal"]){
+  if(get(route+"Safe").checked)chips.push(route+" — no acute hazard evidence");
+  else if(get(route+"ATE").value!=="")chips.push(route+" ATE "+get(route+"ATE").value);
+  else if(get(route+"Cat").value!=="")chips.push(route+" Cat. "+get(route+"Cat").value);
+ }
+ if(get("skin").value)chips.push("Skin "+get("skin").value);
+ if(get("eye").value)chips.push("Eye "+get("eye").value);
+ if(get("hhnoc").checked)chips.push("HHNOC");
+ if(get("specialSkin").checked||get("specialEye").checked)chips.push("Special chemistry — review");
+ overview.textContent="";
+ if(!chips.length){const span=document.createElement("span");span.className="hint";span.textContent="No hazards entered · Edit details to add";overview.appendChild(span)}
+ chips.forEach(label=>{const span=document.createElement("span");span.className="ing-chip"+(/review/.test(label)?" review":"");span.textContent=label;overview.appendChild(span)});
+}
+tr.addEventListener("input",displayChips);
+tr.addEventListener("change",displayChips);
+displayChips();
+tr.querySelector("[data-remove]").addEventListener("click",()=>{tr.remove();show()});
 }
 function read(){return Array.from(rows.children).map(tr=>{
 const get=k=>tr.querySelector('[data-field="'+k+'"]');
