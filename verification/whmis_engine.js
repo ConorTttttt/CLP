@@ -8,6 +8,9 @@
   else root.WHMIS=factory();
 })(typeof self!=="undefined"?self:this,function(){
   "use strict";
+  const SURFACE=(typeof module==="object"&&module.exports)
+    ? require("./whmis_skin_eye.js")
+    : (typeof globalThis!=="undefined" ? globalThis.WHMIS_SURFACE : null);
   const PROFILE=Object.freeze({id:"CA-WHMIS-2022",country:"Canada",
     regulation:"Hazardous Products Regulations (SOR/2015-17)",
     effective:"2022-12-15",transitionEnded:"2025-12-14",
@@ -21,7 +24,7 @@
   const UNSUPPORTED=Object.freeze([
     "Physical hazards (including combustible dust, simple asphyxiants, PHNOC and chemicals under pressure)",
     "Inhalation acute toxicity and water-activated toxicants",
-    "Skin corrosion/irritation; serious eye damage/eye irritation",
+    "Skin/eye tested-mixture data, bridging, exceptional ingredients under HPR 8.2.11(3) and 8.3.11(3)",
     "Respiratory and skin sensitisation",
     "Germ cell mutagenicity, carcinogenicity, reproductive toxicity",
     "STOT SE/RE and aspiration hazard",
@@ -93,6 +96,14 @@
         route,category:cat,ate,status,ref:definition.ref});
       if(hasUnknown)review.push("Verify unknown "+route+" toxicity: "+unknown+"% of ingredients at ≥1% have no usable ATE or explicit not-acutely-toxic evidence.");
       if(valid&&!cat&&!hasUnknown&&divisor===0)review.push("No "+route+" acute toxicity classification calculated: verify negative evidence for all ingredients; missing ATE must not imply safety.");
+    }
+    if(valid&&SURFACE){
+      const surface=SURFACE.calculate(ingredients);
+      outcomes.push(...surface.outcomes);
+      calculations.push(...surface.calculations);
+      review.push(...surface.review);
+    }else if(valid){
+      review.push("Skin and eye additive module unavailable: these hazard classes have not been evaluated.");
     }
     if(valid){
       const matches=ingredients.filter(i=>Number(i.pct)>=1&&i.hhnoc===true);
