@@ -176,8 +176,8 @@
     "category": 1
   },
   "unimplementedRuleGroups": [
-    "physical 7.2-7.21",
-    "acute inhalation 8.1",
+    "physical hazard classes except limited HPR 7.21",
+    "HPR 8.1 water-reactive inhalation toxicants and special data/evidence pathways",
     "skin and eye special ingredient exceptions",
     "sensitisation 8.4",
     "mutagenicity 8.5",
@@ -197,13 +197,18 @@
       "HPR 8.1 oral/dermal ATE mixture pathway (limited)",
       "HPR 8.2.11(1)-(2) additive skin route",
       "HPR 8.3.11(1)-(2) additive eye route",
-      "HPR 8.12.4 HHNOC ingredient trigger"
+      "HPR 8.12.4 HHNOC ingredient trigger",
+      "HPR 8.1.1/8.1.3–8.1.7: gas, vapour and dust/mist inhalation categories, LC50 1-hour conversion, mixture ATE and limited whole-mixture/bridging evidence",
+      "HPR 7.21–7.21.1: Chemicals Under Pressure category 1–3 assessment on explicit product/package evidence"
     ],
     "underExpertReview": [
       "HPR 8.2.11(3) and 8.3.11(3) special ingredients",
       "mixture-tested data and bridging",
       "lower-concentration evidence",
-      "all other HPR health and physical classes"
+      "all other HPR health and physical classes",
+      "HPR 8.1.1(2) water-reactive toxic gas release and supplemental labelling",
+      "HPR 8.1.5 inhalation LC50 values above Category 4 comparable range",
+      "HPA section 12 supplier scope and Schedule 1 exclusions depend on declared product use"
     ]
   },
   "healthCanadaGuidance": {
@@ -244,5 +249,12 @@
       "Physical hazard Schedule 2 item 19 is repealed.",
       "Crosscheck external statutory definitions for exclusions; do not infer applicability from ingredient-only data."
     ]
-  }
+  },
+  "runtimeModules": [
+    "verification/whmis_engine.js",
+    "verification/whmis_extended.js",
+    "verification/whmis_hazard_catalog.js",
+    "verification/whmis_skin_eye.js"
+  ],
+  "scopeStatus": "HPA scope screening is provisional, separate from HPR hazard classification and dependent on declared activity/intended workplace use/exclusions."
 }
