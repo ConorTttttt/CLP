@@ -171,4 +171,22 @@ t("Only new health paths are added; EU engine remains separate",()=>{
  assert.equal(r0.complete,false);
  assert.equal(r0.hazardCoverage.filter(x=>x.status==="partial").length,12);
 });
+t("Gas lactation screening uses volume rather than mass concentration",()=>{
+ const low=r([ing("A",50,{ingredientState:"gas",reproLactation:true},.099),ing("B",50)]);
+ assert.deepEqual(cat(low,"repro-lactation"),[]);
+ const high=r([ing("A",.01,{ingredientState:"gas",reproLactation:true},.1),ing("B",99.99)]);
+ assert.deepEqual(cat(high,"repro-lactation"),["Lactation"]);
+});
+t("Gas STOT SE Cat3 direct threshold uses separately entered volume percentage",()=>{
+ const low=r([ing("A",50,{ingredientState:"gas",stotSE3Narcotic:true},19.9),ing("B",50)]);
+ assert.deepEqual(cat(low,"stot-se"),[]);
+ const high=r([ing("A",.01,{ingredientState:"gas",stotSE3Narcotic:true},20),ing("B",99.99)]);
+ assert.deepEqual(cat(high,"stot-se"),["3"]);
+});
+t("Missing gas volume data in STOT SE Cat3 or lactation triggers review",()=>{
+ const a=r([ing("A",50,{ingredientState:"gas",stotSE3Respiratory:true,reproLactation:true}),ing("B",50)]);
+ assert.deepEqual(cat(a,"stot-se"),[]);
+ assert.deepEqual(cat(a,"repro-lactation"),[]);
+ assert.match(a.review.join(" "),/requires % v\/v/);
+});
 console.log(n+" Canadian HPR 8.4–8.10 health hazard tests passed");
