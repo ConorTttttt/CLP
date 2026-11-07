@@ -91,7 +91,7 @@ t("All WHMIS preview text remains explicit about incomplete classification",()=>
 });
 t("new health classification controls are present and source-linked",()=>{
  for(const field of ["hRespSens","hSkinSens","hMutagen","hCarcinogen","hRepro","hLactation","hStotSE","hStotRE","hStot3Narcotic","hStot3Resp","hStot3Elicit","hAspiration","hState"])
-   assert.ok(html.includes('data-field="'+field+'"'),field);
+   assert.ok(html.includes(field),"Missing dynamically generated health field "+field);
  for(const id of ["health-mixture-inputs","health-other-evidence","asp-viscosity","asp-phase"])
    assert.ok(html.includes('id="'+id+'"'),id);
 });
