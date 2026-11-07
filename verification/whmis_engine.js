@@ -14,6 +14,9 @@
   const EXTENDED=(typeof module==="object"&&module.exports)
     ? require("./whmis_extended.js")
     : (typeof globalThis!=="undefined" ? globalThis.WHMIS_EXTENDED : null);
+  const HAZARD_CATALOG=(typeof module==="object"&&module.exports)
+    ? require("./whmis_hazard_catalog.js")
+    : (typeof globalThis!=="undefined" ? globalThis.WHMIS_HAZARD_CATALOG : null);
   const PROFILE=Object.freeze({id:"CA-WHMIS-2022",country:"Canada",
     regulation:"Hazardous Products Regulations (SOR/2015-17)",
     effective:"2022-12-15",transitionEnded:"2025-12-14",
@@ -156,6 +159,7 @@
     }
     review.push("Check whole-mixture data and bridging principles BEFORE using ingredient calculations (HPR 2.2, 8.1.2–8.1.6).");
     return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,
+      hazardCoverage:HAZARD_CATALOG?HAZARD_CATALOG.CATALOG:[],
       outcomes,calculations,issues,review,supplementalStatements,
       notAssessed:[...UNSUPPORTED,...(extension?extension.notAssessed:[])],
       note:"Not a complete WHMIS classification, SDS or label decision. No CLP output is reused."};
