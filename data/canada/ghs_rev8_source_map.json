@@ -197,7 +197,8 @@
     "chapter2_3_2_tables": "source tables visually checked and compared with current Canada HPR 7.21/7.21.1",
     "hprFullLabelRequirements": "requires verification",
     "Annex3PrecautionaryOptions": "requires individual conditional selection audit",
-    "classificationEngine": "not yet implemented by this reference-only change",
-    "automatedTestPlan": "boundary values including exactly 200 kPa, 1%, 85%, 20 kJ/g, aerosols and underpressure exclusions, missing input handling"
+    "classificationEngine": "HPR 7.21-7.21.1 provisional Chemicals Under Pressure categorisation implemented in verification/whmis_extended.js; scientific input validation and bilingual label selection remain subject to human review.",
+    "automatedTestPlan": "boundary values including exactly 200 kPa, 1%, 85%, 20 kJ/g, aerosols and underpressure exclusions, missing input handling",
+    "automatedTests": "verification/test_whmis_extended.js: pressure >=200 kPa, flammable thresholds 1%/85%, 20 kJ/g, aerosol/gas exclusions and missing data."
   }
 }
