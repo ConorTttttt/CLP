@@ -64,6 +64,30 @@ Automated checks: `verification/test_whmis_guidance.js`. Original HTML is preser
 
 The uploaded guidance explains the full HPR classification system, but this PR **does not** yet implement entire Parts 7 and 8. Unimplemented classes remain explicitly unassessed. Priority work includes complete mixture-evidence ordering, inhalation and water-activated toxicants, non-additive skin/eye rules, sensitisation, carcinogenicity, reproductive toxicity, STOT and aspiration, prescribed classifications, Canadian-specific physical hazard classes and compliant bilingual labelling.
 
+## GHS source references for Canadian WHMIS (uploaded 2026-11-07)
+
+- **GHS Revision 7 (2017)**: UN publication `ST/SG/AC.10/30/Rev.7`, source map: `data/canada/ghs_rev7_source_map.json`. Supporting technical foundation for most Canadian WHMIS building blocks, **not** legislation in itself.
+- **GHS Revision 8 (2019)**: UN publication `ST/SG/AC.10/30/Rev.8`, 570 PDF pages. Uploaded `GHS8.pdf` SHA-256: `fea9464415289f17a3ca55b27fdea350bb078c25192523bc425cbc7039dd88a8`. Source map: `data/canada/ghs_rev8_source_map.json`.
+- Canada adopted the Revision 8 **Chemicals Under Pressure** provisions; other Revision 8 changes are **not automatically Canadian requirements**. Authority: HPR **7.21–7.21.1**, and Health Canada's WHMIS supplier guidance.
+
+### Chemicals Under Pressure — reference crosswalk (not implemented)
+
+The GHS source is section **2.3.2**, printed pages **61–63**, PDF pages **67–69**:
+
+| Canadian legal requirement | Threshold or requirement | GHS source |
+| --- | --- | --- |
+| HPR 7.21: eligibility | Liquid/solid with pressurising gas at **>=200 kPa (gauge)** at 20°C in non-aerosol receptacle; not a gas under pressure | 2.3.2.1 |
+| HPR 7.21.1(1): exclusion | Do not also classify a product already classified as an aerosol | 2.3.0; note to Table 2.3.3 |
+| HPR 7.21.1(2): Category 1 | Flammable components >=85% by mass **and** heat of combustion >=20 kJ/g | Table 2.3.3 |
+| HPR 7.21.1(2): Category 2 | Flammable components >1% by mass **and** heat <20 kJ/g; **OR** flammable components <85% **and** heat >=20 kJ/g | Table 2.3.3 |
+| HPR 7.21.1(2): Category 3 | Flammable components <=1% by mass **and** heat <20 kJ/g | Table 2.3.3 |
+| Calculation method | Heat of combustion is a mass-fraction-weighted sum; input measurements/estimates must be evaluated for validity | 2.3.3.1 |
+| Canadian label text | Hazard codes H282/H283/H284; Category 3 wording is specifically prescribed by HPR 3(1)(c.2). Canadian bilingual requirements apply. | GHS Annex 1/3; HPR 3(1)(c.2) |
+
+**Source anomalies worth preserving:** GHS 2.3.2.2.1 refers to Table 2.3.2 even though the actual criteria appear in **Table 2.3.3**. Its diagram 2.3.2 has a **>200 kPa** test, conflicting with the GHS's own **>=200 kPa** definition and HPR 7.21; **Canadian HPR >=200 kPa governs**. The GHS's typical 50% liquids/solids comment is non-binding explanatory guidance, not an extra criterion.
+
+**Implementation safeguard:** Do not classify a product when required pressure, mass percentages or heat-of-combustion evidence is missing; return **undetermined / needs review**. Also check all HPR hazard-class exclusions rather than assuming mutual exclusion with unrelated health hazards. The current pilot does **not** yet classify chemicals under pressure.
+
 ## Next work
 
 1. Implement whole-mixture/bridging and section 2.4–2.6 evidence precedence.
