@@ -49,7 +49,7 @@
   }
   function classify(input){
     const ingredients=Array.isArray(input&&input.ingredients)?input.ingredients:[];
-    const issues=[],outcomes=[],calculations=[],review=[];
+    const issues=[],outcomes=[],calculations=[],review=[],supplementalStatements=[];
     let total=0;
     for(let ix=0;ix<ingredients.length;ix++){
       const i=ingredients[ix],n=value(i.pct);
@@ -64,8 +64,14 @@
       let divisor=0,unknown=0;
       if(valid)ingredients.forEach((i,index)=>{
         const pct=value(i.pct);
-        if(pct<1)return; // HPR 8.1.2(2)
         const raw=i.acute&&i.acute[route];
+        // HPR 2.5(1), explained in Health Canada supplier guidance:
+        // sub-1% ingredients must also be relevant when evidence shows
+        // acute toxicity effects at their actual mixture concentration.
+        const belowOneRelevant=pct<1 && raw && typeof raw==="object" && raw.relevantBelow1===true;
+        if(pct<1 && !belowOneRelevant)return;
+        if(belowOneRelevant)review.push((i.name||"Ingredient "+(index+1))+
+          ": "+route+" acute toxicity below 1% included on recorded evidence (HPR 2.5(1)); verify supporting data.");
         if(raw&&typeof raw==="object"&&raw.notAcute===true)return;
         const converted=resolveATE(raw,route);
         if(converted){
@@ -94,7 +100,19 @@
         notes:hasUnknown?["Unknown acute toxicity data require review; provisional result cannot establish absence of classification."]:[]});
       if(valid&&cat)outcomes.push({id:"acute-"+route,label:"Acute Toxicity ("+definition.label+") — Category "+cat,
         route,category:cat,ate,status,ref:definition.ref});
-      if(hasUnknown)review.push("Verify unknown "+route+" toxicity: "+unknown+"% of ingredients at ≥1% have no usable ATE or explicit not-acutely-toxic evidence.");
+      // HPR 3(1)(e), Schedule 1 2(b): supplemental unknown-toxicity
+      // percentage applies when classified for this route and unknown
+      // relevant ingredients total at least 1% of the mixture.
+      // This is an English review prompt, NOT a compliant bilingual label.
+      if(valid&&cat&&unknown>=1-1e-9){
+        const english=unknown+"% of the mixture consists of ingredient(s) of unknown acute "+route+" toxicity.";
+        supplementalStatements.push({route,unknownPct:unknown,english,
+          ref:"HPR 3(1)(e); Schedule 1 paragraph 2(b)",status:"requires bilingual label/SDS review"});
+        review.push("Canadian supplemental label/SDS statement required for unknown acute "+route+
+          " toxicity ("+unknown+"%); draft English only — verify and provide compliant English and French wording.");
+      }
+      if(hasUnknown)review.push("Verify unknown "+route+" toxicity: "+unknown+
+        "% of relevant ingredients have no usable ATE or explicit not-acutely-toxic evidence.");
       if(valid&&!cat&&!hasUnknown&&divisor===0)review.push("No "+route+" acute toxicity classification calculated: verify negative evidence for all ingredients; missing ATE must not imply safety.");
     }
     if(valid&&SURFACE){
@@ -117,7 +135,7 @@
     }
     review.push("Check whole-mixture data and bridging principles BEFORE using ingredient calculations (HPR 2.2, 8.1.2–8.1.6).");
     return {profile:PROFILE,phase:"limited pilot",complete:false,valid,
-      outcomes,calculations,issues,review,notAssessed:[...UNSUPPORTED],
+      outcomes,calculations,issues,review,supplementalStatements,notAssessed:[...UNSUPPORTED],
       note:"Not a complete WHMIS classification, SDS or label decision. No CLP output is reused."};
   }
   return {PROFILE,ROUTES,UNSUPPORTED,category,resolveATE,classify};
