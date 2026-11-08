@@ -1,0 +1,204 @@
+{
+  "id": "UN-GHS-REV8-2019",
+  "title": "Globally Harmonized System of Classification and Labelling of Chemicals, Eighth revised edition",
+  "publicationCode": "ST/SG/AC.10/30/Rev.8",
+  "year": 2019,
+  "userUploadedFile": "GHS8.pdf",
+  "fileSHA256": "fea9464415289f17a3ca55b27fdea350bb078c25192523bc425cbc7039dd88a8",
+  "pdfPageCount": 570,
+  "publicationStatus": "GHS 8 identity and chemicals-under-pressure criteria reviewed against rendered source pages; other Rev.8 changes are not incorporated automatically.",
+  "sourceKind": "UN model GHS; supporting technical reference, not automatically binding under Canadian WHMIS.",
+  "jurisdiction": "CA",
+  "legalPrecedence": "Hazardous Products Act (HPA) and Hazardous Products Regulations (HPR, SOR/2015-17) govern; Health Canada interpretive guidance informs application. Only specified Rev.8 provisions should be used.",
+  "adoptionScope": {
+    "generalCanadianBasis": "UN GHS Revision 7",
+    "adoptedFromRev8": [
+      "Chemicals Under Pressure"
+    ],
+    "legalAuthority": [
+      "HPR 7.21 (definition)",
+      "HPR 7.21.1(1) (aerosol exclusion)",
+      "HPR 7.21.1(2) (criteria and categories)",
+      "HPR 3(1)(c.2) (Canadian-specific Category 3 hazard statement)"
+    ],
+    "otherRev8ChangesNotAutomaticallyAdopted": [
+      "Skin corrosion in vitro/ex vivo and non-test method updates",
+      "STOT clarifications",
+      "Revised precautionary statements outside Canada's adopted provisions",
+      "Annex 11 dust explosion guidance",
+      "Changes to other physical hazard testing standards"
+    ],
+    "officialReferences": [
+      "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html",
+      "https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html"
+    ]
+  },
+  "chapterMap": [
+    {
+      "section": "Foreword para. 8",
+      "pdfPage": 3,
+      "note": "Describes all Rev.8 amendment areas; only Canadian-adopted parts may be used."
+    },
+    {
+      "section": "2.3.0",
+      "printedPage": 57,
+      "pdfPage": 63,
+      "note": "Aerosols and chemicals under pressure are distinct classifications."
+    },
+    {
+      "section": "2.3.1",
+      "printedPage": 57,
+      "pdfPage": 63,
+      "note": "Aerosols: separate class; do not duplicate pressure class."
+    },
+    {
+      "section": "2.3.2.1",
+      "printedPage": 61,
+      "pdfPage": 67,
+      "note": "Definition: liquids/solids (including pastes/powders) pressurised with gas at >=200 kPa gauge at 20 °C; exclude aerosol dispensers and gases under pressure."
+    },
+    {
+      "section": "2.3.2.2.1–2.3.2.2.2",
+      "printedPage": 61,
+      "pdfPage": 67,
+      "note": "Flammable components are GHS flammable gases, liquids and solids."
+    },
+    {
+      "section": "Table 2.3.3",
+      "printedPage": 62,
+      "pdfPage": 68,
+      "note": "Categories 1/2/3 thresholds: flammable component mass % and product heat of combustion kJ/g."
+    },
+    {
+      "section": "Notes to Table 2.3.3",
+      "printedPage": 62,
+      "pdfPage": 68,
+      "note": "Do not include excluded pyrophoric, self-heating or water-reactive ingredients in a simplistic flammable summation; avoid duplicative classifications for section 2.3.1, Chapters 2.2, 2.5, 2.6, 2.7."
+    },
+    {
+      "section": "Table 2.3.4",
+      "printedPage": 62,
+      "pdfPage": 68,
+      "note": "Symbols (Cat1/2 flame and cylinder; Cat3 cylinder); signal word Danger for Cat1 and Warning for Cat2/3."
+    },
+    {
+      "section": "Decision logic 2.3.2",
+      "printedPage": 63,
+      "pdfPage": 69,
+      "note": "Guidance diagram; use HPR-inclusive 200 kPa threshold, not conflicting >200 kPa prose in decision-tree box."
+    },
+    {
+      "section": "2.3.3.1",
+      "printedPage": 63,
+      "pdfPage": 69,
+      "note": "Specific heat of combustion formula: sum(mass_fraction_component × heat_of_combustion_component). Results need defensible measured/published/validated data."
+    },
+    {
+      "section": "Annex 1 section A1.3",
+      "printedPage": 259,
+      "pdfPage": 265,
+      "note": "Hazard codes H282 (Cat1), H283 (Cat2), H284 (Cat3) with pictograms."
+    },
+    {
+      "section": "Annex 3, chemicals under pressure",
+      "printedPages": [
+        324,
+        325
+      ],
+      "pdfPages": [
+        330,
+        331
+      ],
+      "note": "Category-specific precautionary statements and conditions. HPR 3(1)(c.2) controls Canadian Category 3 hazard-statement wording."
+    }
+  ],
+  "classificationDecisionSpecification": {
+    "scopePreconditions": [
+      "Product is liquid or solid packaged in a receptacle (not an aerosol dispenser).",
+      "Product is pressurised with a gas, at >=200 kPa gauge at 20 °C.",
+      "Product is not classified as gases under pressure under HPR 7.5.",
+      "If already classified as Aerosols under HPR 7.3, HPR 7.21.1(1) prohibits Chemicals Under Pressure classification."
+    ],
+    "requiredInputs": [
+      "physical state (liquid/solid)",
+      "package/receptacle",
+      "whether an aerosol dispenser",
+      "whether qualifies as gases under pressure",
+      "gauge pressure in kPa at 20°C",
+      "flammable component mass fraction (%)",
+      "specific heat of combustion (kJ/g)"
+    ],
+    "criteria": [
+      {
+        "category": 1,
+        "flammableComponentsPct": {
+          "gte": 85
+        },
+        "heatOfCombustionKJPerG": {
+          "gte": 20
+        },
+        "operator": "AND",
+        "legalSource": "HPR 7.21.1(2) table item 1",
+        "hazardStatementCode": "H282"
+      },
+      {
+        "category": 2,
+        "branches": [
+          {
+            "flammableComponentsPct": {
+              "gt": 1
+            },
+            "heatOfCombustionKJPerG": {
+              "lt": 20
+            }
+          },
+          {
+            "flammableComponentsPct": {
+              "lt": 85
+            },
+            "heatOfCombustionKJPerG": {
+              "gte": 20
+            }
+          }
+        ],
+        "operator": "OR of two AND branches",
+        "legalSource": "HPR 7.21.1(2) table item 2",
+        "hazardStatementCode": "H283"
+      },
+      {
+        "category": 3,
+        "flammableComponentsPct": {
+          "lte": 1
+        },
+        "heatOfCombustionKJPerG": {
+          "lt": 20
+        },
+        "operator": "AND",
+        "legalSource": "HPR 7.21.1(2) table item 3",
+        "hazardStatementCode": "H284"
+      }
+    ],
+    "notClassifiedIf": "Does not meet Chemicals Under Pressure definition; assess other relevant physical hazards. Missing required evidence is UNDETERMINED, not NOT CLASSIFIED.",
+    "heatOfCombustionFormula": "deltaHc_product = sum((mass_pct_i/100) * deltaHc_i)",
+    "precedenceNotes": [
+      "Canada's HPR controls at exactly 200 kPa gauge.",
+      "Category 1 and 2 categories are based on total flammable-component mass, not just the pressurising gas.",
+      "Other independent health and physical classes may remain applicable; check actual HPR hazard-class exclusions before suppression."
+    ]
+  },
+  "sourceIntegrityWarnings": [
+    "The source text under GHS 2.3.2.2.1 refers to 'Table 2.3.2' but the actual chemicals-under-pressure criteria are Table 2.3.3 on printed page 62.",
+    "The diagram at printed page 63 uses 'higher than 200 kPa'; the GHS definition at 2.3.2.1 and Canadian HPR 7.21 use '200 kPa or more'. Implement inclusive >=200 kPa.",
+    "Source PDF embeds other material in text extraction; rely on rendered page visuals for tables, diagrams, and ambiguous extracted characters.",
+    "The 50%-liquid/solid versus 50%-gas example in GHS 2.3.2.1 is a typical-case NOTE, not an additional numerical legal criterion."
+  ],
+  "verificationStatus": {
+    "identity": "verified",
+    "chapter2_3_2_tables": "source tables visually checked and compared with current Canada HPR 7.21/7.21.1",
+    "hprFullLabelRequirements": "requires verification",
+    "Annex3PrecautionaryOptions": "requires individual conditional selection audit",
+    "classificationEngine": "HPR 7.21-7.21.1 provisional Chemicals Under Pressure categorisation implemented in verification/whmis_extended.js; scientific input validation and bilingual label selection remain subject to human review.",
+    "automatedTestPlan": "boundary values including exactly 200 kPa, 1%, 85%, 20 kJ/g, aerosols and underpressure exclusions, missing input handling",
+    "automatedTests": "verification/test_whmis_extended.js: pressure >=200 kPa, flammable thresholds 1%/85%, 20 kJ/g, aerosol/gas exclusions and missing data."
+  }
+}

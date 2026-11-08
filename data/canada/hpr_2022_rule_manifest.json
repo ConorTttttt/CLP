@@ -1,0 +1,277 @@
+{
+  "jurisdiction": "CA",
+  "regulation": "SOR/2015-17",
+  "consolidationDate": "2023-01-01",
+  "lastAmended": "2022-12-15",
+  "source": "User-supplied Canada .xml (official-format HPR XML)",
+  "sourceUrl": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html",
+  "status": "Extracted thresholds; source must be applied with every exception, evidence condition and precedence rule",
+  "general": {
+    "severity": "HPR 2(2)",
+    "prescribedSchedule4": "HPR 2(3)-(5)",
+    "mixtureOrder": "HPR 2.2(2)-(3): follow first applicable provision in each subpart, except 8.1, 8.4, 8.7, 8.8",
+    "bridging": "HPR 2.3",
+    "synergy": "HPR 2.4",
+    "lowerLimitEvidence": "HPR 2.5",
+    "maximumConcentration": "HPR 2.6"
+  },
+  "acute": {
+    "reference": "HPR 8.1.1–8.1.7",
+    "ingredientCutoff": 1,
+    "ingredientCutoffSource": "HPR 8.1.2(2): w/w for solids/liquids/dusts/mists/vapours; v/v for gases",
+    "dataPriority": [
+      "8.1.3 whole mixture",
+      "8.1.4 bridging",
+      "8.1.5 known ingredient ATEs",
+      "8.1.6 unknown ATEs"
+    ],
+    "oral": {
+      "unit": "mg/kg",
+      "limits": [
+        5,
+        50,
+        300,
+        2000
+      ],
+      "categoryPoints": [
+        0.5,
+        5,
+        100,
+        500
+      ]
+    },
+    "dermal": {
+      "unit": "mg/kg",
+      "limits": [
+        50,
+        200,
+        1000,
+        2000
+      ],
+      "categoryPoints": [
+        5,
+        50,
+        300,
+        1100
+      ]
+    },
+    "inhalation": {
+      "gas": {
+        "unit": "ppmV",
+        "limits": [
+          100,
+          500,
+          2500,
+          20000
+        ],
+        "categoryPoints": [
+          10,
+          100,
+          700,
+          4500
+        ]
+      },
+      "vapour": {
+        "unit": "mg/L",
+        "limits": [
+          0.5,
+          2,
+          10,
+          20
+        ],
+        "categoryPoints": [
+          0.05,
+          0.5,
+          3,
+          11
+        ]
+      },
+      "dustMist": {
+        "unit": "mg/L",
+        "limits": [
+          0.05,
+          0.5,
+          1,
+          5
+        ],
+        "categoryPoints": [
+          0.005,
+          0.05,
+          0.5,
+          1.5
+        ]
+      },
+      "hoursBasis": 4,
+      "convertFromOneHour": {
+        "gasDivisor": 2,
+        "vapourDivisor": 2,
+        "dustMistDivisor": 4
+      }
+    },
+    "knownATEInclude": {
+      "oralDermalAboveCategory4UpTo": 5000,
+      "other": "HPR 8.1.5 comparable inhalation range; expert review if needed"
+    },
+    "unknownRule": {
+      "boundaryPct": 10,
+      "atOrBelow": "100/Σ(C_i/ATE_i)",
+      "above": "(100-C_unknown)/Σ(C_i/ATE_i)"
+    },
+    "rangeCrossingRule": "HPR 8.1.7(2): use lowest experimentally obtained value if range does not fit entirely within one row band",
+    "belowOneRelevantException": {
+      "rule": "HPR 2.5(1); guidance HPR 8.1.2(2): relevant ingredient <1% must be included when evidence supports toxicity at actual concentration",
+      "inputProperty": "ingredient.acute[route].relevantBelow1",
+      "requiresEvidence": true
+    },
+    "unknownToxicitySupplement": {
+      "rule": "HPR 3(1)(e), Schedule 1 2(b); Health Canada guidance acute toxicity section",
+      "trigger": "Route classified and relevant unknown acute toxicity ingredient concentrations sum to >=1% of mixture",
+      "output": "supplementalStatements (English draft review prompt only; bilingual labels and SDS required)"
+    }
+  },
+  "skin": {
+    "reference": "HPR 8.2.8–8.2.11",
+    "evidenceBelowOnePercent": "8.2.11(1)(b) requires evidence the ingredient is corrosive/irritant at its present concentration",
+    "additive": {
+      "corrosiveTotalPct": 5,
+      "irritationFromCorrosivesPct": [
+        1,
+        5
+      ],
+      "irritationPct": 10,
+      "irritationWeightedPct": 10,
+      "subtypeRule": "8.2.11(2)(a.1)-(a.3) permits matching subcategory 1A/1B/1C only if no other corrosive subcategories or generic 1 are present; mixed corrosives => general Category 1 under (a.4)"
+    },
+    "specialMixtures": "HPR 8.2.11(3) separate table: acid pH≤2, base pH≥11.5, other nonadditive corrosive≥1% => 1, irritant≥3% => 2; requires qualifying chemistry",
+    "mixturePriority": [
+      "8.2.9 tested mixture",
+      "8.2.10 bridging",
+      "8.2.11 ingredients"
+    ]
+  },
+  "eye": {
+    "reference": "HPR 8.3.8–8.3.11",
+    "evidenceBelowOnePercent": "8.3.11(1)(b) requires evidence damage or irritation at present concentration",
+    "additive": {
+      "severePct": 3,
+      "irritationFromSeverePct": [
+        1,
+        3
+      ],
+      "irritationPct": 10,
+      "weightedPct": 10,
+      "subtypeRule": "8.3.11(2)(c.1)-(c.3) permits 2A/2B only if the other irritant categories are absent; mixed subtypes => Category 2"
+    },
+    "specialMixtures": "HPR 8.3.11(3): special ingredient table, damage 1% or irritation 3% if qualifying chemistry",
+    "mixturePriority": [
+      "8.3.9 tested mixture",
+      "8.3.10 bridging",
+      "8.3.11 ingredients"
+    ]
+  },
+  "hhnoc": {
+    "section": "8.12.4",
+    "ingredientCutoffPct": 1,
+    "wholeMixtureFirst": "8.12.3",
+    "category": 1
+  },
+  "unimplementedRuleGroups": [
+    "physical hazard classes except limited HPR 7.21",
+    "HPR 8.1 water-reactive inhalation toxicants and special data/evidence pathways",
+    "skin and eye special ingredient exceptions",
+    "sensitisation 8.4 whole-mixture/bridging and evidence exceptions; ingredient cut-offs implemented",
+    "mutagenicity 8.5 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "carcinogenicity 8.6 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "reproductive toxicity 8.7 conclusive study exceptions and restricted bridging; ingredient cut-offs implemented",
+    "STOT SE 8.8 mixture data/bridging; ingredient paths implemented",
+    "STOT RE 8.9 mixture data/bridging; ingredient paths implemented",
+    "aspiration 8.10 phase-separated layer-specific route and tested-mixture/bridging; homogeneous ingredient route implemented",
+    "biohazard 8.11",
+    "full HHNOC 8.12",
+    "label/SDS requirements"
+  ],
+  "sourceFileSHA256": "5d1388299f7e0bf93f373b02d811e873a652614a82df1cc3601c5c715d01c504",
+  "sourceVerification": "The source is a 2023-01-01 consolidation; Justice Canada official site current to October 2026 still reports last amended 2022-12-15.",
+  "coverage": {
+    "automated": [
+      "HPR 8.1 oral/dermal ATE mixture pathway (limited)",
+      "HPR 8.2.11(1)-(2) additive skin route",
+      "HPR 8.3.11(1)-(2) additive eye route",
+      "HPR 8.12.4 HHNOC ingredient trigger",
+      "HPR 8.1.1/8.1.3–8.1.7: gas, vapour and dust/mist inhalation categories, LC50 1-hour conversion, mixture ATE and limited whole-mixture/bridging evidence",
+      "HPR 7.21–7.21.1: Chemicals Under Pressure category 1–3 assessment on explicit product/package evidence",
+      "HPR 8.4.5: provisional respiratory and skin sensitisation ingredient cut-off screening, including 1A/1B and gas concentration distinction",
+      "HPR 8.5–8.7: provisional ingredient-trigger CMR screening and separate lactation classification",
+      "HPR 8.8.5: STOT SE Categories 1/2 and same-effect Category 3 direct/summation conditions",
+      "HPR 8.9.5: STOT RE Categories 1/2 ingredient triggers",
+      "HPR 8.10.5(a): homogeneous mixture aspiration Category 1 requiring 10% relevant ingredients and viscosity ≤20.5 at 40°C"
+    ],
+    "underExpertReview": [
+      "HPR 8.2.11(3) and 8.3.11(3) special ingredients",
+      "mixture-tested data and bridging",
+      "lower-concentration evidence",
+      "all other HPR health and physical classes",
+      "HPR 8.1.1(2) water-reactive toxic gas release and supplemental labelling",
+      "HPR 8.1.5 inhalation LC50 values above Category 4 comparable range",
+      "HPA section 12 supplier scope and Schedule 1 exclusions depend on declared product use",
+      "HPR 8.4–8.10 applicable whole-mixture evidence, restricted bridging, conclusive scientific exceptions, and HPR 2.4–2.9",
+      "HPR 8.10.5(b) phase-separated layers and layer-specific viscosity/composition",
+      "HPR 2(3)–(5) Schedule 4 prescribed classifications",
+      "Ingredient-specific lower concentration positive evidence under HPR 2.5(1)"
+    ]
+  },
+  "healthCanadaGuidance": {
+    "title": "Guidance on the WHMIS supplier requirements",
+    "issuingBody": "Health Canada",
+    "sourceUrl": "https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html",
+    "publishedDate": "2025-05-26",
+    "lastModifiedDate": "2026-03-31",
+    "uploadedSnapshotSHA256": "82dea79000d521979c1126606e92c56efeadbc13225a0b708c33f7d78a1792b0",
+    "sourceRole": "Interpretive guidance only; official HPA/HPR text prevails if discrepancy",
+    "appliedTo": [
+      "HPR 2.5(1) below-1% relevant ingredients in acute toxicity (guidance Part 8, Subpart 1)",
+      "HPR 3(1)(e), Schedule 1 2(b) unknown acute toxicity disclosures when classified"
+    ],
+    "reviewPending": [
+      "HPR 8.1 tested-mixture and bridging precedence",
+      "HPR 8.1 inhalation/water-activated toxicants",
+      "HPR 8.2 and 8.3 non-additive chemistry",
+      "HPR 8.4-8.12 remaining health classes",
+      "HPR Part 7 physical hazard classes",
+      "Label and SDS bilingual contents"
+    ]
+  },
+  "parentAct": {
+    "name": "Hazardous Products Act (HPA)",
+    "citation": "R.S.C. 1985, c. H-3",
+    "sourceMap": "data/canada/hpa_2023_source_map.json",
+    "sourceUpload": "Hazardous products.xml",
+    "xmlLastAmended": "2023-01-14",
+    "appliesTo": "Legal hazard-class scope, product-type exclusions and supplier obligations. Detailed classification criteria remain governed by HPR SOR/2015-17.",
+    "hazardClassCount": {
+      "physical": 20,
+      "health": 12
+    },
+    "notes": [
+      "Schedule 2 lists legally recognised hazard classes; only implemented HPR rules may yield automated results.",
+      "Part II section 12 and Schedule 1 exclusions are not equivalent to a negative hazard classification.",
+      "Physical hazard Schedule 2 item 19 is repealed.",
+      "Crosscheck external statutory definitions for exclusions; do not infer applicability from ingredient-only data."
+    ]
+  },
+  "runtimeModules": [
+    "verification/whmis_engine.js",
+    "verification/whmis_extended.js",
+    "verification/whmis_hazard_catalog.js",
+    "verification/whmis_skin_eye.js",
+    "verification/whmis_health.js"
+  ],
+  "scopeStatus": "HPA scope screening is provisional, separate from HPR hazard classification and dependent on declared activity/intended workplace use/exclusions.",
+  "healthMixtureRuleSource": "data/canada/hpr_health_mix_rule_manifest.json",
+  "hazardCoverageSummary": {
+    "totalHPAClasses": 32,
+    "partiallyAutomatedHazardFamilies": 12,
+    "notAutomatedHazardFamilies": 20,
+    "reference": "verification/whmis_hazard_catalog.js"
+  }
+}

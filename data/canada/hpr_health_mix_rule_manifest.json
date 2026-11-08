@@ -1,0 +1,266 @@
+{
+  "id": "CA-HPR-2022-HEALTH-MIXTURES-8.4-8.10",
+  "jurisdiction": "CA",
+  "regulatedBy": "Hazardous Products Regulations (SOR/2015-17)",
+  "governingText": "https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html",
+  "interpretiveGuidance": "https://www.canada.ca/en/health-canada/services/environmental-workplace-health/occupational-health-safety/workplace-hazardous-materials-information-system/supplier-hazard-communication-requirements-whmis/guidance.html",
+  "sourceConsolidated": "2023-01-01",
+  "sourceLastAmended": "2022-12-15",
+  "scope": "Provisional ingredient-based screening only, never a complete classification for these health classes",
+  "code": "verification/whmis_health.js",
+  "test": "verification/test_whmis_health.js",
+  "warnings": [
+    "A negative automatic result means only that this limited ingredient pathway did not establish a classification.",
+    "HPR 2(3)-(5) Schedule 4 prescribed classifications must be checked.",
+    "HPR 2.4 synergy, 2.5 classification at lower limits, 2.6 maximum concentration and 2.9 biological availability may alter results.",
+    "Use actual percentage concentration basis; gas ingredients require volume percent rather than mass-percent substitution.",
+    "Whole-mixture scientific evidence and valid bridging can change ingredient-based conclusions. The user may flag this to withhold automated candidates."
+  ],
+  "rules": [
+    {
+      "id": "sensitisation_respiratory",
+      "sections": [
+        "8.4.2",
+        "8.4.3",
+        "8.4.4",
+        "8.4.5(a)"
+      ],
+      "thresholds": [
+        {
+          "category": "1",
+          "pct": 0.1
+        },
+        {
+          "category": "1A",
+          "pct": 0.1
+        },
+        {
+          "category": "1B",
+          "phase": "solid or liquid",
+          "pct": 1
+        },
+        {
+          "category": "1B",
+          "phase": "gas",
+          "pct": 0.2
+        }
+      ],
+      "concentrationMethod": "Solid/liquid %w/w; gas %v/v with separately entered volume concentration.",
+      "logic": "Assess respiratory and skin branches independently. Category 1B only if no respiratory Category 1A ingredient at or above 0.1%."
+    },
+    {
+      "id": "sensitisation_skin",
+      "sections": [
+        "8.4.2",
+        "8.4.5(b)"
+      ],
+      "thresholds": [
+        {
+          "category": "1",
+          "pct": 0.1
+        },
+        {
+          "category": "1A",
+          "pct": 0.1
+        },
+        {
+          "category": "1B",
+          "pct": 1
+        }
+      ],
+      "logic": "Category 1B requires absence of Category 1A ingredient at or above 0.1%."
+    },
+    {
+      "id": "mutagenicity",
+      "sections": [
+        "8.5.2",
+        "8.5.3",
+        "8.5.4",
+        "8.5.5"
+      ],
+      "thresholds": [
+        {
+          "category": "1A",
+          "pct": 0.1
+        },
+        {
+          "category": "1B",
+          "pct": 0.1
+        },
+        {
+          "category": "2",
+          "pct": 1
+        }
+      ],
+      "priority": "Category 1A > Category 1B > Category 2, subject to exceptions and conclusive whole-mixture evidence.",
+      "nuance": "HPR contains exceptions for whole-mixture conclusive positive and scientifically valid negative in-vivo germ cell mutagenicity tests. Generic ingredient Category 1 without A/B subcategory is flagged."
+    },
+    {
+      "id": "carcinogenicity",
+      "sections": [
+        "8.6.2",
+        "8.6.3",
+        "8.6.4",
+        "8.6.5"
+      ],
+      "thresholds": [
+        {
+          "category": "1A",
+          "pct": 0.1
+        },
+        {
+          "category": "1B",
+          "pct": 0.1
+        },
+        {
+          "category": "2",
+          "pct": 0.1
+        }
+      ],
+      "nuance": "HPR whole-mixture conclusive positive and scientifically valid negative studies take precedence in specified exceptions."
+    },
+    {
+      "id": "reproductive_toxicity",
+      "sections": [
+        "8.7.2",
+        "8.7.3",
+        "8.7.4",
+        "8.7.5",
+        "8.7.6"
+      ],
+      "thresholds": [
+        {
+          "category": "1A",
+          "pct": 0.1
+        },
+        {
+          "category": "1B",
+          "pct": 0.1
+        },
+        {
+          "category": "2",
+          "pct": 0.1
+        },
+        {
+          "category": "Effects on or via Lactation",
+          "pct": 0.1
+        }
+      ],
+      "nuance": "Effects on or via lactation are a separate classification and can coexist with 1A/1B/2 under 8.7.5(2). Other conclusive mixture study exceptions and 8.7.6 bridging require review."
+    },
+    {
+      "id": "stot_single_exposure",
+      "sections": [
+        "8.8.2",
+        "8.8.3",
+        "8.8.4",
+        "8.8.5(1)(a)-(d)",
+        "8.8.5(2)"
+      ],
+      "thresholds": [
+        {
+          "category": "1",
+          "pct": 1
+        },
+        {
+          "category": "2",
+          "pct": 1
+        },
+        {
+          "category": "3",
+          "pct": 20,
+          "exception": "Lower documented concentration known to elicit the Category 3 effect may be used."
+        }
+      ],
+      "combinedCategory3": {
+        "sameEffectRequired": true,
+        "effects": [
+          "narcotic",
+          "respiratory irritation"
+        ],
+        "minCount": 2,
+        "minEachPct": 1,
+        "minSumPct": 20,
+        "mayCoexistWith1Or2": "Only Category 3 established by paragraph 8.8.5(1)(c) may be retained alongside 1/2 under (2)."
+      },
+      "nuance": "No summation of transient narcotic-effect and respiratory-irritation percentages across different endpoints."
+    },
+    {
+      "id": "stot_repeated_exposure",
+      "sections": [
+        "8.9.2",
+        "8.9.3",
+        "8.9.4",
+        "8.9.5"
+      ],
+      "thresholds": [
+        {
+          "category": "1",
+          "pct": 1
+        },
+        {
+          "category": "2",
+          "pct": 1
+        }
+      ],
+      "nuance": "Per-ingredient threshold only; do not invent additive sum for subthreshold ingredients."
+    },
+    {
+      "id": "aspiration",
+      "sections": [
+        "8.10.2",
+        "8.10.3",
+        "8.10.4",
+        "8.10.5"
+      ],
+      "ingredientMinimumPct": 1,
+      "aspirationIngredientSumPct": 10,
+      "maxKinematicViscosity40Cmm2s": 20.5,
+      "pathways": [
+        {
+          "type": "homogeneous bulk mixture",
+          "status": "implemented provisional",
+          "conditions": [
+            "Sum Cat1 aspiration ingredients each present ≥1% reaches 10%",
+            "Kinematic mixture viscosity at 40°C ≤20.5 mm²/s"
+          ]
+        },
+        {
+          "type": "phase-separated mixture / layer",
+          "status": "not implemented",
+          "conditions": [
+            "Evaluate each layer's ingredient concentration and viscosity at 40°C independently per HPR 8.10.5(b)"
+          ]
+        }
+      ],
+      "bridgingNuance": "HPR 8.10.4 does not permit applying subsection 2.3(3) dilution when aspiration toxicant concentration <10%."
+    }
+  ],
+  "precedence": {
+    "sensitisation": "HPR 8.4.3 whole-mixture, 8.4.4 bridging, then 8.4.5 ingredients (independent respiratory/skin).",
+    "cmr": "HPR 8.5-8.7 evaluate ingredient triggers first, subject to conclusive valid mixture-study exceptions and restricted bridging provisions.",
+    "stot": "HPR 8.8.3 / 8.9.3 whole-mixture, 8.8.4 / 8.9.4 bridging, then 8.8.5 / 8.9.5 ingredient method.",
+    "aspiration": "HPR 8.10.3 whole-mixture, 8.10.4 bridging, then 8.10.5 ingredient method."
+  },
+  "coverage": {
+    "automated": [
+      "8.4.5 respiratory/skin sensitisation ingredient triggers",
+      "8.5.3/8.5.4 mutagenicity ingredient triggers",
+      "8.6.3/8.6.4 carcinogenicity ingredient triggers",
+      "8.7.3/8.7.4/8.7.5 reproductive and lactation ingredient triggers",
+      "8.8.5 STOT SE 1/2 and 3 same-effect rules",
+      "8.9.5 STOT RE ingredient triggers",
+      "8.10.5(a) homogeneous aspiration trigger"
+    ],
+    "notAutomated": [
+      "All substantive whole-mixture scientific assessments and bridging decisions in these sections",
+      "HPR 2.5/2.6 evidence-based concentration deviations and 2.9 bioavailability",
+      "HPR 8.10.5(b) distinct-layer aspiration route",
+      "HPR 8.4 biologic assay interpretation and dose response",
+      "HPR 8.5/8.6/8.7 conclusive scientific exception validation",
+      "HPR 8.8/8.9 target organ and route-specific scientific evaluation",
+      "HPR Schedule 4 national prescribed classifications",
+      "Bilingual labels, SDSs and conditional HPR Schedule 5 information elements"
+    ]
+  }
+}
