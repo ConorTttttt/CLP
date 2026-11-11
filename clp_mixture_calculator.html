@@ -3699,7 +3699,7 @@ function ingredientContributionDetailsHTML(i,r){
  return '<div class="contrib-breakdown"><div class="contrib-heading"><b>'+esc(i.name||"Ingredient")+
   ' — hazard contribution screen</b><small>'+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"Concentration missing")+'</small></div>'+
   '<p class="hint">The badge counts matching mixture classifications, not numerical or decisive contributors. “At/above cut-off” means the ingredient passes an applicable screening or category threshold; it does not mean this ingredient alone caused the mixture classification. “Below cut-off” is not an SDS Section 3 exemption.</p>'+
-  (r.outcomes?.length?'<h4>Decisions for mixture classifications</h4>'+r.outcomes.filter(o=>!/^manual/.test(o.hazardId)).map(o=>{
+  (r.outcomes?.length?'<h4>Decisions for mixture classifications</h4>'+r.outcomes.map(o=>{
    const a=ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state);
    return '<div class="contrib-entry"><b>'+esc(o.label)+'</b><div><span class="insight-tag impact-'+esc(a.status)+'">'+esc(CLP_AUDIT_LABELS[a.status])+'</span></div>'+
      '<div>'+esc(a.reason)+(a.math?'<div class="contrib-math">'+esc(a.math)+'</div>':'')+
@@ -3719,7 +3719,7 @@ function ingredientContributionDetailsHTML(i,r){
 
 function ingredientInsightsHTML(r){
  const rows=mix.ingredients.map((i,n)=>({i,n,pct:CLP.num(i.pct)}));
- const derived=r.outcomes.filter(o=>!/^manual/.test(o.hazardId));
+ const derived=r.outcomes;
 
  const grouped=derived.map(o=>{
    const assessments=rows.map(({i,n,pct})=>({i,n,pct,a:ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state)}));
@@ -3763,7 +3763,7 @@ function renderIngredientInsightMarkers(r){
   const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
   if(!element)return;
   const model=ingredientContributionModel(i,r);
-  const assessment=(r.outcomes||[]).filter(o=>!/^manual/.test(o.hazardId)).map(o=>ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state));
+  const assessment=(r.outcomes||[]).map(o=>ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state));
   const included=assessment.filter(a=>a.status==="counted"||a.status==="direct").length;
   const below=assessment.filter(a=>a.status==="below").length;
   const section=ingredientSection3Signals(i,classified,gas);
