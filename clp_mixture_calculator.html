@@ -3733,7 +3733,7 @@ function ingredientInsightsHTML(r){
        '<td><span class="insight-tag impact-'+esc(a.status)+'">'+esc(CLP_AUDIT_LABELS[a.status])+'</span></td>'+
        '<td>'+esc(a.reason)+(a.math?'<div class="contrib-math">'+esc(a.math)+'</div>':'')+
        '<small>CLP '+esc(a.reference)+' · <a href="'+CLP_AUDIT_LAW+'" target="_blank" rel="noopener noreferrer">Regulation</a></small></td></tr>').join("")+
-     '</tbody></table></div><p class="hint">Potential contributor does not mean decisive cause. Review substance-specific evidence and the original calculation trail.</p></details>';
+     '</tbody></table></div><p class="hint">potential contributor does not mean decisive cause. Review substance-specific evidence and the original calculation trail.</p></details>';
  });
  const classified=r.outcomes.length>0,gas=mix.state==="gas";
  const section=rows.map(({i,n,pct})=>({...ingredientSection3Signals(i,classified,gas),i,n,pct}));
