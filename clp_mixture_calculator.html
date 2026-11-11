@@ -173,6 +173,14 @@ details.h .ref{color:var(--mute);font-size:12px;margin:2px 0 4px}
 @media(prefers-color-scheme:dark){.insight-yes,.insight-tag.include{background:#173e2b;color:#b3ebca;border-color:#377c52}.insight-tag.review{background:#49351b;color:#ffda9a}}
 
 
+
+.insight-table .impact-counted,.insight-table .impact-direct,#ingredients-card .impact-counted,#ingredients-card .impact-direct{background:#e8f6ee;color:#195a35}
+.insight-table .impact-below,#ingredients-card .impact-below{background:#fff0d9;color:#815200}
+.insight-table .impact-review,.insight-table .impact-unattributed,#ingredients-card .impact-review,#ingredients-card .impact-unattributed{background:#ebeafb;color:#524987}
+.insight-table .impact-absent,.insight-table .impact-notused,.insight-table .impact-evaluated,#ingredients-card .impact-absent,#ingredients-card .impact-notused,#ingredients-card .impact-evaluated{background:var(--panel);color:var(--mute)}
+.insight-table td small,.contrib-entry small{display:block;margin-top:7px}
+.insight-table .contrib-math{overflow-wrap:anywhere}
+.insight-hazard a,.contrib-breakdown a{text-decoration:underline}
 /* Multiple independently editable, browser-local formulations. */
 .formulation-workspaces{padding:12px 20px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
 .formulation-workspaces-header{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
@@ -3538,6 +3546,147 @@ function ingredientCutoffDetails(i){
        "Physical mixture hazard not calculated from this ingredient's H-code."));
  return rows;
 }
+
+/* Auditable, per-outcome presentation. Classification remains CLP.classify().
+   An included term is not necessarily a but-for cause of the final category. */
+const CLP_AUDIT_LAW="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02008R1272-20260701";
+const CLP_AUDIT_REFS={
+ acute:"Article 11(2)–(3); Annex I §1.1.2.2, Table 1.1; §3.1.3.6, Table 3.1.2",
+ skin:"Annex I §1.1.2.2, Table 1.1; §3.2.3.3, Tables 3.2.3–3.2.4",
+ eye:"Annex I §1.1.2.2, Table 1.1; §3.3.3.3, Tables 3.3.3–3.3.4",
+ skinSens:"Annex I §3.4.3.3, Table 3.4.5",respSens:"Annex I §3.4.3.3, Table 3.4.5",
+ muta:"Annex I §3.5.3.1, Table 3.5.2",carc:"Annex I §3.6.3.1, Table 3.6.2",
+ repro:"Annex I §3.7.3.1, Table 3.7.2; Annex VI §1.1.2.1.2",
+ lact:"Annex I §3.7.3.1.2, Table 3.7.2",
+ stotSE:"Annex I §3.8.3.4, Table 3.8.3; §§3.8.3.4.5–6",
+ stotRE:"Annex I §3.9.3.4, Table 3.9.4",
+ asp:"Annex I §3.10.3.3.1; Table 1.1",
+ aquatic:"Article 11; Annex I §§1.1.2.2, 4.1.3.1, 4.1.3.5; Tables 1.1, 4.1.1–4.1.3",
+ edHH:"Annex I §3.11.3, Table 3.11.2",edEnv:"Annex I §4.2.3, Table 4.2.2",
+ pbt:"Annex I §4.3.3.1",vpvb:"Annex I §4.3.3.1",
+ pmt:"Annex I §4.4.3.1",vpvm:"Annex I §4.4.3.1",ozone:"Annex I §5.1.3, Table 5.1",
+ flam:"Annex I §2.6, Table 2.6.1"
+};
+const CLP_AUDIT_LABELS={counted:"Included in calculation",direct:"Direct classification trigger",
+ below:"Below cut-off / limit",evaluated:"Evaluated, not triggered",
+ absent:"No matching hazard input",notused:"Does not enter this equation",
+ review:"Requires review",unattributed:"Not attributable to an ingredient"};
+function ingredientOutcomeAssessment(i,o,mixtureState="liquid"){
+ const id=o.hazardId,p=CLP.num(i.pct),valid=Number.isFinite(p)&&p>=0&&p<=100;
+ const reference=CLP_AUDIT_REFS[id]||"CLP Article 9; Annex I";
+ const result=(status,reason,math="")=>({status,reason,math,reference});
+ const absent=(reason="No corresponding classified ingredient endpoint was entered.")=>result("absent",reason);
+ const review=(reason)=>result("review",reason);
+ const percent=(v)=>CLP.fmt(v)+"%";
+ const threshold=(lim,kind,trigger)=>{
+   if(!valid)return review("Invalid or missing concentration: cannot assess this limit.");
+   const pass=p+1e-9>=lim;
+   return result(pass?trigger?"direct":"counted":"below",
+     (pass?"At/above ":"Below ")+kind+". "+(pass?(trigger?"This ingredient can trigger the hazard class; the final category may be driven by another ingredient.":"Included in the modelled mixture calculation. Inclusion does not prove it alone determines the outcome."):"Not used by this calculation pathway. Check substance-specific evidence and exceptions."),
+     percent(p)+" "+(pass?"≥":"<")+" "+percent(lim)+" ("+kind+")");
+ };
+ const scl=(key)=>{const raw=i.scl?.[key];if(raw===null||raw===undefined||raw==="")return null;const v=CLP.num(raw);return Number.isFinite(v)&&v>0&&v<=100?v:NaN;};
+ const direct=(key,gcl)=>{
+   const s=scl(key);if(Number.isNaN(s))return review("Invalid entered SCL; verify the source.");
+   return threshold(s??gcl,s!==null?"SCL":"GCL",true);
+ };
+ if(/^manual/.test(id)||id==="flam")return result("unattributed",id==="flam"?
+   "The mixture's flash point and boiling point determine this physical classification, not a raw material's H-code.":
+   "The classification is entered from whole-mixture evidence; assigning responsibility to raw materials is not supported.");
+ if(id==="acute"){
+   const route=o.route||(/oral/i.test(o.label)?"oral":/dermal/i.test(o.label)?"dermal":"vapour");
+   const a=route==="oral"?i.acute?.oral:route==="dermal"?i.acute?.dermal:i.acute?.inh;
+   if(!a||(route!=="oral"&&route!=="dermal"&&a.form!==route))return absent("No acute-toxicity data for this specific route/form.");
+   const ate=CLP.num(a.ate),cat=ate>0?CLP.catFromATE(route,ate):Number(a.cat);
+   if(a.ate!==""&&a.ate!=null&&!(ate>0))return review("Invalid entered ATE: check fallback and classification trail.");
+   if(!cat)return Number.isFinite(ate)&&ate>0?result("notused","ATE is outside the acute toxicity classification range for this route."):absent();
+   const cut=cat<=3?0.1:1,check=threshold(cut,"Table 1.1 generic cut-off (Cat. "+cat+")",false);
+   if(check.status==="counted"){
+     const used=ate>0?ate:CLP.AT[route]?.conv?.[cat-1];
+     if(used>0)check.math=percent(p)+" / "+CLP.fmt(used)+" = "+CLP.fmt(p/used,6)+" (C / ATE)";
+     check.reason="Included as a term in the route-specific ATEmix sum; this does not mean it alone caused the classification.";
+   }
+   return check;
+ }
+ if(id==="aquatic"){
+   const acute=/Acute/i.test(o.label||""),target=/Chronic\s*([1-4])/i.exec(o.label||"");
+   const c=acute?(i.aquaAcute?"1":""):String(i.aquaChronic||"");
+   if(!c)return absent("No matching "+(acute?"Aquatic Acute 1":"Aquatic Chronic")+" input.");
+   if(!acute&&target&&Number(c)>Number(target[1]))return result("notused","This ingredient's Chronic "+c+" category is not used in the mixture Chronic "+target[1]+" equation.");
+   const m=c==="1"?CLP.num(acute?i.mAcute:i.mChronic):1;
+   if(c==="1"&&(!Number.isSafeInteger(m)||m<1))return review("M-factor missing or invalid. The engine's interim M=1 is provisional, not a verified exclusion.");
+   const cut=c==="1"?0.1/m:1,check=threshold(cut,c==="1"?"M-adjusted cut-off 0.1% / "+m:"Table 1.1 generic cut-off",false);
+   if(check.status==="counted"){
+     const t=target?Number(target[1]):1,n=Number(c);
+     const w=acute?1:n===1?(t===2?10:t===3?100:1):n===2&&t===3?10:1;
+     const usedM=!acute&&t===4?1:m; // Chronic 4 uses unweighted concentrations.
+     check.math=percent(p)+(usedM!==1?" × M "+usedM:"")+(w!==1?" × "+w:"")+" = "+percent(p*usedM*w)+" weighted term";
+     check.reason="Included in the "+(acute?"Acute 1":"Chronic "+t)+" summation. The combined weighted result, not this term alone, determines classification.";
+   }
+   return check;
+ }
+ if(id==="skin"||id==="eye"){
+   const skin=id==="skin",severe=!!i.skinCorr&&i.skinCorr!=="2";
+   if(!(skin?i.skinCorr:(severe||i.eye)))return absent();
+   const key=skin?(i.skinCorr==="2"?"skinIrrit":"skinCorr"):(severe||i.eye==="1"?"eyeDam":"eyeIrrit");
+   const s=scl(key);if(Number.isNaN(s))return review("Invalid SCL; confirm ingredient evidence.");
+   const relevance=s!==null&&s<1?0:1;
+   if(!valid)return review("Enter a valid concentration.");
+   if(relevance===0?p<=0:p+1e-9<1)
+     return result("below","Below the relevance screen used by this model. CLP expressly allows lower levels where supported by evidence; this is not an unconditional legal exclusion.",percent(p)+" < "+percent(relevance||1)+" (relevance)");
+   if(i.nonAdditive){
+     const gcl=skin?(i.skinCorr==="2"?3:1):((severe||i.eye==="1")?1:3),lim=s??gcl;
+     const passed=p+1e-9>=lim;
+     return result(passed?"direct":"evaluated",passed?
+       "Non-additive ingredient independently reaches the applicable classification threshold.":
+       "Non-additive ingredient was checked but is below its direct trigger. It is not summed additively.",
+       percent(p)+" "+(passed?"≥":"<")+" "+percent(lim)+" ("+(s!==null?"SCL":"non-additive GCL")+")");
+   }
+   const isSevere=skin?i.skinCorr!=="2":severe||i.eye==="1";
+   return result("counted","Included in the additive "+(skin?"skin":"eye")+" calculation. Actual classification depends on summed/weighted contributions, SCLs and other mixture evidence.",
+     isSevere?percent(p)+" severe; 10 × "+percent(p)+" for irritation":percent(p)+" irritant component");
+ }
+ if(id==="repro"){
+   const parts=[["reproFert","fertility"],["reproDev","development"],["repro","undifferentiated"]].filter(([key])=>!!i[key]);
+   if(!parts.length)return absent();
+   if(!valid)return review("Enter a valid concentration.");
+   const terms=parts.map(([key,name])=>{const a=scl(key),b=scl("repro");return {name,lim:a??b??(i[key]==="2"?3:0.3),bad:Number.isNaN(a)||Number.isNaN(b)};});
+   if(terms.some(t=>t.bad))return review("Entered reproductive SCL invalid.");
+   const met=terms.filter(t=>p+1e-9>=t.lim);
+   return result(met.length?"direct":"below",met.length?
+     "Reaches a classification limit for "+met.map(t=>t.name).join(", ")+". Differentiated effects must be assessed separately.":
+     "Below all recorded reproductive-effect limits.",
+     terms.map(t=>t.name+": "+percent(p)+" "+(p+1e-9>=t.lim?"≥":"<")+" "+percent(t.lim)).join("; "));
+ }
+ if(id==="stotSE"||id==="stotRE"){
+   if(id==="stotSE"&&/STOT SE 3/i.test(o.label||"")){
+     const unspecified=i.stotSE==="3"&&!i.stotSEresp&&!i.stotSEnarc;
+     const matches=unspecified||(/respiratory/i.test(o.label)&&i.stotSEresp)||(/narcotic/i.test(o.label)&&i.stotSEnarc);
+     if(!matches)return absent("No matching Category 3 effect entered.");
+     const r=threshold(1,"Category 3 relevant-ingredient cut-off",false);
+     if(r.status==="counted")r.reason="Included in the effect-specific Category 3 sum (generic 20% total, subject to expert judgement).";
+     return r;
+   }
+   if(!["1","2"].includes(String(i[id])))return absent();
+   if(i[id]==="2")return direct(id,10);
+   const cat1=scl(id)??10,cat2=scl(id+"2")??1;
+   if(Number.isNaN(cat1)||Number.isNaN(cat2))return review("Invalid STOT band SCL.");
+   if(!valid)return review("Enter a valid concentration.");
+   return result(p+1e-9>=cat2?"direct":"below",
+     p+1e-9>=cat1?"Category 1 direct trigger met.":p+1e-9>=cat2?"Category 1 ingredient triggers the Category 2 band, not Category 1.":"Below Category 2 band lower limit.",
+     percent(p)+" vs Cat. 2 "+percent(cat2)+" / Cat. 1 "+percent(cat1));
+ }
+ if(id==="asp")return i.asp?threshold(1,"aspiration relevant-ingredient cut-off (mixture also needs ≥10% sum and viscosity test)",false):absent();
+ const cat={skinSens:i.skinSens,respSens:i.respSens,muta:i.muta,carc:i.carc,lact:i.lact,
+ edHH:i.edHH,edEnv:i.edEnv,pbt:i.pbt,vpvb:i.vpvb,pmt:i.pmt,vpvm:i.vpvm,ozone:i.ozone}[id];
+ if(!cat)return absent();
+ const gcl={skinSens:i.skinSens==="1A"?0.1:1,respSens:i.respSens==="1A"?0.1:mixtureState==="gas"?0.2:1,
+ muta:i.muta==="2"?1:0.1,carc:i.carc==="2"?1:0.1,lact:0.3,
+ edHH:i.edHH==="1"?0.1:1,edEnv:i.edEnv==="1"?0.1:1,pbt:0.1,vpvb:0.1,pmt:0.1,vpvm:0.1,ozone:0.1}[id];
+ if(gcl!==undefined)return direct(id,gcl);
+ return review("No verified contribution pathway for this hazard.");
+}
+
 function ingredientContributionModel(i,r){
  const entries=ingredientCutoffDetails(i);
  const outcomes=(r.outcomes||[]).filter(x=>!/^manual/.test(x.hazardId));
@@ -3550,7 +3699,14 @@ function ingredientContributionDetailsHTML(i,r){
  return '<div class="contrib-breakdown"><div class="contrib-heading"><b>'+esc(i.name||"Ingredient")+
   ' — hazard contribution screen</b><small>'+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"Concentration missing")+'</small></div>'+
   '<p class="hint">The badge counts matching mixture classifications, not numerical or decisive contributors. “At/above cut-off” means the ingredient passes an applicable screening or category threshold; it does not mean this ingredient alone caused the mixture classification. “Below cut-off” is not an SDS Section 3 exemption.</p>'+
-  (model.entries.length?model.entries.map(e=>
+  (r.outcomes?.length?'<h4>Decisions for mixture classifications</h4>'+r.outcomes.map(o=>{
+   const a=ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state);
+   return '<div class="contrib-entry"><b>'+esc(o.label)+'</b><div><span class="insight-tag impact-'+esc(a.status)+'">'+esc(CLP_AUDIT_LABELS[a.status])+'</span></div>'+
+     '<div>'+esc(a.reason)+(a.math?'<div class="contrib-math">'+esc(a.math)+'</div>':'')+
+     '<small>CLP '+esc(a.reference)+' · <a href="'+CLP_AUDIT_LAW+'" target="_blank" rel="noopener noreferrer">Regulation</a></small></div></div>';
+ }).join(''):'<p class="hint">No ingredient-based mixture outcome to attribute.</p>')+
+ '<h4>Screening of all entered ingredient hazards</h4>'+
+ (model.entries.length?model.entries.map(e=>
    '<div class="contrib-entry"><div><b>'+esc(e.label)+'</b><div class="hint">'+esc(e.source)+'</div></div>'+
    '<div><span class="contrib-state '+e.status+'">'+
     (e.status==="below"?"Below cut-off":e.status==="included"?"At/above cut-off":"Review")+'</span>'+
@@ -3563,29 +3719,30 @@ function ingredientContributionDetailsHTML(i,r){
 
 function ingredientInsightsHTML(r){
  const rows=mix.ingredients.map((i,n)=>({i,n,pct:CLP.num(i.pct)}));
- const derived=r.outcomes.filter(o=>!/^manual/.test(o.hazardId));
+ const derived=r.outcomes;
+
  const grouped=derived.map(o=>{
-   const h=r.hazards.find(h=>h.id===o.hazardId);
-   const candidates=rows.filter(({i})=>h&&hazardIngredientRelevant(h,i));
-   const absent=rows.filter(({i})=>!h||!hazardIngredientRelevant(h,i));
-   return '<details class="insight-hazard"><summary><b>'+esc(o.label)+'</b> <span class="hint">'+candidates.length+
-     ' potential contributor(s) · '+absent.length+' not identified</span></summary>'+
-     '<div class="insight-chips">'+rows.map(({i,n,pct})=>{
-       const relevant=h&&hazardIngredientRelevant(h,i);
-       return '<span class="insight-pill '+(relevant?'insight-yes':'insight-no')+'">'+
-         (relevant?'● ':'○ ')+esc(i.name||"Ingredient "+(n+1))+
-         ' · '+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"% missing")+
-         (relevant?' · relevant input':' · not identified')+'</span>';
-     }).join("")+'</div><div class="hint">Potential contributor means the relevant ingredient hazard is recorded, not that the ingredient alone crosses a classification limit. The engine calculation trail determines the actual mixture outcome.</div></details>';
+   const assessments=rows.map(({i,n,pct})=>({i,n,pct,a:ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state)}));
+   const included=assessments.filter(x=>["counted","direct"].includes(x.a.status)).length;
+   const below=assessments.filter(x=>x.a.status==="below").length;
+   const review=assessments.filter(x=>x.a.status==="review").length;
+   return '<details class="insight-hazard"><summary><b>'+esc(o.label)+'</b><span class="hint">'+
+     included+' included / triggered · '+below+' below limit · '+review+' review</span></summary>'+
+     '<div class="insight-table-wrap"><table class="insight-table"><thead><tr><th>Raw material</th><th>Concentration</th><th>Contribution decision</th><th>Reason and CLP provision</th></tr></thead><tbody>'+
+     assessments.map(({i,n,pct,a})=>'<tr><td><b>'+esc(i.name||"Ingredient "+(n+1))+'</b></td><td>'+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"Not entered")+'</td>'+
+       '<td><span class="insight-tag impact-'+esc(a.status)+'">'+esc(CLP_AUDIT_LABELS[a.status])+'</span></td>'+
+       '<td>'+esc(a.reason)+(a.math?'<div class="contrib-math">'+esc(a.math)+'</div>':'')+
+       '<small>CLP '+esc(a.reference)+' · <a href="'+CLP_AUDIT_LAW+'" target="_blank" rel="noopener noreferrer">Regulation</a></small></td></tr>').join("")+
+     '</tbody></table></div><p class="hint">potential contributor does not mean decisive cause. Review substance-specific evidence and the original calculation trail.</p></details>';
  });
  const classified=r.outcomes.length>0,gas=mix.state==="gas";
  const section=rows.map(({i,n,pct})=>({...ingredientSection3Signals(i,classified,gas),i,n,pct}));
  const order={include:0,review:1,"no-trigger":2};
  section.sort((a,b)=>order[a.status]-order[b.status]||b.pct-a.pct);
  const summary=(status)=>section.filter(x=>x.status===status).length;
- return '<div class="card" data-view="ingredientsInsight"><h2>Ingredient contribution and SDS Section 3 screening</h2>'+
+ return '<div class="card" data-view="ingredientsInsight"><h2>Ingredient-level classification audit and SDS Section 3 screening</h2>'+
  '<div class="hint">Two different questions: which ingredient hazard inputs are relevant to each calculated mixture classification, and which constituent substances must be declared in SDS Section 3. Not all Section 3 ingredients drive the mixture classification.</div>'+
- '<h3 style="margin:14px 0 8px">1. Mixture classification — ingredient relevance</h3>'+
+ '<h3 style="margin:14px 0 8px">1. Mixture classification — per-raw-material decisions</h3>'+
  (grouped.join("")||'<div class="hint">No ingredient-based mixture classifications yet. This does not mean that the ingredients have no hazards.</div>')+
  (r.outcomes.some(o=>/^manual/.test(o.hazardId))?'<div class="note">Manual/test-based mixture classifications cannot be allocated to individual ingredients from this calculator.</div>':'')+
  '<h3 style="margin:17px 0 8px">2. REACH SDS Section 3.2 — substance screening</h3>'+
@@ -3606,13 +3763,16 @@ function renderIngredientInsightMarkers(r){
   const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
   if(!element)return;
   const model=ingredientContributionModel(i,r);
+  const assessment=(r.outcomes||[]).map(o=>ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state));
+  const included=assessment.filter(a=>a.status==="counted"||a.status==="direct").length;
+  const below=assessment.filter(a=>a.status==="below").length;
   const section=ingredientSection3Signals(i,classified,gas);
   const shown=ingredientBreakdownsOpen.has(i._id);
-  element.innerHTML='<button type="button" class="insight-tag insight-drill '+(model.count?'contributor':'not-contributor')+
+  element.innerHTML='<button type="button" class="insight-tag insight-drill '+(included?'contributor':'not-contributor')+
     '" data-contribution-toggle="'+i._id+'" aria-expanded="'+shown+
     '" aria-controls="ingredient-contributions-'+i._id+'" title="See matching classifications and ingredient cut-offs">'+
-    (model.count?'Relevant to '+model.count+' mixture hazard'+(model.count===1?'':'s'):'No matching mixture hazards')+
-    (model.below?' · '+model.below+' below cut-off':'')+' ▾</button>'+
+    (included?'Included in '+included+' assessment'+(included===1?'':'s'):'No confirmed calculated contribution')+
+    (below?' · '+below+' below limit':'')+' ▾</button>'+
     '<span class="insight-tag '+esc(section.status)+'" title="'+esc(section.reasons.join('; ')||
       section.review.join('; '))+'">'+(section.status==="include"?"SDS §3: disclose indicated":"SDS §3: review")+'</span>';
   const detail=document.querySelector('tr[data-contribution-row="'+i._id+'"] [data-contribution-detail]');

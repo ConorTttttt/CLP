@@ -16,6 +16,7 @@ and shows every calculation step with the Annex I table/page reference:
 - STOT single / repeated, aspiration (with viscosity)
 - Aquatic acute / chronic summation with independently entered Acute/Chronic 1 M-factors;
   missing/invalid M values trigger prominent provisional classification warnings
+- Ingredient-level classification audit: per raw material and per mixture classification, shows inclusion, cut-off/GCL/SCL comparisons, direct triggers, route/form or aquatic category mismatches, M-factor-weighted terms, review states and exact CLP section/table links; manual and physical classifications are marked as not ingredient-attributable. See docs/ingredient_contribution_audit.md.
 - New classes: ED HH/ENV, PBT, vPvB, PMT, vPvM, ozone
 - Flammable liquid from flash point / initial boiling point
 - Label summary: signal word, Article 26-selected pictograms with a per-hazard audit, Article 27-selected H/EUH statements with an omission audit, PARTIAL Article 28 P-statement candidates with a required/conditional audit, SDS-on-request triggers
