@@ -3619,7 +3619,8 @@ function ingredientOutcomeAssessment(i,o,mixtureState="liquid"){
    if(check.status==="counted"){
      const t=target?Number(target[1]):1,n=Number(c);
      const w=acute?1:n===1?(t===2?10:t===3?100:1):n===2&&t===3?10:1;
-     check.math=percent(p)+" × M "+m+(w!==1?" × "+w:"")+" = "+percent(p*m*w)+" weighted term";
+     const usedM=!acute&&t===4?1:m; // Chronic 4 uses unweighted concentrations.
+     check.math=percent(p)+(usedM!==1?" × M "+usedM:"")+(w!==1?" × "+w:"")+" = "+percent(p*usedM*w)+" weighted term";
      check.reason="Included in the "+(acute?"Acute 1":"Chronic "+t)+" summation. The combined weighted result, not this term alone, determines classification.";
    }
    return check;
@@ -3699,7 +3700,7 @@ function ingredientContributionDetailsHTML(i,r){
   ' — hazard contribution screen</b><small>'+esc(Number.isFinite(pct)?CLP.fmt(pct)+"%":"Concentration missing")+'</small></div>'+
   '<p class="hint">The badge counts matching mixture classifications, not numerical or decisive contributors. “At/above cut-off” means the ingredient passes an applicable screening or category threshold; it does not mean this ingredient alone caused the mixture classification. “Below cut-off” is not an SDS Section 3 exemption.</p>'+
   (r.outcomes?.length?'<h4>Decisions for mixture classifications</h4>'+r.outcomes.filter(o=>!/^manual/.test(o.hazardId)).map(o=>{
-   const a=ingredientOutcomeAssessment(i,o,mix.state);
+   const a=ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state);
    return '<div class="contrib-entry"><b>'+esc(o.label)+'</b><div><span class="insight-tag impact-'+esc(a.status)+'">'+esc(CLP_AUDIT_LABELS[a.status])+'</span></div>'+
      '<div>'+esc(a.reason)+(a.math?'<div class="contrib-math">'+esc(a.math)+'</div>':'')+
      '<small>CLP '+esc(a.reference)+' · <a href="'+CLP_AUDIT_LAW+'" target="_blank" rel="noopener noreferrer">Regulation</a></small></div></div>';
@@ -3721,7 +3722,7 @@ function ingredientInsightsHTML(r){
  const derived=r.outcomes.filter(o=>!/^manual/.test(o.hazardId));
 
  const grouped=derived.map(o=>{
-   const assessments=rows.map(({i,n,pct})=>({i,n,pct,a:ingredientOutcomeAssessment(i,o,mix.state)}));
+   const assessments=rows.map(({i,n,pct})=>({i,n,pct,a:ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state)}));
    const included=assessments.filter(x=>["counted","direct"].includes(x.a.status)).length;
    const below=assessments.filter(x=>x.a.status==="below").length;
    const review=assessments.filter(x=>x.a.status==="review").length;
@@ -3762,7 +3763,7 @@ function renderIngredientInsightMarkers(r){
   const element=document.querySelector('tr[data-id="'+i._id+'"] [data-ingredient-insight]');
   if(!element)return;
   const model=ingredientContributionModel(i,r);
-  const assessment=(r.outcomes||[]).filter(o=>!/^manual/.test(o.hazardId)).map(o=>ingredientOutcomeAssessment(i,o,mix.state));
+  const assessment=(r.outcomes||[]).filter(o=>!/^manual/.test(o.hazardId)).map(o=>ingredientOutcomeAssessment(i,o,typeof mix==='undefined'?'liquid':mix.state));
   const included=assessment.filter(a=>a.status==="counted"||a.status==="direct").length;
   const below=assessment.filter(a=>a.status==="below").length;
   const section=ingredientSection3Signals(i,classified,gas);
