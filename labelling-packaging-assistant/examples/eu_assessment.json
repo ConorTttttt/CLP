@@ -1,0 +1,50 @@
+{
+  "jurisdiction": "EU",
+  "as_of": "2026-11-12",
+  "product_id": "EU-LABEL-DEMO-001",
+  "market_member_state": "IE",
+  "general_public": true,
+  "ingredient_concentration_basis": "percent_w_w",
+  "ingredients": {
+    "67-56-1": 3,
+    "75-09-2": 0
+  },
+  "classification": {
+    "approved_by_user": true,
+    "is_hazardous": true,
+    "hazard_categories": [
+      "Flam. Liq. 2"
+    ],
+    "hazard_statements": [
+      "H225"
+    ],
+    "pictogram_candidates": [
+      "GHS02"
+    ],
+    "signal_word_candidates": [
+      "Danger"
+    ]
+  },
+  "packaging": {
+    "packaged": true,
+    "is_aerosol": false,
+    "sealed_spray": false,
+    "transportable_gas_receptacle": false,
+    "capacity_ml": 500,
+    "quantity_elsewhere_on_package": false,
+    "child_attractive_design": false
+  },
+  "product_flags": {
+    "cyanoacrylate_adhesive": false,
+    "contains_isocyanates": false,
+    "isocyanates_already_identified_on_label": false,
+    "contains_epoxy_mw_lte_700": false,
+    "epoxy_already_identified_on_label": false,
+    "is_paint_or_varnish": false
+  },
+  "lead_metal_percent_w_w": 0,
+  "active_chlorine_percent": 0,
+  "label": {
+    "claims": []
+  }
+}

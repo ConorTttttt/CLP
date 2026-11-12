@@ -1,0 +1,64 @@
+{
+  "source_id": "EU-CLP-02008R1272-20260701",
+  "kind": "EU consolidated regulation (informational, not authentic OJ)",
+  "title": "Regulation (EC) No 1272/2008, consolidated 1 July 2026",
+  "jurisdiction": "EU",
+  "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+  "source_pdf_filename": "CELEX_02008R1272-20260701_EN_TXT.pdf",
+  "source_pdf_sha256": "602529287cbdbbb80f4bc17404fef58041ce5edf30646509b3cdb6991b7fc8a7",
+  "page_count": 1584,
+  "assessment_date": "2026-11-12",
+  "source_warning": "The consolidation explicitly has no legal effect. Verify authentic Official Journal acts, amendment application dates, and transitional provisions.",
+  "amendment_not_in_this_pdf": {
+    "regulation": "EU 2025/2439 (amending application dates in EU 2024/2865)",
+    "official_journal_url": "https://eur-lex.europa.eu/eli/reg/2025/2439/oj",
+    "key_application_dates": [
+      "2026-07-01",
+      "2027-01-01",
+      "2028-01-01"
+    ],
+    "review_status": "MUST_BE_RESOLVED_PER_PROVISION_BEFORE_COMPLIANCE_USE"
+  },
+  "sections": [
+    {
+      "citation": "EU CLP, Articles 17-35",
+      "pdf_pages": "19-32",
+      "coverage": "labelling and packaging articles, including exceptions and precedence"
+    },
+    {
+      "citation": "EU CLP, Annex I",
+      "pdf_pages": "63-238",
+      "coverage": "class-specific label elements, dimensions and exemptions"
+    },
+    {
+      "citation": "EU CLP, Annex II",
+      "pdf_pages": "239-247",
+      "coverage": "supplemental statements, CRF, TWD and special packaging"
+    },
+    {
+      "citation": "EU CLP, Annex III",
+      "pdf_pages": "248-364",
+      "coverage": "official hazard statement wording"
+    },
+    {
+      "citation": "EU CLP, Annex IV",
+      "pdf_pages": "365-520",
+      "coverage": "precautionary statements"
+    },
+    {
+      "citation": "EU CLP, Annex V",
+      "pdf_pages": "521-525",
+      "coverage": "pictograms"
+    },
+    {
+      "citation": "EU CLP, Annex VI",
+      "pdf_pages": "526-1561",
+      "coverage": "harmonised entries and notes"
+    },
+    {
+      "citation": "EU CLP, Annex VIII",
+      "pdf_pages": "1562-1584",
+      "coverage": "poison centre notification"
+    }
+  ]
+}
