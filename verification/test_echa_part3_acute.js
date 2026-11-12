@@ -21,9 +21,9 @@ function component(name, pct, opts = {}) {
 }
 const inert = pct => component('Inert carrier', pct);
 const result = (...ingredients) => CLP.classify({state:'liquid',ingredients});
-const inhalation = r => r.outcomes.filter(o => /Acute Tox\\. \\d \\(inhalation\\)/.test(o.label));
-const oral = r => r.outcomes.filter(o => /Acute Tox\\. \\d \\(oral\\)/.test(o.label));
-const trail = r => r.hazards.find(h=>h.id==='acute').steps.join('\\n');
+const inhalation = r => r.outcomes.filter(o => /Acute Tox\. \d \(inhalation\)/.test(o.label));
+const oral = r => r.outcomes.filter(o => /Acute Tox\. \d \(oral\)/.test(o.label));
+const trail = r => r.hazards.find(h=>h.id==='acute').steps.join('\n');
 
 check('Mixed gas and vapour: individually unclassified contributions combine to Acute 4', () => {
   const r = result(component('Gas',20,{inh:{form:'gas',cat:'4'}}),
@@ -66,7 +66,7 @@ check('Single-form gas toxicity: inhalation unknown fraction counts regardless o
   const r = result(component('Gas',19,{inh:{form:'gas',cat:'4'}}),
     component('Unknown',20,{inhUnknown:true}),inert(61));
   assert.deepEqual(inhalation(r).map(o=>o.label), ['Acute Tox. 4 (inhalation)']);
-  assert.match(trail(r), /inhalation \\(gas\\) unknown data/);
+  assert.match(trail(r), /inhalation \(gas\) unknown data/);
 });
 check('Mixed-form unknown >10%: combined fraction denominator is corrected', () => {
   const r = result(component('Gas',12,{inh:{form:'gas',cat:'4'}}),
