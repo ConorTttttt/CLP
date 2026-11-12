@@ -85,7 +85,7 @@ t('pH 11.5 -> corrosive', has(run([water(100)], { pH: '11.5' }), 'Skin Corr. 1')
 t('pH 11.49 -> none', !has(run([water(100)], { pH: '11.49' }), 'Skin Corr. 1'));
 t('pH 2 -> corrosive', has(run([water(100)], { pH: '2' }), 'Skin Corr. 1'));
 t('pH 2.01 -> none', !has(run([water(100)], { pH: '2.01' }), 'Skin Corr. 1'));
-t('pH 12 + reserve ok -> not applied', !has(run([water(100)], { pH: '12', pHReserveOk: true }), 'Skin Corr. 1'));
+ t('pH 12 + reserve-only -> still Skin Corr 1 & Eye Dam 1', (() => { const r = run([water(100)], { pH: '12', pHReserveOk: true }); return has(r, 'Skin Corr. 1') && has(r, 'Eye Dam. 1') && r.warnings.some(w => /acid\/alkaline reserve/.test(w)); })());
 
 /* ---------- 5. acute ---------- */
 const ac = (rows, mix) => run(rows.concat([water(100 - rows.reduce((s, x) => s + x.pct, 0))]), mix);
