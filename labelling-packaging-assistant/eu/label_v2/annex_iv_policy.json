@@ -1,0 +1,230 @@
+{
+  "id": "EU-ANNEX-IV-SELECTOR-PARTIAL-2026-11-12",
+  "jurisdiction": "EU",
+  "as_of": "2026-11-12",
+  "legal_basis": [
+    "EU CLP Article 22(2)-(4)",
+    "EU CLP Article 28(1)-(3)",
+    "EU CLP Annex IV Part 1 and 2"
+  ],
+  "max_statements_default": 6,
+  "completion": "NOT_CERTIFIED: conditions not modelled for every candidate; user wordings are not validated against legally required alternatives",
+  "policy": {
+    "P210": {
+      "code": "P210",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 366,
+      "priority": 10,
+      "condition": "ALWAYS",
+      "english_template": "Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking."
+    },
+    "P233": {
+      "code": "P233",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 369,
+      "priority": 90,
+      "condition": "FLAG_VOLATILE",
+      "english_template": "Keep container tightly closed."
+    },
+    "P243": {
+      "code": "P243",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 370,
+      "priority": 60,
+      "condition": "FLAG_VOLATILE",
+      "english_template": "Take action to prevent static discharges."
+    },
+    "P280": {
+      "code": "P280",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 373,
+      "priority": 14,
+      "condition": "WORDING_PPE",
+      "english_template": null
+    },
+    "P303+P361+P353": {
+      "code": "P303+P361+P353",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 388,
+      "priority": 16,
+      "condition": "ALWAYS",
+      "english_template": "IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water."
+    },
+    "P370+P378": {
+      "code": "P370+P378",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 387,
+      "priority": 25,
+      "condition": "FLAG_WATER_AND_WORDING",
+      "english_template": "In case of fire: Use {extinguishing_media} to extinguish."
+    },
+    "P403+P235": {
+      "code": "P403+P235",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 392,
+      "priority": 55,
+      "condition": "FLAMMABLE_STORAGE",
+      "english_template": "Store in a well-ventilated place. Keep cool."
+    },
+    "P501": {
+      "code": "P501",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.5; Article 28(2)",
+      "pdf_page": 393,
+      "priority": 5,
+      "condition": "WORDING_DISPOSAL",
+      "english_template": "Dispose of contents/container to {disposal_route}."
+    },
+    "P264": {
+      "code": "P264",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 372,
+      "priority": 52,
+      "condition": "WORDING_WASH",
+      "english_template": "Wash {wash_after_handling} thoroughly after handling."
+    },
+    "P305+P351+P338": {
+      "code": "P305+P351+P338",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 388,
+      "priority": 12,
+      "condition": "ALWAYS",
+      "english_template": "IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing."
+    },
+    "P337+P313": {
+      "code": "P337+P313",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 387,
+      "priority": 22,
+      "condition": "ALWAYS",
+      "english_template": "If eye irritation persists: Get medical advice/attention."
+    },
+    "P302+P352": {
+      "code": "P302+P352",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 385,
+      "priority": 15,
+      "condition": "ALWAYS",
+      "english_template": "IF ON SKIN: Wash with plenty of water."
+    },
+    "P332+P313": {
+      "code": "P332+P313",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 386,
+      "priority": 21,
+      "condition": "ALWAYS",
+      "english_template": "If skin irritation occurs: Get medical advice/attention."
+    },
+    "P362+P364": {
+      "code": "P362+P364",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 387,
+      "priority": 45,
+      "condition": "ALWAYS",
+      "english_template": "Take off contaminated clothing and wash it before reuse."
+    },
+    "P261": {
+      "code": "P261",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 371,
+      "priority": 50,
+      "condition": "WORDING_INHALATION",
+      "english_template": "Avoid breathing {inhalation_forms}."
+    },
+    "P272": {
+      "code": "P272",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 373,
+      "priority": 40,
+      "condition": "PROFESSIONAL_ONLY",
+      "english_template": "Contaminated work clothing should not be allowed out of the workplace."
+    },
+    "P333+P313": {
+      "code": "P333+P313",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 386,
+      "priority": 19,
+      "condition": "ALWAYS",
+      "english_template": "If skin irritation or rash occurs: Get medical advice/attention."
+    },
+    "P301+P330+P331": {
+      "code": "P301+P330+P331",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 388,
+      "priority": 11,
+      "condition": "ALWAYS",
+      "english_template": "IF SWALLOWED: Rinse mouth. Do NOT induce vomiting."
+    },
+    "P304+P340": {
+      "code": "P304+P340",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 385,
+      "priority": 20,
+      "condition": "ALWAYS",
+      "english_template": "IF INHALED: Remove person to fresh air and keep comfortable for breathing."
+    },
+    "P405": {
+      "code": "P405",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 390,
+      "priority": 80,
+      "condition": "ALWAYS",
+      "english_template": "Store locked up."
+    },
+    "P310": {
+      "code": "P310",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 377,
+      "priority": 18,
+      "condition": "WORDING_EMERGENCY",
+      "english_template": "Immediately call {emergency_contact}."
+    },
+    "P363": {
+      "code": "P363",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 382,
+      "priority": 42,
+      "condition": "ALWAYS",
+      "english_template": "Wash contaminated clothing before reuse."
+    },
+    "P260": {
+      "code": "P260",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "pdf_page": 371,
+      "priority": 48,
+      "condition": "WORDING_NO_BREATHE",
+      "english_template": "Do not breathe {no_breathe_forms}."
+    },
+    "P102": {
+      "code": "P102",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.1",
+      "pdf_page": 365,
+      "priority": 35,
+      "condition": "CONSUMER_GENERAL",
+      "english_template": "Keep out of reach of children."
+    },
+    "P240": {
+      "code": "P240",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "pdf_page": 370,
+      "priority": 70,
+      "condition": "FLAG_VOLATILE",
+      "english_template": "Ground and bond container and receiving equipment."
+    },
+    "P241": {
+      "code": "P241",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "pdf_page": 370,
+      "priority": 71,
+      "condition": "FLAG_VOLATILE",
+      "english_template": "Use explosion-proof equipment."
+    },
+    "P242": {
+      "code": "P242",
+      "annex_iv_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "pdf_page": 370,
+      "priority": 72,
+      "condition": "FLAG_LOW_IGNITION_ENERGY",
+      "english_template": "Use non-sparking tools."
+    }
+  }
+}

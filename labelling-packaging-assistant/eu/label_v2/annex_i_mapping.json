@@ -1,0 +1,312 @@
+{
+  "id": "EU-ANNEX-I-LABEL-TRANCHE-2-2026-11-12",
+  "jurisdiction": "EU",
+  "as_of": "2026-11-12",
+  "source": {
+    "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+    "pdf": "CELEX_02008R1272-20260701_EN_TXT.pdf",
+    "status": "INFORMATIONAL_CONSOLIDATION_NOT_LEGALLY_CERTIFIED"
+  },
+  "entries": [
+    {
+      "classification": "Flam. Liq. 1",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 2.6.2",
+        "pdf_page": 102,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS02",
+      "signal_word": "Danger",
+      "hazard_code": "H224",
+      "hazard_text_en": "Extremely flammable liquid and vapour",
+      "annex_i_precautionary_candidates": [
+        "P210",
+        "P233",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P280",
+        "P303+P361+P353",
+        "P370+P378",
+        "P403+P235",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Flam. Liq. 2",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 2.6.2",
+        "pdf_page": 102,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS02",
+      "signal_word": "Danger",
+      "hazard_code": "H225",
+      "hazard_text_en": "Highly flammable liquid and vapour",
+      "annex_i_precautionary_candidates": [
+        "P210",
+        "P233",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P280",
+        "P303+P361+P353",
+        "P370+P378",
+        "P403+P235",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Flam. Liq. 3",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 2.6.2",
+        "pdf_page": 102,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS02",
+      "signal_word": "Warning",
+      "hazard_code": "H226",
+      "hazard_text_en": "Flammable liquid and vapour",
+      "annex_i_precautionary_candidates": [
+        "P210",
+        "P233",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P280",
+        "P303+P361+P353",
+        "P370+P378",
+        "P403+P235",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Corr. 1",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.2.5",
+        "pdf_page": 148,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS05",
+      "signal_word": "Danger",
+      "hazard_code": "H314",
+      "hazard_text_en": "Causes severe skin burns and eye damage",
+      "annex_i_precautionary_candidates": [
+        "P260",
+        "P264",
+        "P280",
+        "P301+P330+P331",
+        "P303+P361+P353",
+        "P363",
+        "P304+P340",
+        "P310",
+        "P321",
+        "P305+P351+P338",
+        "P405",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Corr. 1A",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.2.5",
+        "pdf_page": 148,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS05",
+      "signal_word": "Danger",
+      "hazard_code": "H314",
+      "hazard_text_en": "Causes severe skin burns and eye damage",
+      "annex_i_precautionary_candidates": [
+        "P260",
+        "P264",
+        "P280",
+        "P301+P330+P331",
+        "P303+P361+P353",
+        "P363",
+        "P304+P340",
+        "P310",
+        "P321",
+        "P305+P351+P338",
+        "P405",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Corr. 1B",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.2.5",
+        "pdf_page": 148,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS05",
+      "signal_word": "Danger",
+      "hazard_code": "H314",
+      "hazard_text_en": "Causes severe skin burns and eye damage",
+      "annex_i_precautionary_candidates": [
+        "P260",
+        "P264",
+        "P280",
+        "P301+P330+P331",
+        "P303+P361+P353",
+        "P363",
+        "P304+P340",
+        "P310",
+        "P321",
+        "P305+P351+P338",
+        "P405",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Corr. 1C",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.2.5",
+        "pdf_page": 148,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS05",
+      "signal_word": "Danger",
+      "hazard_code": "H314",
+      "hazard_text_en": "Causes severe skin burns and eye damage",
+      "annex_i_precautionary_candidates": [
+        "P260",
+        "P264",
+        "P280",
+        "P301+P330+P331",
+        "P303+P361+P353",
+        "P363",
+        "P304+P340",
+        "P310",
+        "P321",
+        "P305+P351+P338",
+        "P405",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Irrit. 2",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.2.5",
+        "pdf_page": 148,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS07",
+      "signal_word": "Warning",
+      "hazard_code": "H315",
+      "hazard_text_en": "Causes skin irritation",
+      "annex_i_precautionary_candidates": [
+        "P264",
+        "P280",
+        "P302+P352",
+        "P321",
+        "P332+P313",
+        "P362+P364"
+      ]
+    },
+    {
+      "classification": "Eye Dam. 1",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.3.5",
+        "pdf_page": 154,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS05",
+      "signal_word": "Danger",
+      "hazard_code": "H318",
+      "hazard_text_en": "Causes serious eye damage",
+      "annex_i_precautionary_candidates": [
+        "P280",
+        "P305+P351+P338",
+        "P310"
+      ]
+    },
+    {
+      "classification": "Eye Irrit. 2",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.3.5",
+        "pdf_page": 154,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS07",
+      "signal_word": "Warning",
+      "hazard_code": "H319",
+      "hazard_text_en": "Causes serious eye irritation",
+      "annex_i_precautionary_candidates": [
+        "P264",
+        "P280",
+        "P305+P351+P338",
+        "P337+P313"
+      ]
+    },
+    {
+      "classification": "Skin Sens. 1",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.4.7",
+        "pdf_page": 163,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS07",
+      "signal_word": "Warning",
+      "hazard_code": "H317",
+      "hazard_text_en": "May cause an allergic skin reaction",
+      "annex_i_precautionary_candidates": [
+        "P261",
+        "P272",
+        "P280",
+        "P302+P352",
+        "P333+P313",
+        "P321",
+        "P362+P364",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Sens. 1A",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.4.7",
+        "pdf_page": 163,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS07",
+      "signal_word": "Warning",
+      "hazard_code": "H317",
+      "hazard_text_en": "May cause an allergic skin reaction",
+      "annex_i_precautionary_candidates": [
+        "P261",
+        "P272",
+        "P280",
+        "P302+P352",
+        "P333+P313",
+        "P321",
+        "P362+P364",
+        "P501"
+      ]
+    },
+    {
+      "classification": "Skin Sens. 1B",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.4.7",
+        "pdf_page": 163,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      },
+      "pictogram": "GHS07",
+      "signal_word": "Warning",
+      "hazard_code": "H317",
+      "hazard_text_en": "May cause an allergic skin reaction",
+      "annex_i_precautionary_candidates": [
+        "P261",
+        "P272",
+        "P280",
+        "P302+P352",
+        "P333+P313",
+        "P321",
+        "P362+P364",
+        "P501"
+      ]
+    }
+  ]
+}

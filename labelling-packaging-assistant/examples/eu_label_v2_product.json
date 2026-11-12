@@ -1,0 +1,8 @@
+{
+  "jurisdiction":"EU", "as_of":"2026-11-12", "product_id":"DEMO-IRRITATING-FLAMMABLE-LIQUID",
+  "market_member_state":"IE",
+  "classification":{"approved_by_user":true,"hazard_categories":["Flam. Liq. 2","Eye Irrit. 2"],"hazard_statements":["H225","H319"]},
+  "packaging":{"general_public":true,"capacity_ml":500},
+  "use_context":{"volatile_explosive_atmosphere":true,"water_increases_fire_risk":false},
+  "supplier_wording":{"approved_by_user":true,"ppe":"protective gloves and eye protection","disposal_route":"an approved hazardous waste collection point","wash_after_handling":"hands","extinguishing_media":"dry powder"}
+}
