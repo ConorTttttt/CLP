@@ -1391,6 +1391,7 @@ pre.rep{padding:14px}
           const message = 'STOT SE Category 3 effect not specified for ' + unspecifiedMembers.map(nm).join(', ') +
             '. ECHA Part 3 s. 3.8.3.3 (pp. 239–241) requires separate respiratory-irritation (H335) and narcotic-effect (H336) assessment. The unspecified ingredients are not silently assigned both effects; select the substantiated effect(s).';
           H.notes.push(message);
+          H.steps.push('STOT SE Category 3: effect unspecified for ' + unspecifiedMembers.map(nm).join(', ') + '; no effect-specific H335/H336 calculation is possible from these ingredient entries.');
           ctx.warnings.push('DATA REVIEW: ' + message);
           if (H.status === 'not') H.status = 'incomplete';
         }
