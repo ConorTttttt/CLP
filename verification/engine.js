@@ -294,6 +294,15 @@
 
   function acute(mix, ings, ctx) {
     const H = hz('acute', 'Acute toxicity', 'Annex I 3.1.3.6 (cons. pp.138–139); Table 3.1.1 (p.134); conversions Table 3.1.2 (pp.139–140); cut-offs Table 1.1 (p.68)');
+    // ECHA Part 3 s. 3.1.3.3.3, p. 38: do not let category-derived
+    // point estimates classify a mixture of exclusively same-category
+    // ingredients into a more severe category at a boundary.
+    const sameConvertedCategory = (rows, unknownPct, category) =>
+      category > 0 && rows.length > 0 && unknownPct < EPS &&
+      rows.every(r => r.src.startsWith('Table 3.1.2') && r.cat === rows[0].cat) &&
+      Math.abs(sum(rows.map(r => r.i.pct)) - 100) <= EPS &&
+      ings.every(i => rows.some(r => r.i === i)) &&
+      category < rows[0].cat;
     const unknown = ings.filter((i) => {
       if (!ge(i.pct,1)) return false;
       return ['oral','dermal','inh'].some(key => {
@@ -324,13 +333,17 @@
       ctx.supplemental.push(`${fmt(unkSum)} % of the mixture consists of ingredient(s) of unknown acute toxicity (3.1.3.6.2.2; label and SDS).`);
     }
     const inhForms = new Set(ings.filter((i) => i.acute.inh.cat || has(num(i.acute.inh.ate))).map((i) => i.acute.inh.form));
-    if (inhForms.size > 1) H.notes.push('Inhalation data are given in different forms (' + [...inhForms].join(', ') + '). Each form is calculated separately – check that this is appropriate for your mixture.');
+    if (inhForms.size > 1) H.steps.push('Mixed inhalation forms (' + [...inhForms].join(', ') + '): ECHA Part 3 s. 3.1.3.3.4 (p. 37) requires a combined category-by-category fraction assessment.');
     routes.forEach(([key, getter]) => {
+      // Do not issue separate inhalation classifications for each physical form.
+      if (key !== 'oral' && key !== 'dermal' && (inhForms.size > 1 || !inhForms.has(key))) return;
       const T = AT[key], rows = [], skipped = [];
       const routeUnknown = ings.filter((i) => {
         if (!ge(i.pct,1)) return false;
-        const r=getter(i);
-        if (!r || (key!=='oral'&&key!=='dermal'&&i.acute.inh.form!==key)) return false;
+        // The inhalation unknown flag covers the inhalation route regardless
+        // of the physical-form selector on an ingredient with no inhalation data.
+        const r = key === 'oral' || key === 'dermal' ? getter(i) : i.acute.inh;
+        if (!r) return false;
         const known=(validPositive(r.ate) || ['1','2','3','4'].includes(String(r.cat)));
         return (i.acute.unknown || !!r.unknown) && !known;
       });
@@ -376,7 +389,13 @@
         H.notes.push(detail); ctx.warnings.push('DATA VALIDATION: '+detail);
         return;
       }
-      const ateMix = numer / denom, cat = catFromATE(key, ateMix);
+      const ateMix = numer / denom, formulaCat = catFromATE(key, ateMix);
+      let cat = formulaCat;
+      if (sameConvertedCategory(rows, routeUnknownSum, formulaCat)) {
+        cat = rows[0].cat;
+        H.steps.push('   ECHA Part 3 p. 38, CLP 3.1.3.3(c): all mixture ingredients have converted Category ' +
+          cat + ' ATEs; correct the numerical Category ' + formulaCat + ' boundary artefact.');
+      }
       H.steps.push(`— ${T.label} (${T.unit}): ` + rows.map((r, k) => `${nm(r.i)} ${fmt(r.i.pct)} % ÷ ${fmt(r.ate)} [${r.src}] = ${fmt(terms[k], 6)}`).join(' ; '));
       H.steps.push(`   ATEmix = ${fmt(numer)} / ${fmt(denom, 6)} = ${fmt(ateMix)} ${T.unit}  → ` + (cat ? `Category ${cat} (limit ≤ ${fmt(T.limits[cat - 1])})` : `above Category 4 limit (${fmt(T.limits[3])}) → not classified for this route`));
       skipped.forEach((s) => H.steps.push('   ' + s));
@@ -386,9 +405,86 @@
         H.status = 'classified';
         H.outcomes.push(out(`Acute Tox. ${cat} (${key === 'oral' ? 'oral' : key === 'dermal' ? 'dermal' : 'inhalation'})`, [T.h[cat - 1]], cat <= 3 ? 'Danger' : 'Warning', [cat <= 3 ? 'GHS06' : 'GHS07'], { route: key, ate: ateMix }));
       }
-      if (new Set(rows.map((r) => r.cat)).size === 1 && rows.length > 1 && cat !== rows[0].cat)
-        H.notes.push(`${T.label}: all contributing ingredients are in Category ${rows[0].cat} but the mixture result is ${cat ? 'Category ' + cat : 'not classified'}. 3.1.3.3(c) says the mixture should then be classified in that category – review with expert judgement.`);
+      // This safeguard must not override genuine dilution by non-toxic ingredients.
     });
+
+    // ECHA Part 3 s. 3.1.3.3.4 and Example 13, pp. 59–60:
+    // use form-specific ATEs and category limits, but SUM their fractions
+    // to make a single inhalation classification for the whole mixture.
+    if (inhForms.size > 1) {
+      const rows = [], skipped = [];
+      ings.forEach(i => {
+        const r = i.acute.inh, key = r.form, T = AT[key];
+        if (!T) return;
+        const tested = num(r.ate), cat0 = parseInt(r.cat, 10) || 0;
+        if (!(tested > 0) && !cat0) return;
+        let cat, ate, src;
+        if (tested > 0) {
+          ate = tested; cat = catFromATE(key, ate); src = 'tested/derived ATE';
+          if (cat0 && cat !== cat0) {
+            const detail = nm(i) + ' ' + T.label + ': entered Category ' + cat0 +
+              ' conflicts with ATE ' + fmt(ate) + ' (' +
+              (cat ? 'Category ' + cat : 'above Cat. 4 range') + '); ATE used, verify evidence.';
+            H.notes.push(detail); ctx.warnings.push('DATA REVIEW: ' + detail);
+          }
+        } else {
+          cat = cat0; ate = T.conv[cat - 1]; src = 'Table 3.1.2 conversion of Category ' + cat;
+        }
+        if (!cat) { skipped.push(nm(i) + ' (' + key + ') above Category 4 range.'); return; }
+        const cut = cat <= 3 ? 0.1 : 1;
+        if (i.pct < cut - EPS) {
+          skipped.push(nm(i) + ' (' + key + ', Category ' + cat + ') below ' +
+            fmt(cut) + ' % relevance cut-off.'); return;
+        }
+        rows.push({i,key,cat,ate,src});
+      });
+      const unknownInh = ings.filter(i => ge(i.pct,1) &&
+        (i.acute.unknown || !!i.acute.inh.unknown) &&
+        !validPositive(i.acute.inh.ate) &&
+        !['1','2','3','4'].includes(String(i.acute.inh.cat)));
+      const unknownPct = sum(unknownInh.map(i => i.pct));
+      const numer = unknownPct > 10 + EPS ? 100 - unknownPct : 100;
+      if (unknownPct > 0) H.steps.push('— Combined inhalation has ' +
+        fmt(unknownPct) + ' % unknown toxicity; correction denominator ' +
+        fmt(numer) + ' (CLP 3.1.3.6.2.3).');
+      if (numer <= 0) {
+        H.status = 'incomplete';
+        const msg = 'Mixed-form inhalation cannot be calculated with the unknown-data fraction provided.';
+        H.notes.push(msg); ctx.warnings.push('DATA VALIDATION: ' + msg);
+      } else if (!rows.length) {
+        if (unknownPct > 0 && H.status !== 'classified') H.status = 'incomplete';
+        H.notes.push('No known relevant acute inhalation estimates for mixed-form calculation.');
+      } else {
+        H.steps.push('— Mixed-form ingredients: ' + rows.map(r =>
+          nm(r.i) + ' ' + fmt(r.i.pct) + ' % (' + r.key + ') / ' +
+          fmt(r.ate) + ' ' + AT[r.key].unit + ' [' + r.src + ']').join('; '));
+        let computed = 0;
+        for (let c = 1; c <= 4; c++) {
+          const fractions = rows.map(r =>
+            (AT[r.key].limits[c-1] / r.ate) * r.i.pct / numer);
+          const total = sum(fractions);
+          H.steps.push('   Category ' + c + ': ' + fractions.map(v => fmt(v,6)).join(' + ') +
+            ' = ' + fmt(total,6) + (ge(total,1) ? ' ≥ 1' : ' < 1'));
+          if (!computed && ge(total,1)) computed = c;
+        }
+        let cat = computed;
+        if (sameConvertedCategory(rows, unknownPct, computed)) {
+          cat = rows[0].cat;
+          H.steps.push('   ECHA Part 3 p. 38 / CLP 3.1.3.3(c): same converted Category ' +
+            cat + ' for every ingredient overrides the calculated Category ' + computed + '.');
+        }
+        skipped.forEach(s => H.steps.push('   ' + s));
+        H.steps.push('   Combined inhalation classification: ' +
+          (cat ? 'Category ' + cat : 'not classified') + '.');
+        if (cat) {
+          H.status = 'classified';
+          H.outcomes.push(out('Acute Tox. ' + cat + ' (inhalation)',
+            [AT.vapour.h[cat-1]], cat <= 3 ? 'Danger' : 'Warning',
+            [cat <= 3 ? 'GHS06' : 'GHS07'],
+            { route: 'inhalation', testedForms: [...inhForms] }));
+        }
+      }
+    }
     if (H.outcomes.length > 1) H.notes.push('Classified for more than one route: the pictogram and signal word reflect the most severe category and all hazard statements are used (3.1.3.2).');
     if (!H.steps.length) H.steps.push('No acute-toxicity route could be calculated.');
     return H;
