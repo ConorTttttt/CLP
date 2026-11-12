@@ -1213,9 +1213,10 @@ pre.rep{padding:14px}
     ings.forEach((i) => {
       const cat = def.get(i); if (!cat) return;
       const gcl = def.gcl(cat, mix); if (gcl === undefined) return;
-      const scl = num((i.scl || {})[def.sclKey || def.id]);
-      const lim = has(scl) && scl > 0 ? scl : gcl;
-      const isScl = lim !== gcl;
+      const scl = sclValue(i, def.sclKey || def.id);
+      // Reject invalid SCL percentages without silently suppressing a hazard.
+      const lim = has(scl) ? scl : gcl;
+      const isScl = has(scl);
       const ok = ge(i.pct, lim);
       const line = `${nm(i)} [${def.catLabel(cat)}] ${fmt(i.pct)} % ${ok ? '≥' : '<'} ${fmt(lim)} % (${isScl ? 'specific concentration limit' : 'generic limit'})`;
       H.steps.push(line + (ok ? ' → triggers' : ''));
@@ -1253,11 +1254,11 @@ pre.rep{padding:14px}
       const named = [];
       ings.forEach((i) => {
         const c = i[f]; if (!c) return;
-        const scl = num((i.scl || {})[f]);
+        const scl = sclValue(i, f);
         // Table 3.4.6 Note 1 (ECHA Part 3 p. 142): one-tenth of
         // the SCL applies only where that SCL is BELOW 0.1 %.
         // Otherwise retain the category-specific elicitation threshold.
-        const lim = has(scl) && scl > 0 && scl < 0.1 ? scl / 10 : el[c];
+        const lim = has(scl) && scl < 0.1 ? scl / 10 : el[c];
         if (ge(i.pct, lim)) {
           const driver = H.status === 'classified' && (H.triggeredIngredients || []).includes(i);
           named.push({ i, c, lim, driver });
@@ -1297,12 +1298,12 @@ pre.rep{padding:14px}
     const assess = (field, name) => {
       let best = '';
       ings.filter((i) => rank[i[field]]).forEach((i) => {
-        const exact = num((i.scl || {})[field]), common = num((i.scl || {}).repro);
-        const lim = exact > 0 ? exact : common > 0 ? common : genericLimit[i[field]];
+        const exact = sclValue(i, field), common = sclValue(i, 'repro');
+        const lim = has(exact) ? exact : has(common) ? common : genericLimit[i[field]];
         const triggered = ge(i.pct, lim);
         r.steps.push(name + ': ' + nm(i) + ' Repr. ' + i[field] + ' ' + fmt(i.pct) +
           ' % ' + (triggered ? '≥' : '<') + ' ' + fmt(lim) + ' % (' +
-          (exact > 0 ? 'effect-specific SCL' : common > 0 ? 'common reproductive SCL' : 'generic limit') +
+          (has(exact) ? 'effect-specific SCL' : has(common) ? 'common reproductive SCL' : 'generic limit') +
           ')' + (triggered ? ' → triggers' : ''));
         if (triggered && (!best || rank[i[field]] > rank[best])) best = i[field];
       });
@@ -1352,7 +1353,7 @@ pre.rep{padding:14px}
       const trig1 = [], trig2 = [];
       ings.forEach((i) => {
         const c = i[f]; if (c !== '1' && c !== '2') return;
-        const scl = num((i.scl || {})[f]); const useScl = has(scl) && scl > 0;
+        const scl = sclValue(i, f); const useScl = has(scl);
         if (c === '1') {
           const l1 = useScl ? scl : 10;
           // Annex VI entries may give a banded SCL for the Category 2 range of a
