@@ -30,9 +30,13 @@ ECHA requires **separate** additive assessment of respiratory tract irritation (
 
 Now the engine does **not** presume either effect when the effect is unspecified. It flags an incomplete evidence assessment for the unqualified ingredient and asks the user to specify the supported effect(s). Inputs with explicit H335/H336 effects continue to sum independently, as required by the guidance.
 
+## Invalid SCL input safety — ECHA Part 3, Article 10 discussions in sections 3.2–3.9
+
+An SCL is expressed as a **concentration percentage**. Values outside (0, 100] are malformed and are already reported by input validation. Several health-hazard modules previously applied a numerical SCL **above 100%** anyway, silently suppressing classification in spite of the warning. The threshold helpers for sensitisation, CMR/reproductive effects and STOT now consistently reject such invalid SCLs and calculate using the applicable generic limits as an explicit provisional fallback. This brings them into line with the existing skin/eye SCL treatment; the invalid-input warning remains visible and the original value must be corrected before a final determination.
+
 ## Verification
 
-`verification/test_echa_part3_health_followup.js` adds 12 targeted tests on extreme-pH handling, high and low sensitiser SCL elicitation limits, and STOT-SE effect specificity. The existing `test_engine.js` expected a reserve-only override; that test is changed to expect the proper corrosion/eye-damage outcome.
+`verification/test_echa_part3_health_followup.js` adds 17 targeted tests on extreme-pH handling, high and low sensitiser SCL elicitation limits, and STOT-SE effect specificity. The existing `test_engine.js` expected a reserve-only override; that test is changed to expect the proper corrosion/eye-damage outcome.
 
 Run `npm test` (the repository's GitHub Actions workflow uses the same command).
 
