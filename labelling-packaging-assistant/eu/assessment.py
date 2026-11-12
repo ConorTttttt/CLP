@@ -22,10 +22,12 @@ if str(ROOT) not in sys.path:
 
 from eu.label_v2.selector import assess as assess_label, load_json, stable_hash, InvalidInput  # noqa: E402
 from eu.legal.engine import assess as assess_legal, InvalidAssessment  # noqa: E402
+from eu.physical_label.engine import assess as assess_physical, PhysicalLabelInputError  # noqa: E402
 
 MAPPING_PATH = ROOT / 'eu/label_v2/annex_i_mapping.json'
 POLICY_PATH = ROOT / 'eu/label_v2/annex_iv_policy.json'
 LEGAL_PATH = ROOT / 'eu/legal/requirements.json'
+PHYSICAL_PATH = ROOT / 'eu/physical_label/rules.json'
 
 
 class IntegratedAssessmentError(ValueError):
@@ -130,11 +132,18 @@ def _unique_blockers(label_report: dict, legal_report: dict) -> list[dict]:
 
 
 def assess(product: dict[str, Any], *, mapping: dict | None = None,
-           policy: dict | None = None, legal: dict | None = None) -> dict[str, Any]:
+           policy: dict | None = None, legal: dict | None = None,
+           physical: dict | None = None) -> dict[str, Any]:
     mapping = copy.deepcopy(mapping) if mapping is not None else load_json(MAPPING_PATH)
     policy = copy.deepcopy(policy) if policy is not None else load_json(POLICY_PATH)
     legal = copy.deepcopy(legal) if legal is not None else load_json(LEGAL_PATH)
+    physical = copy.deepcopy(physical) if physical is not None else load_json(PHYSICAL_PATH)
     validate_inputs(product, mapping, policy, legal)
+    if physical.get('jurisdiction') != 'EU' or physical.get('as_of') != product['as_of']:
+        raise IntegratedAssessmentError('Physical label rulebook jurisdiction/date mismatch.')
+    if (physical.get('source', {}).get('eli') != legal.get('source', {}).get('eli') or
+            physical.get('source', {}).get('sha256') != legal.get('source', {}).get('source_sha256')):
+        raise IntegratedAssessmentError('Physical label rulebook legal source does not match EU label/packaging sources.')
 
     # Independent module evaluations; no shared rule selection or GB fallback.
     try:
@@ -143,6 +152,7 @@ def assess(product: dict[str, Any], *, mapping: dict | None = None,
             raise IntegratedAssessmentError('Module-extracted EU label and packaging source fingerprints differ.')
         adapted = adapt_for_packaging(product, label_report, mapping)
         legal_report = assess_legal(adapted, legal)
+        physical_report = assess_physical(product, physical)
         if label_report['unsupported_classifications'] or not product['classification']['hazard_categories']:
             # The legacy engine accepts candidate lists but cannot tell that
             # ours are incomplete. NEVER turn an absent *known* candidate into
@@ -153,10 +163,18 @@ def assess(product: dict[str, Any], *, mapping: dict | None = None,
                     decision['status'] = 'INSUFFICIENT_DATA'
                     decision['reason'] = ('Precedence cannot be excluded: one or more approved hazard categories '
                                           'have no complete Annex I mapping in the current EU rulebook.')
-    except (InvalidAssessment, InvalidInput) as err:
+    except (InvalidAssessment, InvalidInput, PhysicalLabelInputError) as err:
         raise IntegratedAssessmentError(str(err)) from err
 
     blockers = _unique_blockers(label_report, legal_report)
+    for section in ('outer_inner_decisions','small_pack_decisions','dimension_decisions'):
+        for d in physical_report[section]:
+            if d['status'] in ('REQUIRES_REVIEW','REQUIRES_REVIEW_IF_POSSIBLE',
+                               'POTENTIAL_DIMENSION_DEFICIENCY_REQUIRES_REVIEW'):
+                blockers.append({'module':'EU_PHYSICAL_LABEL','code':'PHYSICAL_LABEL_REVIEW',
+                                 'section':d['section'],'legal_reference':d['legal_reference'],
+                                 'classification':d.get('classification'),
+                                 'missing_fields':d.get('missing_fields',[]),'reason':d['reason']})
     return {
         'system': 'EU_CLP_ONLY',
         'assessment_kind': 'DETERMINISTIC_PARTIAL_LABELLING_AND_PACKAGING',
@@ -181,6 +199,8 @@ def assess(product: dict[str, Any], *, mapping: dict | None = None,
             'annex_iv_policy_sha256': stable_hash(policy),
             'eu_packaging_rulebook_id': legal['id'],
             'eu_packaging_rulebook_sha256': stable_hash(legal),
+            'eu_physical_label_rulebook_id': physical['id'],
+            'eu_physical_label_rulebook_sha256': stable_hash(physical),
         },
         'label_elements_draft': label_report['label_elements_draft'],
         'label_mapping_trace': label_report['mapped_classifications'],
@@ -191,16 +211,20 @@ def assess(product: dict[str, Any], *, mapping: dict | None = None,
             'tactile_warning': legal_report['tactile_warning'],
         },
         'packaging_and_other_legal_decisions': legal_report['decisions'],
+        'physical_labelling_and_packaging': physical_report,
         'blocking_items': blockers,
         'coverage': {
             'annex_i_categories_implemented': len(mapping['entries']),
             'eu_packaging_and_other_requirements_implemented': len(legal['rules']),
+            'small_pack_hazard_category_rows_indexed': len(physical['small_pack']['categories']),
+            'physical_label_layer_geometry_coverage': 'PARTIAL',
             'annex_iv_policy_statements_implemented': len(policy['policy']),
             'assessment_is_exhaustive': False,
         },
         'warnings': sorted(set(label_report['warnings'] + [
             'No full EU CLP compliance decision: mappings, special cases, date transitions, wording and law-state remain incomplete.',
             'Existing EU packaging and EU labelling modules have not been independently legally validated.',
+            'EU physical label layout, small-pack permissions and package-layer decisions remain preliminary, not an approved label or a blanket exemption.',
         ])),
         'label_ready_for_use': False,
         'whole_label_and_package_compliance_verdict': 'NOT_ASSESSED',

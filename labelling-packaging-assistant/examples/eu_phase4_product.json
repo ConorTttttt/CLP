@@ -1,0 +1,65 @@
+{
+  "jurisdiction": "EU",
+  "as_of": "2026-11-12",
+  "product_id": "EU-PHASE-4-SMALL-PACK-DEMO",
+  "market_member_state": "IE",
+  "classification": {
+    "approved_by_user": true,
+    "hazard_categories": [
+      "Flam. Liq. 2",
+      "Eye Irrit. 2"
+    ],
+    "hazard_statements": [
+      "H225",
+      "H319"
+    ]
+  },
+  "packaging": {
+    "general_public": true,
+    "capacity_ml": 125,
+    "packaged": true,
+    "is_aerosol": false,
+    "sealed_spray": false,
+    "transportable_gas_receptacle": false,
+    "quantity_elsewhere_on_package": false,
+    "child_attractive_design": false,
+    "structure": "outer_and_inner",
+    "outer_transport_labelling_required": false,
+    "has_intermediate_packaging": false,
+    "inner_label_clearly_visible_through_outer": false,
+    "physical_label": {
+      "width_mm": 52,
+      "height_mm": 74,
+      "pictogram_side_mm": 16
+    }
+  },
+  "use_context": {
+    "volatile_explosive_atmosphere": true,
+    "water_increases_fire_risk": false
+  },
+  "supplier_wording": {
+    "approved_by_user": true,
+    "ppe": "protective gloves and eye protection",
+    "disposal_route": "an approved hazardous waste collection point",
+    "wash_after_handling": "hands",
+    "extinguishing_media": "dry powder"
+  },
+  "ingredient_concentration_basis": "percent_w_w",
+  "ingredients": {
+    "67-56-1": 3.0,
+    "75-09-2": 0.0
+  },
+  "product_flags": {
+    "cyanoacrylate_adhesive": false,
+    "contains_isocyanates": false,
+    "isocyanates_already_identified_on_label": false,
+    "contains_epoxy_mw_lte_700": false,
+    "epoxy_already_identified_on_label": false,
+    "is_paint_or_varnish": false
+  },
+  "lead_metal_percent_w_w": 0.0,
+  "active_chlorine_percent": 0.0,
+  "label": {
+    "claims": []
+  }
+}
