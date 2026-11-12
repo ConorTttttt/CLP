@@ -674,6 +674,11 @@ pre.rep{padding:14px}
   // malformed. Source-specific thresholds take precedence over generic values.
   const entered = (value) => value !== '' && value !== null && value !== undefined;
   const validPositive = (value) => has(num(value)) && num(value) > 0;
+  // CLP Annex I Table 4.1.3: aquatic M-factors increase in factor-ten intervals.
+  const validM = (raw) => {
+    const value = num(raw);
+    return Number.isSafeInteger(value) && /^10*$/.test(String(value)) ? value : NaN;
+  };
   const sclValue = (ingredient, key) => {
     const value = (ingredient.scl || {})[key];
     return validPositive(value) && num(value) <= 100 ? num(value) : NaN;
@@ -1198,8 +1203,8 @@ pre.rep{padding:14px}
     ings.forEach((i) => {
       const cat = def.get(i); if (!cat) return;
       const gcl = def.gcl(cat, mix); if (gcl === undefined) return;
-      const scl = num((i.scl || {})[def.sclKey || def.id]);
-      const lim = has(scl) && scl > 0 ? scl : gcl;
+      const scl = sclValue(i, def.sclKey || def.id);
+      const lim = has(scl) ? scl : gcl;
       const isScl = lim !== gcl;
       const ok = ge(i.pct, lim);
       const line = `${nm(i)} [${def.catLabel(cat)}] ${fmt(i.pct)} % ${ok ? '≥' : '<'} ${fmt(lim)} % (${isScl ? 'specific concentration limit' : 'generic limit'})`;
@@ -1238,8 +1243,8 @@ pre.rep{padding:14px}
       const named = [];
       ings.forEach((i) => {
         const c = i[f]; if (!c) return;
-        const scl = num((i.scl || {})[f]);
-        const lim = has(scl) && scl > 0 ? scl / 10 : el[c];
+        const scl = sclValue(i, f);
+        const lim = has(scl) ? scl / 10 : el[c];
         if (ge(i.pct, lim)) {
           const driver = H.status === 'classified' && (H.triggeredIngredients || []).includes(i);
           named.push({ i, c, lim, driver });
@@ -1404,10 +1409,6 @@ pre.rep{padding:14px}
 
   function aquatic(mix, ings, ctx) {
     const H = hz('aquatic', 'Hazardous to the aquatic environment', 'Annex I 4.1.3.5 (cons. pp.218–220); Tables 4.1.1–4.1.3 (pp.219–221); relevance 4.1.3.1 (pp.214–215); label Table 4.1.4 (pp.221–222)');
-    const validM = (raw) => {
-      const value=num(raw);
-      return Number.isInteger(value) && value >= 1 ? value : NaN;
-    };
     const mA = (i) => has(validM(i.mAcute)) ? validM(i.mAcute) : 1;
     const mC = (i) => has(validM(i.mChronic)) ? validM(i.mChronic) : 1;
     const missingM=ings.filter(i=>
@@ -1418,6 +1419,8 @@ pre.rep{padding:14px}
       H.notes.push('Aquatic M-factor incomplete for '+names+
         '. An interim M=1 lower-bound is used for missing/invalid factors, but the final aquatic classification cannot be confirmed.');
       H.steps.push('PROVISIONAL: M-factor not established for '+names+'. M=1 is a lower-bound screen only.');
+      ctx.warnings.push('PROVISIONAL AQUATIC RESULT: '+names+
+        ' lack valid Acute/Chronic 1 M-factor(s). The displayed category may be less stringent; confirm the M-factor(s) from the supplier or aquatic toxicity evidence before final classification (ECHA 4.1.4.5).');
     }
     const unk = ings.filter((i) => i.aquaUnknown && ge(i.pct, 1));
     if (unk.length) {
@@ -1485,11 +1488,20 @@ pre.rep{padding:14px}
       // Table 3.11.3 (Delegated Regulation (EU) 2023/707): Cat 1 Danger, Cat 2 Warning; no pictogram.
       outcome: (c) => out('ED HH ' + c, [c === '1' ? 'EUH380' : 'EUH381'], c === '1' ? 'Danger' : 'Warning', [])
     }, ings, mix));
-    list.push(thresholdHazard({
+    const edEnvironment = thresholdHazard({
       id: 'edEnv', name: 'Endocrine disruption – environment', ref: 'Annex I 4.2.3 · Table 4.2.2 (cons. p.226); label Table 4.2.3 (p.227)',
       get: (i) => i.edEnv, order: ['1', '2'], catLabel: (c) => 'ED ENV ' + c, gcl: (c) => ({ '1': 0.1, '2': 1.0 }[c]),
       outcome: (c) => out('ED ENV ' + c, [c === '1' ? 'EUH430' : 'EUH431'], c === '1' ? 'Danger' : 'Warning', [])
-    }, ings, mix));
+    }, ings, mix);
+    const edIngredients = ings.filter((i) => i.edEnv === '1' || i.edEnv === '2');
+    if (edIngredients.length > 1) {
+      const note = 'ED ENV ADDITIVITY REVIEW: multiple endocrine-disrupting ingredients ('+
+        edIngredients.map(nm).join(', ')+
+        '). Individual GCL/SCL screening does not assess combined effects. ECHA guidance 4.2.3.1.1 requires case-by-case consideration of additivity, adverse outcomes and related endocrine mechanisms; do not infer either classification or safety from the concentration screen alone.';
+      edEnvironment.notes.push(note);
+      ctx.warnings.push(note);
+    }
+    list.push(edEnvironment);
     [['pbt', 'PBT', 'EUH440'], ['vpvb', 'vPvB', 'EUH441']].forEach(([f, lab, code]) => list.push(thresholdHazard({
       id: f, name: lab + ' properties', ref: 'Annex I 4.3.3.1 (cons. p.231); label Table 4.3.1 (p.232)',
       get: (i) => (i[f] ? 'Y' : ''), order: ['Y'], catLabel: () => lab, gcl: () => 0.1, outcome: () => out(lab, [code], 'Danger', [])
@@ -1912,8 +1924,8 @@ pre.rep{padding:14px}
       for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
         if (!entered(raw[field])) continue;
         const mFactor = num(raw[field]);
-        if (!has(mFactor) || mFactor < 1 || !Number.isSafeInteger(mFactor))
-          invalid(field,raw[field],'M-factor must be an integer of at least 1; do not use a silent default.');
+        if (!has(validM(raw[field])))
+          invalid(field,raw[field],'M-factor must be 1, 10, 100, 1000, etc. (CLP Annex I Table 4.1.3). An invalid factor is not used in the aquatic calculation.');
         if (!applicable)
           warnings.push('INPUT REVIEW: '+id+' — '+field+' supplied but the corresponding aquatic Category 1 classification is not selected.');
       }
