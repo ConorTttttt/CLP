@@ -2,8 +2,8 @@
 const fs=require("fs"),assert=require("assert").strict,CLP=require("./engine.js");
 const html=fs.readFileSync("clp_mixture_calculator.html","utf8");
 const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
-const app=scripts[1],start=app.indexOf("/* Transparent screening for REACH Annex II"),end=app.indexOf("function renderResult(r)",start);
-assert(start>=0&&end>start,"Ingredient screening functions missing");
+const app=scripts[1],start=app.indexOf("function validDisplayM(raw)"),end=app.indexOf("function renderResult(r)",start);
+assert(start>=0&&end>start,"Ingredient screening functions or M-factor validation helper missing");
 const code=app.slice(start,end),esc=x=>String(x??"").replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
 let mix={ingredients:[],state:"liquid"},codes=i=>CLP.parseHCodeTokens(i.hcodes).codes.map(x=>x.code);
 const fn=new Function("CLP","esc","ingredientHCodes","getMix","groupForCode","hazardChipLabel",code.replace("const rows=mix.ingredients.map","const rows=getMix().ingredients.map").replace("mix.state===","getMix().state===")+
@@ -84,6 +84,13 @@ test("Aquatic Chronic 1 M=10 at 0.01% is included",()=>{
  const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:"10"});
  const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
  assert.equal(x.status,"included");
+});
+test("Invalid non-decade aquatic M-factor requests review",()=>{
+ const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:"2"});
+ const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
+ assert.equal(x.status,"review");
+ assert.match(x.extra,/M-factor missing or invalid/);
+ assert(screen(i).review.some(message=>/Verify the Aquatic Chronic 1 M-factor/.test(message)));
 });
 test("Aquatic M-factor missing explicitly requests review",()=>{
  const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:""});
