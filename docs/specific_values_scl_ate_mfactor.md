@@ -23,7 +23,7 @@ Separate *corrosion* and *irritation* weighted sums are evaluated, including rel
 
 For specified **non-additive** ingredients, the engine applies a validated SCL where present or the applicable non-additive generic criterion otherwise. Low-SCL ingredients below 1% remain eligible to participate in the weighted additive calculation even when individually below the SCL, because their weighted contributions may collectively trigger a result.
 
-**Unresolved scientific/regulatory caveats:** Ingredient relevance and mode of action must be substantiated; pH/reserve data can override simple concentration-based predictions; not every combination of a corrosion SCL and irritation or eye-damage limit can be inferred automatically. The engine explicitly warns when Skin Corr. has an SCL but no separately established Eye Dam. limit and generic eye criteria are used. Verify classification with the applicable Annex I tables and ECHA guidance before final release.
+**Unresolved scientific/regulatory caveats:** Ingredient relevance and mode of action must be substantiated; extreme pH provisionally triggers corrosion/serious eye damage; reserve alone cannot override it, and an alternative classification requires adequate confirming evidence and expert weight of evidence; not every combination of a corrosion SCL and irritation or eye-damage limit can be inferred automatically. The engine explicitly warns when Skin Corr. has an SCL but no separately established Eye Dam. limit and generic eye criteria are used. Verify classification with the applicable Annex I tables and ECHA guidance before final release.
 
 ## ATE validation and per-route handling
 

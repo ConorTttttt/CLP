@@ -11,7 +11,7 @@ and shows every calculation step with the Annex I table/page reference:
   values are mg/kg, gas ppmV and vapour/dust/mist mg/l
 - Skin corrosion/irritation and serious eye damage/irritation: SCL-aware potency-weighted
   additivity (Tables 3.2.3, 3.3.3), SCL-aware non-additive routes (3.2.4, 3.3.4),
-  pH <= 2 / >= 11.5 criterion; category- and evidence-specific review remains required
+  pH <= 2 / >= 11.5 criterion; the reserve checkbox raises an evidence-review flag but cannot by itself suppress Skin Corr. 1 / Eye Dam. 1; confirmation and case-specific SCL exceptions require expert review
 - Skin / respiratory sensitisation, CMR, lactation (generic limits or your SCLs), EUH208 elicitation
 - STOT single / repeated, aspiration (with viscosity)
 - Aquatic acute / chronic summation with independently entered Acute/Chronic 1 M-factors;
