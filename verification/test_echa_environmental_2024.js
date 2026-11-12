@@ -73,5 +73,9 @@ function warning(result, expression) {
 const browser = fs.readFileSync(path.join(__dirname, '..', 'clp_mixture_calculator.html'), 'utf8');
 const engine = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8');
 test('offline HTML contains exact tested engine copy', browser.includes(engine));
+test('SDS/cut-off screens use decade M-factor validation', browser.includes('function validDisplayM(raw)') &&
+  browser.includes('const m=CLP.num(i.mAcute),ok=validDisplayM(i.mAcute);') &&
+  browser.includes('ok=validDisplayM(i.mChronic);'));
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
