@@ -81,4 +81,29 @@ run('STOT SE specified dual effect still triggers both independently', () => {
   assert.ok(has(r,'STOT SE 3 (respiratory irritation)'));
   assert.ok(has(r,'STOT SE 3 (narcotic effects)'));
 });
+run('Out-of-range SCL cannot suppress skin sensitisation classification', () => {
+  const r = withCarrier(mk('Sensitiser',1,{skinSens:'1B',scl:{skinSens:150}}));
+  assert.ok(has(r,'Skin Sens. 1B'));
+  assert.ok(notes(r).includes('invalid SCL skinSens'));
+});
+run('Out-of-range SCL cannot suppress carcinogenicity', () => {
+  const r = withCarrier(mk('Carcinogen',0.1,{carc:'1B',scl:{carc:150}}));
+  assert.ok(has(r,'Carc. 1B'));
+  assert.ok(notes(r).includes('invalid SCL carc'));
+});
+run('Out-of-range SCL cannot suppress reproductive toxicity', () => {
+  const r = withCarrier(mk('Reprotoxicant',0.3,{reproFert:'1B',scl:{reproFert:150}}));
+  assert.ok(has(r,'Repr. 1B'));
+  assert.ok(notes(r).includes('invalid SCL reproFert'));
+});
+run('Out-of-range SCL cannot suppress STOT SE Category 1', () => {
+  const r = withCarrier(mk('Target-organ toxicant',10,{stotSE:'1',scl:{stotSE:150}}));
+  assert.ok(has(r,'STOT SE 1'));
+  assert.ok(notes(r).includes('invalid SCL stotSE'));
+});
+run('Out-of-range SCL cannot suppress STOT RE Category 2', () => {
+  const r = withCarrier(mk('Target-organ toxicant',10,{stotRE:'2',scl:{stotRE:150}}));
+  assert.ok(has(r,'STOT RE 2'));
+  assert.ok(notes(r).includes('invalid SCL stotRE'));
+});
 console.log(passed + ' ECHA Part 3 follow-up checks passed');
