@@ -398,6 +398,20 @@
     const S = hz('skin', 'Skin corrosion / irritation', 'Annex I 3.2.3 (cons. pp.145–147); Tables 3.2.3 and 3.2.4 (p.147); cut-off Table 1.1 (p.68)');
     const E = hz('eye', 'Serious eye damage / eye irritation', 'Annex I 3.3.3 (cons. pp.151–154); Tables 3.3.3 and 3.3.4 (p.153–154); cut-off Table 1.1 (p.68)');
     const pH = num(mix.pH), phTrig = has(pH) && (pH <= 2 + EPS || pH >= 11.5 - EPS), reserveOk = !!mix.pHReserveOk;
+    // ECHA Part 3 ss. 3.2.3.2.1.1 and 3.3.3.2.1.1: reserve alone
+    // does not displace default extreme-pH classifications. A validated
+    // applicable test and expert weight-of-evidence must substantiate any
+    // subsequent change; the boolean flag does NOT represent such evidence.
+    if (phTrig && reserveOk) {
+      const message = 'The acid/alkaline reserve indication cannot on its own rule out skin corrosion or serious eye damage at extreme pH. Skin Corr. 1 and Eye Dam. 1 remain the conservative screening classifications; review suitable validated mixture test data and the complete weight of evidence (ECHA Part 3 pp. 79–80 and 107–108).';
+      S.notes.push(message); E.notes.push(message);
+      ctx.warnings.push('EVIDENCE REVIEW: ' + message);
+    }
+    if (phTrig && ings.some(i => i.skinCorr && i.skinCorr !== '2' && has(sclValue(i,'skinCorr')))) {
+      const message = 'Extreme pH with a corrosive ingredient SCL: ECHA Part 3 pp. 79 and 107 describe an exception when the sole corrosive/irritant ingredient is an acid or base with an applicable SCL. The calculator cannot establish that identity or the absence of other contributors; review this special case before adopting the conservative pH screen.';
+      S.notes.push(message); E.notes.push(message);
+      ctx.warnings.push('EVIDENCE REVIEW: ' + message);
+    }
 
     /* ---- skin ---- */
     const skinCut = (i) => {
@@ -474,9 +488,10 @@
       } else S.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
     if (has(pH)) {
-      if (phTrig && !reserveOk) { S.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Skin Corr. 1 in the absence of other information (3.2.3.1.2).`); if (!sCat || sCat === '2') sCat = '1'; }
-      else if (phTrig && reserveOk) S.steps.push(`Mixture pH ${fmt(pH)} is extreme but acid/alkaline reserve was marked as not corrosive – pH criterion not applied; this needs confirming data (preferably validated in-vitro test).`);
-      else S.steps.push(`Mixture pH ${fmt(pH)}: pH criterion (≤ 2 or ≥ 11.5) not met.`);
+      if (phTrig) {
+        S.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → provisional Skin Corr. 1 in the absence of adequate contradictory evidence (3.2.3.1.2; ECHA Part 3 pp. 78–80).`);
+        if (!sCat || sCat === '2') sCat = '1';
+      } else S.steps.push(`Mixture pH ${fmt(pH)}: pH criterion (≤ 2 or ≥ 11.5) not met.`);
     }
     if (!sRel.length && !has(pH)) S.steps.push('No skin-corrosive or skin-irritant ingredient ≥ 1 % and no pH entered.');
     if (sCat === '2') { S.status = 'classified'; S.outcomes.push(out('Skin Irrit. 2', ['H315'], 'Warning', ['GHS07'])); }
@@ -536,9 +551,9 @@
         if(severe || !eCat)eCat=severe?'1':'2';
       } else E.steps.push('Non-additive '+nm(i)+' '+fmt(i.pct)+' % < '+fmt(limit)+' % threshold.');
     });
-    if (has(pH)) {
-      if (phTrig && !reserveOk) { E.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → Eye Dam. 1 in the absence of other information (3.3.3.1.2).`); eCat = '1'; }
-      else if (phTrig) E.steps.push(`Mixture pH ${fmt(pH)} extreme, reserve marked non-corrosive → pH criterion not applied (needs confirming data).`);
+    if (has(pH) && phTrig) {
+      E.steps.push(`Mixture pH ${fmt(pH)} (≤ 2 or ≥ 11.5) → provisional Eye Dam. 1 in the absence of adequate contradictory evidence (3.3.3.1.2; ECHA Part 3 pp. 106–108).`);
+      eCat = '1';
     }
     if (!eRel.length && !has(pH)) E.steps.push('No eye-damaging/irritant or skin-corrosive ingredient ≥ 1 % and no pH entered.');
     if (eCat === '1') { E.status = 'classified'; E.outcomes.push(out('Eye Dam. 1', ['H318'], 'Danger', ['GHS05'])); }
@@ -597,7 +612,10 @@
       ings.forEach((i) => {
         const c = i[f]; if (!c) return;
         const scl = num((i.scl || {})[f]);
-        const lim = has(scl) && scl > 0 ? scl / 10 : el[c];
+        // Table 3.4.6 Note 1 (ECHA Part 3 p. 142): one-tenth of
+        // the SCL applies only where that SCL is BELOW 0.1 %.
+        // Otherwise retain the category-specific elicitation threshold.
+        const lim = has(scl) && scl > 0 && scl < 0.1 ? scl / 10 : el[c];
         if (ge(i.pct, lim)) {
           const driver = H.status === 'classified' && (H.triggeredIngredients || []).includes(i);
           named.push({ i, c, lim, driver });
@@ -726,14 +744,20 @@
         const unspecified = (i) => i.stotSE === '3' && !i.stotSEresp && !i.stotSEnarc;
         const c3 = ings.filter((i) => isCat3(i) && ge(i.pct, 1));
         ings.filter((i) => isCat3(i) && !ge(i.pct, 1)).forEach((i) => H.steps.push(`${nm(i)} [Cat. 3] ${fmt(i.pct)} % < 1 % (relevant-ingredient threshold 3.8.3.4.6) – not counted`));
+        const unspecifiedMembers = c3.filter(unspecified);
+        if (unspecifiedMembers.length) {
+          const message = 'STOT SE Category 3 effect not specified for ' + unspecifiedMembers.map(nm).join(', ') +
+            '. ECHA Part 3 s. 3.8.3.3 (pp. 239–241) requires separate respiratory-irritation (H335) and narcotic-effect (H336) assessment. The unspecified ingredients are not silently assigned both effects; select the substantiated effect(s).';
+          H.notes.push(message);
+          ctx.warnings.push('DATA REVIEW: ' + message);
+          if (H.status === 'not') H.status = 'incomplete';
+        }
         const eff = [['stotSEresp', 'respiratory tract irritation', 'H335'], ['stotSEnarc', 'narcotic effects (drowsiness/dizziness)', 'H336']];
         eff.forEach(([flag, lab, h]) => {
-          const members = c3.filter((i) => i[flag] || unspecified(i));
+          const members = c3.filter((i) => i[flag]);
           if (!members.length) return;
           const s = sum(members.map((i) => i.pct));
-          const unspec = members.filter(unspecified);
           H.steps.push(`Cat. 3 – ${lab}: ` + members.map((i) => `${nm(i)} ${fmt(i.pct)} %`).join(' + ') + ` = ${fmt(s)} % ${ge(s, 20) ? '≥' : '<'} 20 % (additive, 3.8.3.4.5)`);
-          if (unspec.length) H.notes.push(`${unspec.map(nm).join(', ')}: Cat. 3 without a stated effect is counted for both respiratory irritation and narcotic effects. Specify the effect.`);
           if (ge(s, 20)) { H.status = 'classified'; H.outcomes.push(out(`STOT SE 3 (${flag === 'stotSEresp' ? 'respiratory irritation' : 'narcotic effects'})`, [h], 'Warning', ['GHS07'])); }
         });
         if (c3.length) H.notes.push('Cat. 3 is an expert-judgement call: the 20 % generic limit "may be higher or lower depending on the Category 3 ingredient(s)"; narcotic effects may occur below 20 % (3.8.3.4.5). Treat the result as a screening value.');
@@ -1428,7 +1452,7 @@
     const label = (i, k) => (anon ? `Ingredient ${String.fromCharCode(65 + k)}` : nm(i));
     L.push(`CLP MIXTURE CLASSIFICATION – ${anon ? '(name withheld)' : (m.name || '(unnamed mixture)')}`);
     L.push('Rules: Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026, ingredient-based (additivity / summation / generic concentration limits).');
-    L.push(`Physical state: ${m.state}. Flash point: ${m.flashPoint || 'n/a'} °C; IBP: ${m.ibp || 'n/a'} °C; viscosity@40 °C: ${m.viscosity40 || 'n/a'} mm²/s; pH: ${m.pH || 'n/a'}${m.pHReserveOk ? ' (reserve marked non-corrosive)' : ''}.`);
+    L.push(`Physical state: ${m.state}. Flash point: ${m.flashPoint || 'n/a'} °C; IBP: ${m.ibp || 'n/a'} °C; viscosity@40 °C: ${m.viscosity40 || 'n/a'} mm²/s; pH: ${m.pH || 'n/a'}${m.pHReserveOk ? ' (reserve suggests lower corrosivity; confirmatory evidence not modelled)' : ''}.`);
     L.push('', 'INGREDIENTS (% w/w or v/v) and assumed ingredient classifications:');
     ings.forEach((i, k) => {
       const c = [];
