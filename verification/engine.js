@@ -37,6 +37,15 @@
     return validPositive(value) && num(value) <= 100 ? num(value) : NaN;
   };
   const concentrationLimit = (i, key, generic) => has(sclValue(i,key)) ? sclValue(i,key) : generic;
+  // Annex I 4.1.3.5.5.5, Table 4.1.3: M-factors are powers of ten (1, 10, 100, ...).
+  // Any other value (e.g. 5) is invalid input, never a usable multiplier.
+  const isValidMFactor = (raw) => {
+    const n = num(raw);
+    if (!Number.isSafeInteger(n) || n < 1) return false;
+    let m = n;
+    while (m % 10 === 0) m /= 10;
+    return m === 1;
+  };
 
   /* ---------------- reference data ---------------- */
   const PICTO = {
@@ -762,10 +771,7 @@
 
   function aquatic(mix, ings, ctx) {
     const H = hz('aquatic', 'Hazardous to the aquatic environment', 'Annex I 4.1.3.5 (cons. pp.218–220); Tables 4.1.1–4.1.3 (pp.219–221); relevance 4.1.3.1 (pp.214–215); label Table 4.1.4 (pp.221–222)');
-    const validM = (raw) => {
-      const value=num(raw);
-      return Number.isInteger(value) && value >= 1 ? value : NaN;
-    };
+    const validM = (raw) => isValidMFactor(raw) ? num(raw) : NaN;
     const mA = (i) => has(validM(i.mAcute)) ? validM(i.mAcute) : 1;
     const mC = (i) => has(validM(i.mChronic)) ? validM(i.mChronic) : 1;
     const missingM=ings.filter(i=>
@@ -1269,9 +1275,8 @@
         warnings.push('DATA GAP: '+id+' — Aquatic Chronic 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
       for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
         if (!entered(raw[field])) continue;
-        const mFactor = num(raw[field]);
-        if (!has(mFactor) || mFactor < 1 || !Number.isSafeInteger(mFactor))
-          invalid(field,raw[field],'M-factor must be an integer of at least 1; do not use a silent default.');
+        if (!isValidMFactor(raw[field]))
+          invalid(field,raw[field],'M-factor must be 1, 10, 100, 1000 … (a power of ten, Annex I Table 4.1.3); do not use a silent default.');
         if (!applicable)
           warnings.push('INPUT REVIEW: '+id+' — '+field+' supplied but the corresponding aquatic Category 1 classification is not selected.');
       }
@@ -1425,7 +1430,7 @@
     const { m, ings } = normalise(mixture);
     const L = [];
     const anon = opts.anonymise;
-    const label = (i, k) => (anon ? `Ingredient ${String.fromCharCode(65 + k)}` : nm(i));
+    const label = (i, k) => (anon ? anonLabel(k) : nm(i));
     L.push(`CLP MIXTURE CLASSIFICATION – ${anon ? '(name withheld)' : (m.name || '(unnamed mixture)')}`);
     L.push('Rules: Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026, ingredient-based (additivity / summation / generic concentration limits).');
     L.push(`Physical state: ${m.state}. Flash point: ${m.flashPoint || 'n/a'} °C; IBP: ${m.ibp || 'n/a'} °C; viscosity@40 °C: ${m.viscosity40 || 'n/a'} mm²/s; pH: ${m.pH || 'n/a'}${m.pHReserveOk ? ' (reserve marked non-corrosive)' : ''}.`);
@@ -1503,19 +1508,50 @@
     L.push('', 'CALCULATION TRAIL:');
     result.hazards.filter((h) => h.status !== 'na' && (h.status !== 'not' || h.steps.some((s) => !/No ingredient carries|No ingredient classified|No Aspiration|No skin-corrosive|No eye-damaging/.test(s)))).forEach((h) => {
       L.push(`[${h.name}] (${h.ref})`);
-      h.steps.forEach((s) => L.push('  ' + (anon ? anonymiseText(s, ings) : s)));
+      h.steps.forEach((s) => L.push('  ' + s));
       h.notes.forEach((s) => L.push('  note: ' + s));
     });
     if (result.sds.length) { L.push('', 'SDS-on-request triggers:'); result.sds.forEach((s) => L.push('- ' + s)); }
     if (result.warnings.length) { L.push('', 'Warnings:'); result.warnings.forEach((s) => L.push('- ' + s)); }
     L.push('', 'Not modelled: bridging principles, tested-mixture data, aquatic additivity formula for tested ingredients, complete tested-mixture / substance-specific skin-eye evidence and unusual SCL category combinations, physical hazards other than flammable liquids, complete Article 28 Annex I/IV coverage and final P-statement approval, unvalidated manual Article 26(2) severity, and case-specific Article 27 label reviews.');
-    return L.join('\n');
+    const text = L.join('\n');
+    // Anonymise the WHOLE report: ingredient names and CAS/EC identifiers also
+    // appear in warnings, notes, SDS triggers and supplemental label text.
+    return anon ? anonymiseText(text, ings, mixture) : text;
   }
-  function anonymiseText(s, ings) {
-    let t = s;
-    ings.forEach((i, k) => { const n = nm(i); if (n && n !== '(unnamed ingredient)') t = t.split(n).join(`Ingredient ${String.fromCharCode(65 + k)}`); });
-    return t;
+  // Ingredient A … Z, AA, AB … (spreadsheet-style, so more than 26 stay distinct).
+  function anonLabel(k) {
+    let s = '', n = k;
+    do { s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26) - 1; } while (n >= 0);
+    return 'Ingredient ' + s;
+  }
+  function anonymiseText(text, ings, mixture) {
+    const pairs = [];
+    const add = (value, replacement) => {
+      const v = String(value == null ? '' : value).trim();
+      if (v && !pairs.some(([x]) => x === v)) pairs.push([v, replacement]);
+    };
+    // Same index as the ingredient list in report(), so labels stay consistent.
+    ings.forEach((i, k) => { add(i.name, anonLabel(k)); add(i.cas, anonLabel(k)); });
+    // Ingredients dropped by normalise() (no concentration) still appear in warnings.
+    ((mixture && mixture.ingredients) || []).forEach((raw) => {
+      if (!raw) return;
+      add(raw.name, 'an excluded ingredient');
+      add(raw.cas, 'an excluded ingredient');
+    });
+    add(mixture && mixture.name, '(name withheld)');
+    // Longest first, so a name that contains another name is replaced whole.
+    // Whole-word matching avoids mangling ordinary words with short names, and
+    // placeholders stop a replacement label being matched by a later value.
+    pairs.sort((a, b) => b[0].length - a[0].length);
+    let t = String(text);
+    pairs.forEach(([v], n) => {
+      const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      t = t.replace(new RegExp('(^|[^\\p{L}\\p{N}])' + escaped + '(?=[^\\p{L}\\p{N}]|$)', 'gu'),
+        (_, before) => before + '\u0000' + n + '\u0000');
+    });
+    return t.replace(/\u0000(\d+)\u0000/g, (_, n) => pairs[+n][1]);
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor };
 });

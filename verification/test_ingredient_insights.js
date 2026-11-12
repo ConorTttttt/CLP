@@ -91,6 +91,14 @@ test("Aquatic M-factor missing explicitly requests review",()=>{
  assert.equal(x.status,"review");
  assert.match(x.extra,/M-factor missing/);
 });
+test("Aquatic M-factor that is not a power of ten requests review",()=>{
+ for(const m of ["5","3","20"]){
+  const i=ing(0.01,"H410",{aquaChronic:"1",mChronic:m});
+  const x=ui.ingredientCutoffDetails(i).find(x=>x.label==="Aquatic Chronic 1");
+  assert.equal(x.status,"review","M="+m);
+  assert.match(x.extra,/M-factor missing or invalid/);
+ }
+});
 test("Acute 4 at 0.5% is below the engine's 1% cut-off",()=>{
  const i=ing(0.5,"H302");
  const x=ui.ingredientCutoffDetails(i).find(x=>x.label.startsWith("Acute toxicity — Oral"));

@@ -187,5 +187,48 @@ check('All routes with valid data do not create unknown acute toxicity statement
 const x=single(20,{acute:{oral:{ate:'bad'},dermal:{},inh:{form:'vapour'}}});
 check('Invalid ATE without category is recorded as incomplete',H(x,'acute').status==='incomplete');
 }
+// M-factors must be powers of ten (Annex I Table 4.1.3); other integers are invalid input.
+{
+for (const m of [1,10,100,1000,'10','1e2'])
+  check('M-factor '+m+' accepted',C.isValidMFactor(m));
+for (const m of [0,2,3,5,15,20,50,110,0.5,-10,'','abc',null,undefined])
+  check('M-factor '+JSON.stringify(m)+' rejected',!C.isValidMFactor(m));
+const x=single(5,{aquaAcute:true,mAcute:5,aquaChronic:'1',mChronic:5});
+check('M=5 flagged as invalid (acute)',warn(x,'invalid mAcute'));
+check('M=5 flagged as invalid (chronic)',warn(x,'invalid mChronic'));
+check('M=5 is not used as a multiplier',!label(x,'Aquatic Acute 1')&&!label(x,'Aquatic Chronic 1'));
+check('M=5 falls back to the M=1 lower-bound screen',label(x,'Aquatic Chronic 2'));
+check('M=5 result is marked provisional',H(x,'aquatic').steps.some(s=>/PROVISIONAL/.test(s)));
+const y=single(5,{aquaAcute:true,mAcute:10,aquaChronic:'1',mChronic:10});
+check('M=10 at 5% still gives Acute 1 and Chronic 1',label(y,'Aquatic Acute 1')&&label(y,'Aquatic Chronic 1'));
+check('M=10 is not flagged as invalid',!warn(y,'invalid mAcute')&&!warn(y,'invalid mChronic'));
+}
+// Anonymised reports must not reveal ingredient names, CAS/EC numbers or the
+// mixture name anywhere (warnings, notes, SDS triggers, supplemental text).
+{
+const mix={name:'SecretProduct',state:'liquid',ingredients:[
+  {name:'AcmeSecretSolvent',cas:'123-45-6',pct:60},
+  {name:'ProprietaryBiocideX',cas:'999-99-9',pct:0.05,skinSens:'1A'},
+  {name:'HiddenCarc',cas:'111-11-1',pct:0.5,carc:'2'},
+  {name:'',cas:'222-22-2',pct:1,acute:{oral:{ate:'-5'},dermal:{},inh:{form:'vapour'}}},
+  {name:'DroppedThing',cas:'333-33-3',pct:0},
+  {name:'Acid',pct:2,skinCorr:'1B',scl:{skinCorr:0.5}},
+  {name:'WaterBase',pct:36.45}]};
+const x=C.classify(mix);
+const plain=C.report(mix,x), anon=C.report(mix,x,{anonymise:true});
+const secrets=['AcmeSecretSolvent','ProprietaryBiocideX','HiddenCarc','222-22-2','DroppedThing','333-33-3','SecretProduct','WaterBase','123-45-6'];
+check('Plain report still names ingredients',['ProprietaryBiocideX','HiddenCarc','222-22-2'].every(s=>plain.includes(s)));
+secrets.forEach(s=>check('Anonymised report omits '+s,!anon.includes(s)));
+check('Anonymised SDS trigger uses the ingredient label',/SDS available on request: Carc\. 2 ingredient Ingredient C/.test(anon));
+check('Anonymised warning for unnamed ingredient uses its label',/DATA VALIDATION: Ingredient D /.test(anon));
+check('Excluded ingredient is redacted in warnings',anon.includes('an excluded ingredient'));
+check('Short ingredient name replaced as a whole word only',!/\bAcid\b/.test(anon)&&anon.includes('acids, bases'));
+}
+{
+const many={ingredients:Array.from({length:28},(_,k)=>({name:'Comp'+k+'X',pct:k<27?3:19}))};
+const anon=C.report(many,C.classify(many),{anonymise:true});
+check('More than 26 ingredients get distinct labels',anon.includes('Ingredient Z:')&&anon.includes('Ingredient AA:')&&anon.includes('Ingredient AB:'));
+check('No raw names with many ingredients',!/Comp\d+X/.test(anon));
+}
 console.log('\n'+pass+' specific-value checks passed, '+fail+' failed');
 process.exit(fail?1:0);
