@@ -855,7 +855,7 @@
     if (edIngredients.length > 1) {
       const note = 'ED ENV ADDITIVITY REVIEW: multiple endocrine-disrupting ingredients ('+
         edIngredients.map(nm).join(', ')+
-        '). Individual GCL/SCL screening does not assess combined effects. ECHA guidance 4.2.3.1.1 requires case-by-case consideration of additivity, adverse outcomes and related endocrine mechanisms; do not infer either classification or safety from the concentration screen alone.';
+        '). Individual GCL/SCL screening does not assess combined effects. ECHA guidance 4.2.3.1.1 allows case-by-case consideration of additivity, adverse outcomes and related endocrine mechanisms; do not infer either classification or safety from the concentration screen alone.';
       edEnvironment.notes.push(note);
       ctx.warnings.push(note);
     }
@@ -1281,7 +1281,6 @@
         warnings.push('DATA GAP: '+id+' — Aquatic Chronic 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
       for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
         if (!entered(raw[field])) continue;
-        const mFactor = num(raw[field]);
         if (!has(validM(raw[field])))
           invalid(field,raw[field],'M-factor must be 1, 10, 100, 1000, etc. (CLP Annex I Table 4.1.3). An invalid factor is not used in the aquatic calculation.');
         if (!applicable)
