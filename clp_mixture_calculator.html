@@ -1497,7 +1497,7 @@ pre.rep{padding:14px}
     if (edIngredients.length > 1) {
       const note = 'ED ENV ADDITIVITY REVIEW: multiple endocrine-disrupting ingredients ('+
         edIngredients.map(nm).join(', ')+
-        '). Individual GCL/SCL screening does not assess combined effects. ECHA guidance 4.2.3.1.1 requires case-by-case consideration of additivity, adverse outcomes and related endocrine mechanisms; do not infer either classification or safety from the concentration screen alone.';
+        '). Individual GCL/SCL screening does not assess combined effects. ECHA guidance 4.2.3.1.1 allows case-by-case consideration of additivity, adverse outcomes and related endocrine mechanisms; do not infer either classification or safety from the concentration screen alone.';
       edEnvironment.notes.push(note);
       ctx.warnings.push(note);
     }
@@ -1923,7 +1923,6 @@ pre.rep{padding:14px}
         warnings.push('DATA GAP: '+id+' — Aquatic Chronic 1 M-factor is missing. M=1 is a lower-bound scenario only; classification is provisional.');
       for(const [field,applicable] of [['mAcute',!!raw.aquaAcute],['mChronic',raw.aquaChronic==='1']]) {
         if (!entered(raw[field])) continue;
-        const mFactor = num(raw[field]);
         if (!has(validM(raw[field])))
           invalid(field,raw[field],'M-factor must be 1, 10, 100, 1000, etc. (CLP Annex I Table 4.1.3). An invalid factor is not used in the aquatic calculation.');
         if (!applicable)
@@ -2530,7 +2529,7 @@ function detailHTML(i) {
   <section class="detail-category" data-detail-category="environmental">
     <h4>Environmental hazards</h4>
   <details class="detail-group" data-detail-section="aquatic"${sectionOpen("aquatic")}><summary>Aquatic environment</summary><div class="detail-group-body">
-    <div class="hint" style="margin-bottom:6px">For Aquatic Acute 1 and Chronic 1 enter the applicable M-factor separately, even if it equals 1. Missing or invalid values use a provisional lower-bound screen and trigger warnings; they are not accepted as an approved aquatic classification.</div>
+    <div class="hint" style="margin-bottom:6px">For Aquatic Acute 1 and Chronic 1 enter the applicable M-factor separately (1, 10, 100, etc.), even if it equals 1. Missing or invalid values use a provisional lower-bound screen and trigger warnings; they are not accepted as an approved aquatic classification.</div>
     <div class="g g4">
       <div style="align-self:end">${CHK("aquaAcute", i.aquaAcute, "Aquatic Acute 1")}</div>
       <div><label>M-factor (acute)</label>${TXT("mAcute", i.mAcute, "1")}</div>
