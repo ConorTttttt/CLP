@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ConorTttttt/CLP/tree/main/labelling-packaging-assistant/eu/input_schema.json",
+  "title": "EU CLP partial integrated assessment input (Phase 3)",
+  "description": "User-approved classifications plus explicit product/packaging facts. EU-only. Missing optional facts are treated as unknown by the assessment rather than false or zero.",
+  "type": "object",
+  "required": ["jurisdiction", "as_of", "classification", "packaging", "use_context", "ingredient_concentration_basis"],
+  "properties": {
+    "jurisdiction": {"const": "EU"},
+    "as_of": {"const": "2026-11-12"},
+    "product_id": {"type": "string"},
+    "market_member_state": {"type": "string", "minLength": 2},
+    "classification": {
+      "type": "object",
+      "required": ["approved_by_user", "hazard_categories", "hazard_statements"],
+      "properties": {
+        "approved_by_user": {"const": true},
+        "hazard_categories": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "hazard_statements": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^H[0-9]{3}[A-Za-z]?$"}}
+      },
+      "not": {"anyOf": [{"required": ["pictogram_candidates"]}, {"required": ["signal_word_candidates"]}]}
+    },
+    "packaging": {
+      "type": "object",
+      "required": ["packaged"],
+      "properties": {
+        "packaged": {"const": true},
+        "general_public": {"type": "boolean"},
+        "capacity_ml": {"type": "number", "exclusiveMinimum": 0},
+        "is_aerosol": {"type": "boolean"},
+        "sealed_spray": {"type": "boolean"},
+        "transportable_gas_receptacle": {"type": "boolean"},
+        "quantity_elsewhere_on_package": {"type": "boolean"},
+        "child_attractive_design": {"type": "boolean"}
+      }
+    },
+    "ingredient_concentration_basis": {"const": "percent_w_w"},
+    "ingredients": {
+      "type": "object",
+      "description": "Explicit concentration values for named CAS numbers; absence means UNKNOWN, not 0%.",
+      "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100}
+    },
+    "use_context": {"type": "object"},
+    "supplier_wording": {"type": "object"},
+    "product_flags": {"type": "object"},
+    "label": {"type": "object"},
+    "lead_metal_percent_w_w": {"type": "number", "minimum": 0, "maximum": 100},
+    "active_chlorine_percent": {"type": "number", "minimum": 0, "maximum": 100}
+  }
+}

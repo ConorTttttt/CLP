@@ -1,0 +1,1005 @@
+{
+  "system": "EU_CLP_ONLY",
+  "assessment_kind": "DETERMINISTIC_PARTIAL_LABELLING_AND_PACKAGING",
+  "product_id": "EU-PHASE-3-DEMONSTRATION",
+  "as_of": "2026-11-12",
+  "classification_provenance": "MANUALLY_SUPPLIED_AND_APPROVED_BY_USER",
+  "classification_is_never_modified": true,
+  "source": {
+    "regulation": "Regulation (EC) No 1272/2008 (EU CLP)",
+    "consolidation_date": "2026-07-01",
+    "pdf_sha256": "602529287cbdbbb80f4bc17404fef58041ce5edf30646509b3cdb6991b7fc8a7",
+    "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+    "regulatory_status": "SOURCE_EXTRACTED_NOT_ALL_PROVISIONS_LEGALLY_VALIDATED",
+    "application_and_transition_dates_verified": false
+  },
+  "version_control": {
+    "input_sha256": "9db5780ee56a30b17c3ddf823b804045fcf8ddc74a9f44e40ce239bb92ae56f8",
+    "adapted_legal_input_sha256": "58e3897a80a546ef429386fa917d75b242f61530d1a13ff727a672deab891951",
+    "annex_i_mapping_id": "EU-ANNEX-I-LABEL-TRANCHE-2-2026-11-12",
+    "annex_i_mapping_sha256": "fe2f096f3b803f6636122cbe8ebf3a004403dc12b24e00c1da9e6dfd613faff4",
+    "annex_iv_policy_id": "EU-ANNEX-IV-SELECTOR-PARTIAL-2026-11-12",
+    "annex_iv_policy_sha256": "6fd365aebc86be073c441f82ddd086677c47756e01cca2f637ed026b40948044",
+    "eu_packaging_rulebook_id": "EU-CLP-PROVISION-TRANCHE-1-2026-11-12",
+    "eu_packaging_rulebook_sha256": "d70ee8c8c0d8bf1c294bf52aa3b92f2ee9c0d95c71c2c54f85fcde5a81c3e674"
+  },
+  "label_elements_draft": {
+    "hazard_pictograms": [
+      "GHS02",
+      "GHS07"
+    ],
+    "pictogram_source_trace": {
+      "GHS07": [
+        "Eye Irrit. 2"
+      ],
+      "GHS02": [
+        "Flam. Liq. 2"
+      ]
+    },
+    "pictogram_precedence_decisions": [],
+    "signal_word": "Danger",
+    "signal_word_reference": "EU CLP Article 20(3); Annex I class label tables",
+    "hazard_statements_en": [
+      {
+        "code": "H225",
+        "english_text": "Highly flammable liquid and vapour",
+        "source_classification": "Flam. Liq. 2",
+        "legal_reference": "EU CLP Annex I, Table 2.6.2",
+        "pdf_page": 102
+      },
+      {
+        "code": "H319",
+        "english_text": "Causes serious eye irritation",
+        "source_classification": "Eye Irrit. 2",
+        "legal_reference": "EU CLP Annex I, Table 3.3.5",
+        "pdf_page": 154
+      }
+    ],
+    "omitted_hazard_statements": [],
+    "selected_precautionary_statements_en": [
+      {
+        "code": "P501",
+        "english_text": "Dispose of contents/container to an approved hazardous waste collection point.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.5; Article 28(2)",
+        "reason": "Supplier-approved wording for Annex IV placeholder; legal acceptability still requires review."
+      },
+      {
+        "code": "P210",
+        "english_text": "Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+        "reason": "Included by versioned policy for an Annex I candidate."
+      },
+      {
+        "code": "P305+P351+P338",
+        "english_text": "IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+        "reason": "Included by versioned policy for an Annex I candidate."
+      },
+      {
+        "code": "P280",
+        "english_text": "Wear protective gloves and eye protection.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+        "reason": "Supplier-approved PPE wording. Legal acceptability still requires review."
+      },
+      {
+        "code": "P303+P361+P353",
+        "english_text": "IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+        "reason": "Included by versioned policy for an Annex I candidate."
+      },
+      {
+        "code": "P337+P313",
+        "english_text": "If eye irritation persists: Get medical advice/attention.",
+        "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+        "reason": "Included by versioned policy for an Annex I candidate."
+      }
+    ]
+  },
+  "label_mapping_trace": [
+    {
+      "classification": "Eye Irrit. 2",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 3.3.5",
+        "pdf_page": 154,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      }
+    },
+    {
+      "classification": "Flam. Liq. 2",
+      "source": {
+        "legal_reference": "EU CLP Annex I, Table 2.6.2",
+        "pdf_page": 102,
+        "eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01"
+      }
+    }
+  ],
+  "unsupported_hazard_categories": [],
+  "precautionary_statement_decisions": [
+    {
+      "code": "P102",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "General precaution appropriate for consumer products; internal default policy.",
+      "source_classifications": [
+        {
+          "classification": "general consumer precaution",
+          "annex_i_table": "EU CLP Annex IV Part 1, Table 6.1, as appropriate",
+          "pdf_page": 365
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1",
+      "annex_iv_pdf_page": 365,
+      "english_text": "Keep out of reach of children.",
+      "priority": 35
+    },
+    {
+      "code": "P210",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Included by versioned policy for an Annex I candidate.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 366,
+      "english_text": "Keep away from heat, hot surfaces, sparks, open flames and other ignition sources. No smoking.",
+      "priority": 10
+    },
+    {
+      "code": "P233",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Annex IV: for liquids volatile enough to form an explosive atmosphere.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 369,
+      "english_text": "Keep container tightly closed.",
+      "priority": 90
+    },
+    {
+      "code": "P240",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Annex IV: for liquids volatile enough to form an explosive atmosphere.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "annex_iv_pdf_page": 370,
+      "english_text": "Ground and bond container and receiving equipment.",
+      "priority": 70
+    },
+    {
+      "code": "P241",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Annex IV: for liquids volatile enough to form an explosive atmosphere.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "annex_iv_pdf_page": 370,
+      "english_text": "Use explosion-proof equipment.",
+      "priority": 71
+    },
+    {
+      "code": "P242",
+      "status": "NEEDS_INPUT",
+      "reason": "Annex IV P242: requires verified explosive-atmosphere and very-low-ignition-energy facts.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.2",
+      "annex_iv_pdf_page": 370,
+      "english_text": null,
+      "priority": 72
+    },
+    {
+      "code": "P243",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Annex IV: for liquids volatile enough to form an explosive atmosphere.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 370,
+      "english_text": "Take action to prevent static discharges.",
+      "priority": 60
+    },
+    {
+      "code": "P264",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Supplier-approved wording for Annex IV placeholder; legal acceptability still requires review.",
+      "source_classifications": [
+        {
+          "classification": "Eye Irrit. 2",
+          "annex_i_table": "EU CLP Annex I, Table 3.3.5",
+          "pdf_page": 154
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 372,
+      "english_text": "Wash hands thoroughly after handling.",
+      "priority": 52
+    },
+    {
+      "code": "P280",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Supplier-approved PPE wording. Legal acceptability still requires review.",
+      "source_classifications": [
+        {
+          "classification": "Eye Irrit. 2",
+          "annex_i_table": "EU CLP Annex I, Table 3.3.5",
+          "pdf_page": 154
+        },
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 373,
+      "english_text": "Wear protective gloves and eye protection.",
+      "priority": 14
+    },
+    {
+      "code": "P303+P361+P353",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Included by versioned policy for an Annex I candidate.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 388,
+      "english_text": "IF ON SKIN (or hair): Take off immediately all contaminated clothing. Rinse skin with water.",
+      "priority": 16
+    },
+    {
+      "code": "P305+P351+P338",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Included by versioned policy for an Annex I candidate.",
+      "source_classifications": [
+        {
+          "classification": "Eye Irrit. 2",
+          "annex_i_table": "EU CLP Annex I, Table 3.3.5",
+          "pdf_page": 154
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 388,
+      "english_text": "IF IN EYES: Rinse cautiously with water for several minutes. Remove contact lenses, if present and easy to do. Continue rinsing.",
+      "priority": 12
+    },
+    {
+      "code": "P337+P313",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Included by versioned policy for an Annex I candidate.",
+      "source_classifications": [
+        {
+          "classification": "Eye Irrit. 2",
+          "annex_i_table": "EU CLP Annex I, Table 3.3.5",
+          "pdf_page": 154
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 387,
+      "english_text": "If eye irritation persists: Get medical advice/attention.",
+      "priority": 22
+    },
+    {
+      "code": "P370+P378",
+      "status": "OMITTED_CONDITION_NOT_MET",
+      "reason": "Annex IV: P370+P378 if water increases the risk.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 387,
+      "english_text": "In case of fire: Use {extinguishing_media} to extinguish.",
+      "priority": 25
+    },
+    {
+      "code": "P403+P235",
+      "status": "OMITTED_BY_DRAFT_SIX_STATEMENT_POLICY",
+      "reason": "Annex IV: other flammable liquids only when volatile and may form an explosive atmosphere.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.1/6.2/6.3/6.4/6.5 (as applicable)",
+      "annex_iv_pdf_page": 392,
+      "english_text": "Store in a well-ventilated place. Keep cool.",
+      "priority": 55
+    },
+    {
+      "code": "P501",
+      "status": "SELECTED_BY_DRAFT_POLICY",
+      "reason": "Supplier-approved wording for Annex IV placeholder; legal acceptability still requires review.",
+      "source_classifications": [
+        {
+          "classification": "Flam. Liq. 2",
+          "annex_i_table": "EU CLP Annex I, Table 2.6.2",
+          "pdf_page": 102
+        }
+      ],
+      "legal_reference": "EU CLP Annex IV Part 1, Table 6.5; Article 28(2)",
+      "annex_iv_pdf_page": 393,
+      "english_text": "Dispose of contents/container to an approved hazardous waste collection point.",
+      "priority": 5
+    }
+  ],
+  "packaging_summary": {
+    "child_resistant_fastening": "REQUIRED_BY_ONE_OR_MORE_RULES",
+    "tactile_warning": "REQUIRED_BY_ONE_OR_MORE_RULES"
+  },
+  "packaging_and_other_legal_decisions": [
+    {
+      "id": "EU-17-1-A",
+      "issue": "label_content",
+      "status": "REQUIRED",
+      "legal_reference": "Article 17(1)(a)",
+      "source_pdf_page": 19,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Hazardous packaged products must identify supplier(s) on the label.",
+      "conditions": [
+        {
+          "field": "classification.is_hazardous",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.packaged",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        }
+      ],
+      "effect_if_triggered": {
+        "elements": [
+          "supplier name",
+          "supplier address",
+          "supplier telephone number"
+        ]
+      }
+    },
+    {
+      "id": "EU-17-1-B",
+      "issue": "label_content",
+      "status": "REQUIRED",
+      "legal_reference": "Article 17(1)(b)",
+      "source_pdf_page": 19,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "For general-public packages, nominal quantity belongs on label unless specified elsewhere on package.",
+      "conditions": [
+        {
+          "field": "classification.is_hazardous",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.packaged",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.quantity_elsewhere_on_package",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": {
+        "elements": [
+          "nominal quantity on label"
+        ]
+      }
+    },
+    {
+      "id": "EU-17-1-C",
+      "issue": "label_content",
+      "status": "REQUIRED",
+      "legal_reference": "Article 17(1)(c)",
+      "source_pdf_page": 19,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Hazardous packaged products must bear a product identifier.",
+      "conditions": [
+        {
+          "field": "classification.is_hazardous",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.packaged",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        }
+      ],
+      "effect_if_triggered": {
+        "elements": [
+          "product identifier per Article 18"
+        ]
+      }
+    },
+    {
+      "id": "EU-17-2",
+      "issue": "label_language",
+      "status": "REQUIRES_MEMBER_STATE_LOOKUP",
+      "legal_reference": "Article 17(2)",
+      "source_pdf_page": 19,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Label language depends on Member State; specific language mapping is not implemented.",
+      "conditions": [
+        {
+          "field": "classification.is_hazardous",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.packaged",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        }
+      ],
+      "effect_if_triggered": {
+        "elements": [
+          "official language(s) of destination Member State unless local exception"
+        ]
+      }
+    },
+    {
+      "id": "EU-20-3",
+      "issue": "signal_word_precedence",
+      "status": "PROHIBITED",
+      "legal_reference": "Article 20(3)",
+      "source_pdf_page": 21,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Warning may not appear when Danger appears.",
+      "conditions": [
+        {
+          "field": "classification.signal_word_candidates",
+          "operator": "contains",
+          "expected": "Danger",
+          "actual": [
+            "Danger",
+            "Warning"
+          ]
+        }
+      ],
+      "effect_if_triggered": {
+        "exclude": "Warning"
+      }
+    },
+    {
+      "id": "EU-26-1-B",
+      "issue": "pictogram_precedence",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Article 26(1)(b)",
+      "source_pdf_page": 25,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "If GHS06 is required, GHS07 must not appear.",
+      "conditions": [
+        {
+          "field": "classification.pictogram_candidates",
+          "operator": "contains",
+          "expected": "GHS06",
+          "actual": [
+            "GHS02",
+            "GHS07"
+          ]
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-25-4",
+      "issue": "misleading_label_claims",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Article 25(4)",
+      "source_pdf_page": 24,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Four expressly named prohibited claims. Broader equivalent claims require separate review.",
+      "conditions": [
+        {
+          "field": "label.claims",
+          "operator": "any_of",
+          "expected": [
+            "non-toxic",
+            "non-harmful",
+            "non-polluting",
+            "ecological"
+          ],
+          "actual": []
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-35-2-DESIGN",
+      "issue": "packaging_design",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Article 35(2)",
+      "source_pdf_page": 31,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "A general-public hazardous package may not be designed to attract children. Wider misleading-design rules are not exhaustively checked.",
+      "conditions": [
+        {
+          "field": "classification.is_hazardous",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.child_attractive_design",
+          "operator": "eq",
+          "expected": true,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-3.1.1.1",
+      "issue": "child_resistant_fastening",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 3.1.1.1",
+      "source_pdf_page": 243,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "General-public packages: listed acute toxicity/STOT/skin-corrosion categories.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "classification.hazard_categories",
+          "operator": "any_of",
+          "expected": [
+            "Acute Tox. 1",
+            "Acute Tox. 2",
+            "Acute Tox. 3",
+            "STOT SE 1",
+            "STOT RE 1",
+            "Skin Corr. 1",
+            "Skin Corr. 1A",
+            "Skin Corr. 1B",
+            "Skin Corr. 1C"
+          ],
+          "actual": [
+            "Flam. Liq. 2",
+            "Eye Irrit. 2"
+          ]
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-3.1.1.2",
+      "issue": "child_resistant_fastening",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 3.1.1.2",
+      "source_pdf_page": 243,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Aspiration hazard triggers CRF except aerosol/sealed spray packages, subject to detailed 3.10 provisions.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "classification.hazard_categories",
+          "operator": "contains",
+          "expected": "Asp. Tox. 1",
+          "actual": [
+            "Flam. Liq. 2",
+            "Eye Irrit. 2"
+          ]
+        },
+        {
+          "field": "packaging.is_aerosol",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        },
+        {
+          "field": "packaging.sealed_spray",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-3.1.1.3-METHANOL",
+      "issue": "child_resistant_fastening",
+      "status": "REQUIRED",
+      "legal_reference": "Annex II, 3.1.1.3",
+      "source_pdf_page": 244,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Methanol at least 3 percent w/w in general-public package.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "ingredients.67-56-1",
+          "operator": "gte",
+          "expected": 3,
+          "actual": 3.0
+        }
+      ],
+      "effect_if_triggered": {
+        "fit": "child-resistant fastening"
+      }
+    },
+    {
+      "id": "EU-ANII-3.1.1.3-DCM",
+      "issue": "child_resistant_fastening",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 3.1.1.3",
+      "source_pdf_page": 244,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Dichloromethane at least 1 percent w/w in general-public package.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "ingredients.75-09-2",
+          "operator": "gte",
+          "expected": 1,
+          "actual": 0.0
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-3.2.1.1-OTHER",
+      "issue": "tactile_warning",
+      "status": "REQUIRED",
+      "legal_reference": "Annex II, 3.2.1.1-3.2.1.2",
+      "source_pdf_page": 244,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Listed hazards other than aspiration in general-public packaging (transportable gas receptacle excluded).",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.transportable_gas_receptacle",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        },
+        {
+          "field": "classification.hazard_categories",
+          "operator": "any_of",
+          "expected": [
+            "Acute Tox. 1",
+            "Acute Tox. 2",
+            "Acute Tox. 3",
+            "Acute Tox. 4",
+            "Skin Corr. 1",
+            "Skin Corr. 1A",
+            "Skin Corr. 1B",
+            "Skin Corr. 1C",
+            "Muta. 2",
+            "Carc. 2",
+            "Repr. 2",
+            "Resp. Sens. 1",
+            "Resp. Sens. 1A",
+            "Resp. Sens. 1B",
+            "STOT SE 1",
+            "STOT SE 2",
+            "STOT RE 1",
+            "STOT RE 2",
+            "Flam. Gas 1",
+            "Flam. Gas 1A",
+            "Flam. Gas 1B",
+            "Flam. Gas 2",
+            "Flam. Liq. 1",
+            "Flam. Liq. 2",
+            "Flam. Sol. 1",
+            "Flam. Sol. 2"
+          ],
+          "actual": [
+            "Flam. Liq. 2",
+            "Eye Irrit. 2"
+          ]
+        }
+      ],
+      "effect_if_triggered": {
+        "fit": "tactile warning"
+      }
+    },
+    {
+      "id": "EU-ANII-3.2.1.1-ASP",
+      "issue": "tactile_warning",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 3.2.1.1-3.2.1.2",
+      "source_pdf_page": 245,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Aspiration-only hazard: aerosol and sealed-spray exceptions apply. Other classifications are evaluated separately.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "packaging.transportable_gas_receptacle",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        },
+        {
+          "field": "classification.hazard_categories",
+          "operator": "contains",
+          "expected": "Asp. Tox. 1",
+          "actual": [
+            "Flam. Liq. 2",
+            "Eye Irrit. 2"
+          ]
+        },
+        {
+          "field": "packaging.is_aerosol",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        },
+        {
+          "field": "packaging.sealed_spray",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-2.1-LEAD",
+      "issue": "supplemental_label",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 2.1",
+      "source_pdf_page": 240,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Paints/varnishes with lead above 0.15% w/w of mixture.",
+      "conditions": [
+        {
+          "field": "product_flags.is_paint_or_varnish",
+          "operator": "eq",
+          "expected": true,
+          "actual": false
+        },
+        {
+          "field": "lead_metal_percent_w_w",
+          "operator": "gt",
+          "expected": 0.15,
+          "actual": 0.0
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-2.2-CYANO",
+      "issue": "supplemental_label",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 2.2",
+      "source_pdf_page": 241,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Immediate packaging of cyanoacrylate adhesives requires EUH202 and safety advice.",
+      "conditions": [
+        {
+          "field": "product_flags.cyanoacrylate_adhesive",
+          "operator": "eq",
+          "expected": true,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-2.4-ISOCYANATES",
+      "issue": "supplemental_label",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 2.4",
+      "source_pdf_page": 241,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Mixtures containing isocyanates unless already identified on label.",
+      "conditions": [
+        {
+          "field": "product_flags.contains_isocyanates",
+          "operator": "eq",
+          "expected": true,
+          "actual": false
+        },
+        {
+          "field": "product_flags.isocyanates_already_identified_on_label",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-2.5-EPOXY",
+      "issue": "supplemental_label",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 2.5",
+      "source_pdf_page": 241,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "Mixtures with epoxy constituents average MW <=700 unless already identified on label.",
+      "conditions": [
+        {
+          "field": "product_flags.contains_epoxy_mw_lte_700",
+          "operator": "eq",
+          "expected": true,
+          "actual": false
+        },
+        {
+          "field": "product_flags.epoxy_already_identified_on_label",
+          "operator": "eq",
+          "expected": false,
+          "actual": false
+        }
+      ],
+      "effect_if_triggered": null
+    },
+    {
+      "id": "EU-ANII-2.6-CHLORINE",
+      "issue": "supplemental_label",
+      "status": "NOT_TRIGGERED_BY_THIS_RULE",
+      "legal_reference": "Annex II, 2.6",
+      "source_pdf_page": 241,
+      "source_eli": "https://eur-lex.europa.eu/eli/reg/2008/1272/2026-07-01",
+      "reason": "General-public mixtures with more than 1% active chlorine.",
+      "conditions": [
+        {
+          "field": "general_public",
+          "operator": "eq",
+          "expected": true,
+          "actual": true
+        },
+        {
+          "field": "active_chlorine_percent",
+          "operator": "gt",
+          "expected": 1,
+          "actual": 0.0
+        }
+      ],
+      "effect_if_triggered": null
+    }
+  ],
+  "blocking_items": [
+    {
+      "module": "EU_LABEL",
+      "code": "PRECAUTIONARY_INPUT_REQUIRED",
+      "statement": "P242",
+      "reason": "Annex IV P242: requires verified explosive-atmosphere and very-low-ignition-energy facts."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P102",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P264",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P403+P235",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P243",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P240",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P241",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    },
+    {
+      "module": "EU_LABEL",
+      "code": "P_STATEMENT_PRIORITY_OVERFLOW",
+      "statement": "P233",
+      "effect": "Priority-based omission requires expert justification under Articles 22 and 28."
+    }
+  ],
+  "coverage": {
+    "annex_i_categories_implemented": 13,
+    "eu_packaging_and_other_requirements_implemented": 19,
+    "annex_iv_policy_statements_implemented": 27,
+    "assessment_is_exhaustive": false
+  },
+  "warnings": [
+    "Annex IV criteria and the internal P-statement priority policy require regulatory review for each use case.",
+    "Existing EU packaging and EU labelling modules have not been independently legally validated.",
+    "Member-State official language(s) and local exceptions NOT validated. English text below is illustrative only.",
+    "No full EU CLP compliance decision: mappings, special cases, date transitions, wording and law-state remain incomplete.",
+    "This is a non-certified, partial rulebook. No market-language or transition assessment has been completed."
+  ],
+  "label_ready_for_use": false,
+  "whole_label_and_package_compliance_verdict": "NOT_ASSESSED"
+}
