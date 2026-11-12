@@ -1,0 +1,18 @@
+{
+  "product_id": "EXAMPLE-EU-CLEANER",
+  "jurisdiction": "EU",
+  "as_of": "2026-11-12",
+  "market": "Ireland",
+  "product_type": "mixture",
+  "general_public": true,
+  "package_capacity_ml": 500,
+  "ingredient_concentration_basis": "percent_w_w",
+  "ingredients_w_w_percent": {"67-56-1": 4.0, "75-09-2": 0.0},
+  "classification": {
+    "confirmed_by_user": true,
+    "hazard_classes": [{"hazard_class": "Flam. Liq.", "category": "2"}],
+    "hazard_statements": ["H225"],
+    "pictograms_from_classification": ["GHS02"],
+    "signal_words_from_classification": ["Danger"]
+  }
+}
