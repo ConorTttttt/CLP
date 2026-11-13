@@ -102,6 +102,52 @@
     EUH451: 'Can cause very long-lasting and diffuse contamination of water resources'
   };
 
+  /* ---------------- jurisdiction profiles ----------------
+     One engine, one set of Annex I mixture rules. A profile only records where a
+     jurisdiction's law differs from EU CLP, so the rules cannot drift apart.
+
+     GB CLP: Regulation (EC) No 1272/2008 as retained in Great Britain (England,
+     Scotland, Wales) at the end of the Brexit transition period (31 December 2020)
+     and amended by UK legislation. Differences applied here:
+       - The hazard classes added to EU CLP by Delegated Regulation (EU) 2023/707
+         (ED HH, ED ENV, PBT/vPvB, PMT/vPvM; EUH380–EUH451) are not GB hazard classes.
+       - Harmonised classifications, SCLs, M-factors and ATEs come from the GB
+         Mandatory Classification List (GB MCL), not from EU Annex VI; EU ATPs
+         adopted after 2020 do not apply automatically in GB.
+     Northern Ireland applies EU CLP (Windsor Framework), so it uses the EU profile. */
+  const JURISDICTIONS = Object.freeze({
+    EU: Object.freeze({
+      id: 'EU', short: 'EU CLP', name: 'European Union and Northern Ireland — EU CLP',
+      legalBasis: 'Regulation (EC) No 1272/2008 (EU CLP), consolidated 01.07.2026',
+      appliesTo: 'EU Member States and Northern Ireland (Windsor Framework); EEA states once amendments are incorporated.',
+      rules: 'Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026, ingredient-based (additivity / summation / generic concentration limits).',
+      harmonisedList: 'Annex VI', euNewHazardClasses: true, notes: []
+    }),
+    GB: Object.freeze({
+      id: 'GB', short: 'GB CLP', name: 'Great Britain (England, Scotland, Wales) — GB CLP',
+      legalBasis: 'GB CLP: Regulation (EC) No 1272/2008 as retained in Great Britain and amended by UK legislation',
+      appliesTo: 'England, Scotland and Wales. Northern Ireland applies EU CLP.',
+      rules: 'GB CLP Annex I (retained Regulation (EC) 1272/2008), ingredient-based (additivity / summation / generic concentration limits). EU-only amendments made after 31.12.2020 are not applied.',
+      harmonisedList: 'the GB Mandatory Classification List (GB MCL)', euNewHazardClasses: false,
+      newHazardClassReason: 'added to EU CLP by Delegated Regulation (EU) 2023/707, which does not apply in Great Britain',
+      notes: [
+        'GB CLP applies to Great Britain (England, Scotland, Wales). Northern Ireland applies EU CLP: select the EU option for products placed on the NI market.',
+        'Harmonised classifications, SCLs, M-factors and ATEs must come from the GB Mandatory Classification List (GB MCL) or self-classification. EU harmonised classifications adopted after 31 December 2020 do not apply automatically in Great Britain.',
+        'EU-only hazard classes from Delegated Regulation (EU) 2023/707 (endocrine disruption, PBT/vPvB, PMT/vPvM) are not assessed for GB CLP.',
+        'Annex I paragraph and table references are the same in GB CLP; page numbers in the calculation trail refer to the EU consolidated text.',
+        'GB label rules (GB-based supplier details, English language) are outside this calculation; check them before release.'
+      ]
+    })
+  });
+  const NEW_EU_HAZARD_CLASSES = Object.freeze([
+    { id: 'edHH', field: 'edHH', name: 'Endocrine disruption – human health', codes: ['EUH380', 'EUH381'] },
+    { id: 'edEnv', field: 'edEnv', name: 'Endocrine disruption – environment', codes: ['EUH430', 'EUH431'] },
+    { id: 'pbt', field: 'pbt', name: 'PBT properties', codes: ['EUH440'] },
+    { id: 'vpvb', field: 'vpvb', name: 'vPvB properties', codes: ['EUH441'] },
+    { id: 'pmt', field: 'pmt', name: 'PMT properties', codes: ['EUH450'] },
+    { id: 'vpvm', field: 'vpvm', name: 'vPvM properties', codes: ['EUH451'] }
+  ]);
+
   /* Table 3.1.1 limits and Table 3.1.2 conversion values */
   const AT = {
     oral: { unit: 'mg/kg bw', label: 'oral', limits: [5, 50, 300, 2000], conv: [0.5, 5, 100, 500], h: ['H300', 'H300', 'H301', 'H302'] },
@@ -890,6 +936,19 @@
 
   function newClasses(mix, ings, ctx) {
     const list = [];
+    const profile = ctx.profile || JURISDICTIONS.EU;
+    if (!profile.euNewHazardClasses) {
+      // Not a hazard class in this jurisdiction: record that clearly in the trail
+      // rather than calculating it, and never let EU-only ingredient data leak in.
+      NEW_EU_HAZARD_CLASSES.forEach((c) => {
+        const H = hz(c.id, c.name, 'EU CLP only (Delegated Regulation (EU) 2023/707); not part of ' + profile.short);
+        H.status = 'na';
+        H.steps.push('Not a hazard class under ' + profile.short + ': ' + profile.newHazardClassReason + '.');
+        const affected = ings.filter((i) => i[c.field]);
+        if (affected.length) H.steps.push('EU-only ingredient data (' + c.codes.join('/') + ') not used: ' + affected.map(nm).join(', ') + '.');
+        list.push(H);
+      });
+    } else {
     list.push(thresholdHazard({
       id: 'edHH', name: 'Endocrine disruption – human health', ref: 'Annex I 3.11.3 · Table 3.11.2 (cons. pp.204–205); label p.206',
       get: (i) => i.edHH, order: ['1', '2'], catLabel: (c) => 'ED HH ' + c, gcl: (c) => ({ '1': 0.1, '2': 1.0 }[c]),
@@ -909,12 +968,13 @@
       id: f, name: lab + ' properties', ref: 'Annex I 4.4.3.1 (cons. p.236); label Table 4.4.1 (p.237)',
       get: (i) => (i[f] ? 'Y' : ''), order: ['Y'], catLabel: () => lab, gcl: () => 0.1, outcome: () => out(lab, [code], 'Danger', [])
     }, ings, mix)));
+    }
     list.push(thresholdHazard({
       id: 'ozone', name: 'Hazardous to the ozone layer', ref: 'Annex I 5.1.3 · Table 5.1 (cons. p.238); label Table 5.2 (p.238)',
       get: (i) => (i.ozone ? 'Y' : ''), order: ['Y'], catLabel: () => 'Ozone 1', gcl: () => 0.1,
       outcome: () => out('Ozone 1', ['H420'], 'Warning', ['GHS07'])
     }, ings, mix));
-    ings.forEach((i) => {
+    if (profile.euNewHazardClasses) ings.forEach((i) => {
       if (i.edHH === '2' && ge(i.pct, 0.1)) ctx.sds.push(`SDS available on request: ED HH Cat. 2 ingredient ${nm(i)} ≥ 0.1 % (Table 3.11.2 note 1).`);
       if (i.edEnv === '2' && ge(i.pct, 0.1)) ctx.sds.push(`SDS available on request: ED ENV Cat. 2 ingredient ${nm(i)} ≥ 0.1 % (Table 4.2.2 note 1).`);
     });
@@ -1301,6 +1361,14 @@
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
     const warnings = [];
+    // Jurisdiction: EU unless GB is chosen. An unknown value is reported, not guessed.
+    const requested = m.jurisdiction === undefined || m.jurisdiction === null || String(m.jurisdiction).trim() === ''
+      ? 'EU' : String(m.jurisdiction).trim().toUpperCase();
+    if (!JURISDICTIONS[requested])
+      warnings.push('DATA VALIDATION: jurisdiction ' + JSON.stringify(m.jurisdiction) +
+        ' is not supported (use EU or GB). EU CLP rules were applied; choose the correct jurisdiction before relying on the result.');
+    m.jurisdiction = JURISDICTIONS[requested] ? requested : 'EU';
+    const profile = JURISDICTIONS[m.jurisdiction];
     const pctReported = new Set();
     const ings = (m.ingredients || []).map((raw) => {
       const i = Object.assign(blankIngredient(), raw);
@@ -1338,7 +1406,15 @@
           Object.values(raw.scl || {}).some(entered) ||
           (raw.aquaAcute && entered(raw.mAcute)) ||
           (raw.aquaChronic==='1' && entered(raw.mChronic))))
-        warnings.push('EVIDENCE REVIEW: '+id+' — ATE/SCL/M-factor values are entered but no source reference is recorded. Verify against Annex VI, measured data or supplier evidence.');
+        warnings.push('EVIDENCE REVIEW: '+id+' — ATE/SCL/M-factor values are entered but no source reference is recorded. Verify against '+profile.harmonisedList+', measured data or supplier evidence.');
+      // GB: values copied from EU Annex VI / an EU ATP may not be GB law.
+      if (!profile.euNewHazardClasses && entered(raw.valueSource) && /\bannex\s*vi\b|\bATP\b|\bEU\s+harmoni[sz]ed\b/i.test(String(raw.valueSource)))
+        warnings.push('EVIDENCE REVIEW: '+id+' — the recorded source refers to EU Annex VI or an EU ATP. For '+profile.short+
+          ', confirm the classification and any SCL, M-factor or ATE against '+profile.harmonisedList+
+          ': EU harmonised classifications adopted after 31 December 2020 do not apply automatically in Great Britain.');
+      if (!profile.euNewHazardClasses && NEW_EU_HAZARD_CLASSES.some((c) => raw[c.field]))
+        warnings.push('JURISDICTION: '+id+' — EU-only classifications ('+NEW_EU_HAZARD_CLASSES.filter((c) => raw[c.field]).map((c) => c.codes.join('/')).join(', ')+
+          ') are recorded for this ingredient. They are not '+profile.short+' hazard classes and were not used.');
       if (raw.acute && raw.acute.unknown &&
           ['oral','dermal','inh'].some((route)=>{
             const a=raw.acute[route] || {};
@@ -1387,12 +1463,12 @@
       }
       return true;
     });
-    return { m, ings, warnings };
+    return { m, ings, warnings, profile };
   }
 
   function classify(mixture) {
-    const { m, ings, warnings } = normalise(mixture);
-    const ctx = { supplemental: [], euh: [], sds: [], warnings };
+    const { m, ings, warnings, profile } = normalise(mixture);
+    const ctx = { supplemental: [], euh: [], sds: [], warnings, profile };
     const total = sum(ings.map((i) => i.pct));
     if (!ings.length) warnings.push('No ingredients with a concentration were entered.');
     else if (Math.abs(total - 100) > 0.5) warnings.push(`Concentrations add up to ${fmt(total)} %, not 100 %. Classification uses the percentages as entered.`);
@@ -1473,7 +1549,8 @@
       notes.push('Article 28 P-statements require confirmation of uses, relevant conditional wording and omissions before release.');
     if (outcomes.some((o) => ['ED HH 1', 'ED HH 2', 'ED ENV 1', 'ED ENV 2', 'PBT', 'vPvB', 'PMT', 'vPvM'].includes(o.label)))
       notes.push('New hazard classes: mixtures placed on the market before 1 May 2026 need not be classified/labelled for these classes until 1 May 2028 (3.11.3.4, 4.2.3.4, 4.3.3.2, 4.4.3.2).');
-    return {
+    notes.unshift(...profile.notes);
+    const result = {
       total, ingredientsUsed: ings.length, hazards, outcomes,
       label: {
         signal: hasDanger ? 'Danger' : hasWarn ? 'Warning' : null,
@@ -1484,19 +1561,51 @@
         article28: art28,
         supplemental: ctx.supplemental
       },
-      sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name)
+      sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name),
+      jurisdiction: { id: profile.id, short: profile.short, name: profile.name, legalBasis: profile.legalBasis, appliesTo: profile.appliesTo }
     };
+    // Outside the EU profile, show exactly how the result differs from EU CLP for
+    // the same formulation (the EU result is calculated with the same engine).
+    if (profile.id !== 'EU') result.jurisdiction.differencesFromEU = compareResults(classify(Object.assign({}, mixture, { jurisdiction: 'EU' })), result);
+    return result;
+  }
+
+  // Differences between two classify() results: { onlyInEU, onlyHere } for
+  // classifications, H/EUH statements, pictograms, SDS triggers, plus the signal word.
+  function compareResults(eu, here) {
+    const diff = (a, b) => ({ onlyInEU: a.filter((x) => !b.includes(x)), onlyHere: b.filter((x) => !a.includes(x)) });
+    const codes = (r) => [...r.label.hazardStatements, ...r.label.euhStatements].map((x) => x.code);
+    const d = {
+      classifications: diff(eu.outcomes.map((o) => o.label), here.outcomes.map((o) => o.label)),
+      statements: diff(codes(eu), codes(here)),
+      pictograms: diff(eu.label.pictograms.map((p) => p.code), here.label.pictograms.map((p) => p.code)),
+      sdsTriggers: diff(eu.sds, here.sds),
+      signal: { eu: eu.label.signal, here: here.label.signal }
+    };
+    d.identical = ['classifications', 'statements', 'pictograms', 'sdsTriggers'].every((k) => !d[k].onlyInEU.length && !d[k].onlyHere.length) &&
+      d.signal.eu === d.signal.here;
+    return d;
   }
 
   /* plain-text report (also used as the Gemini review payload) */
   function report(mixture, result, opts) {
     opts = opts || {};
-    const { m, ings } = normalise(mixture);
+    const { m, ings, profile } = normalise(mixture);
     const L = [];
     const anon = opts.anonymise;
     const label = (i, k) => (anon ? anonLabel(k) : nm(i));
-    L.push(`CLP MIXTURE CLASSIFICATION – ${anon ? '(name withheld)' : (m.name || '(unnamed mixture)')}`);
-    L.push('Rules: Regulation (EC) 1272/2008 Annex I, consolidated 01.07.2026, ingredient-based (additivity / summation / generic concentration limits).');
+    L.push(`${profile.short} MIXTURE CLASSIFICATION – ${anon ? '(name withheld)' : (m.name || '(unnamed mixture)')}`);
+    L.push('Jurisdiction: ' + profile.name + '. ' + profile.appliesTo);
+    L.push('Rules: ' + profile.rules);
+    profile.notes.forEach((n) => L.push('Note: ' + n));
+    const d = result.jurisdiction && result.jurisdiction.differencesFromEU;
+    if (d) {
+      const list = (x) => x.join(', ') || 'none';
+      L.push(d.identical ? 'Compared with EU CLP: same classification, statements, pictograms, SDS triggers and signal word.'
+        : 'Compared with EU CLP — classifications only in EU: ' + list(d.classifications.onlyInEU) + '; only in ' + profile.short + ': ' + list(d.classifications.onlyHere) +
+          '. Statements only in EU: ' + list(d.statements.onlyInEU) + '. Pictograms only in EU: ' + list(d.pictograms.onlyInEU) +
+          '. Signal word: EU ' + (d.signal.eu || 'none') + ', ' + profile.short + ' ' + (d.signal.here || 'none') + '.');
+    }
     L.push(`Physical state: ${m.state}. Flash point: ${m.flashPoint || 'n/a'} °C; IBP: ${m.ibp || 'n/a'} °C; viscosity@40 °C: ${m.viscosity40 || 'n/a'} mm²/s; pH: ${m.pH || 'n/a'}${m.pHReserveOk ? ' (reserve marked non-corrosive)' : ''}.`);
     L.push('', 'INGREDIENTS (% w/w or v/v) and assumed ingredient classifications:');
     ings.forEach((i, k) => {
@@ -1617,5 +1726,5 @@
     return t.replace(/\u0000(\d+)\u0000/g, (_, n) => pairs[+n][1]);
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor, parsePct };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor, parsePct, JURISDICTIONS };
 });

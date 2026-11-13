@@ -3,6 +3,23 @@ CLP MIXTURE CLASSIFICATION CALCULATOR
 Open clp_mixture_calculator.html in any modern browser; keep the pictograms/ folder alongside it. Works offline, no AI or installation required.
 Gemini features are optional and only run when you click them, with your own API key.
 
+JURISDICTION: EU CLP OR GB CLP
+Choose the market in "1. Mixture information" (saved with each formulation; default EU CLP).
+- EU CLP: European Union and Northern Ireland (Windsor Framework).
+- GB CLP: Great Britain (England, Scotland, Wales) — Regulation (EC) 1272/2008 as retained in
+  GB and amended by UK legislation. The same engine and Annex I mixture rules are used; the GB
+  profile differs only where GB law differs:
+    * The hazard classes added to EU CLP by Delegated Regulation (EU) 2023/707 (ED HH, ED ENV,
+      PBT/vPvB, PMT/vPvM; EUH380–EUH451) are not GB hazard classes. Ingredient data for them is
+      reported as "not used" and never classifies a GB mixture.
+    * Harmonised classifications, SCLs, M-factors and ATEs must come from the GB Mandatory
+      Classification List (GB MCL). A value source that cites EU Annex VI or an EU ATP is flagged.
+  Every GB result shows exactly how it differs from the EU CLP result for the same formulation
+  (classifications, H/EUH statements, pictograms, SDS triggers, signal word), in the results
+  panel and in the text report. GB label requirements (GB supplier details, English) are not
+  calculated. Profiles are defined in JURISDICTIONS in verification/engine.js.
+Tests: node verification/test_gb_profile.js
+
 MOBILE VERSION
 mobile/index.html is a phone-friendly, local-only build of this calculator: same engine
 and features, no Gemini, and no network access (enforced by a Content-Security-Policy).
