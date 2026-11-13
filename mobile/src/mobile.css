@@ -1,0 +1,82 @@
+/* CLP calculator — mobile presentation layer.
+ * Appended by mobile/build.js after the desktop stylesheet, so it only overrides
+ * layout. It must never hide calculation results, warnings or inputs.
+ */
+
+/* Room for the fixed bottom tab bar and the iPhone home indicator. */
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{padding-top:calc(10px + env(safe-area-inset-top))}
+#mixture-card,#ingredients-card,#p28settings,#results{scroll-margin-top:12px}
+
+/* The bottom tab bar replaces the desktop section links. */
+.workspace-nav{display:none!important}
+
+/* Inputs: 16px stops iOS zooming on focus; 44px meets touch-target guidance. */
+input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important;min-height:44px}
+button{min-height:44px}
+button.small{min-height:40px;padding-left:12px;padding-right:12px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px}
+label.chk{min-height:40px;align-items:center}
+details>summary{min-height:40px}
+/* Desktop renders these headings as flex rows, which splits text around <i>. */
+.detail-group>summary{display:block!important}
+.detail-group>summary:before{display:inline-grid!important;vertical-align:middle;margin-right:8px}
+
+/* Ingredients: one card per ingredient instead of a sideways-scrolling table. */
+@media (max-width:900px){
+  #ingredients-card .ingredient-tip{display:none}
+  #ingredients-card .ingredient-scroll{overflow:visible;border:0;border-radius:0}
+  #ingredients-card .ingredient-scroll table{min-width:0;width:100%;border-spacing:0}
+  #ingredients-card .ingredient-scroll thead{display:none}
+  #ingredients-card .ingredient-scroll table,#ingredients-card .ingredient-scroll tbody{display:block}
+  #ingredients-card tr.ing{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px 10px;margin:0 0 10px;padding:10px;
+    border:1px solid var(--ix-border,var(--line));border-left:4px solid var(--ix-accent,var(--accent));border-radius:12px;background:var(--panel)}
+  #ingredients-card tr.ing[data-expanded="true"]{background:var(--ix-tint,var(--panel));margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
+  #ingredients-card tr.ing>td{display:block!important;min-width:0!important;width:auto!important;padding:0!important;border:0!important;
+    border-radius:0!important;background:transparent!important}
+  #ingredients-card tr.ing>td.ix-identity,#ingredients-card tr.ing>td.ingredient-hazards-cell{grid-column:1/-1}
+  #ingredients-card tr.ing>td:nth-child(2)::before{content:"CAS / EC"}
+  #ingredients-card tr.ing>td:nth-child(3)::before{content:"% w/w"}
+  #ingredients-card tr.ing>td:nth-child(2)::before,#ingredients-card tr.ing>td:nth-child(3)::before{display:block;margin:0 0 3px;font-size:12px;color:var(--mute)}
+  #ingredients-card tr.ing>td input{width:100%}
+  #ingredients-card tr.ing>td:last-child{grid-column:1/-1;display:flex!important;gap:8px;white-space:normal!important}
+  #ingredients-card tr.ing>td:last-child button[data-act="det"]{flex:1}
+  #ingredients-card tr[data-detrow],#ingredients-card tr[data-contribution-row]{display:block;margin:0 0 10px}
+  #ingredients-card tr[data-detrow]>td,#ingredients-card tr[data-contribution-row]>td{display:block;padding:8px!important;
+    border:1px solid var(--ix-border,var(--line));border-top:0;border-left:4px solid var(--ix-accent,var(--accent));border-radius:0 0 12px 12px;background:var(--panel)}
+  #ingredients-card .ix-tabs{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;overflow:visible}
+  #ingredients-card .ix-tab{width:100%;min-width:0;white-space:normal;text-align:center}
+  #ingredients-card .row{flex-wrap:wrap}
+}
+
+/* Narrow phones: stack every form grid to one column. */
+@media (max-width:480px){
+  .g4,.g3,.g2{grid-template-columns:minmax(0,1fr)!important}
+  .g4>[style*="span"],.g3>[style*="span"]{grid-column:auto!important}
+  #ingredients-card>.row:first-child{flex-direction:column;align-items:stretch;gap:8px}
+  #ingredients-card>.row:first-child>.row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #ingredients-card>.row:first-child>.row>#addIng{grid-column:1/-1}
+  .formulation-workspaces-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+}
+
+/* Bottom tab bar. */
+.m-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(4,1fr);
+  padding:4px 4px calc(4px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);
+  box-shadow:0 -4px 18px rgba(0,0,0,.08)}
+.m-tabbar a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;
+  border-radius:10px;color:var(--mute);text-decoration:none;font-size:11.5px;font-weight:600;-webkit-tap-highlight-color:transparent}
+.m-tabbar a svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.m-tabbar a[aria-current="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.m-tabbar a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.m-badge{position:absolute;top:2px;left:calc(50% + 9px);white-space:nowrap;
+  min-width:18px;padding:1px 5px;border-radius:9px;font-size:10px;line-height:15px;
+  font-weight:700;text-align:center;background:var(--line);color:var(--ink)}
+.m-badge:empty{display:none}
+.m-badge[data-signal="Danger"]{background:#c62828;color:#fff}
+.m-badge[data-signal="Warning"]{background:#ef8f00;color:#1b1300}
+.m-badge[data-warnings="true"]::after{content:"";position:absolute;top:-4px;right:-7px;width:7px;height:7px;border-radius:50%;
+  background:#ef8f00;border:2px solid var(--panel)}
+
+.m-local-note{display:block;margin-top:4px;font-size:12px;color:var(--mute)}
+
+@media print{.m-tabbar{display:none!important}body{padding-bottom:0}}

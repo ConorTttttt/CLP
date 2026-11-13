@@ -3,6 +3,12 @@ CLP MIXTURE CLASSIFICATION CALCULATOR
 Open clp_mixture_calculator.html in any modern browser; keep the pictograms/ folder alongside it. Works offline, no AI or installation required.
 Gemini features are optional and only run when you click them, with your own API key.
 
+MOBILE VERSION
+mobile/index.html is a phone-friendly, local-only build of this calculator: same engine
+and features, no Gemini, and no network access (enforced by a Content-Security-Policy).
+It is generated from this page; do not edit it directly. After changing the calculator,
+run "npm run build:mobile" and commit the result. See mobile/README.md.
+
 WHAT IT DOES
 Applies the ingredient-based mixture rules of Regulation (EC) 1272/2008 Annex I (consolidated 01.07.2026)
 and shows every calculation step with the Annex I table/page reference:

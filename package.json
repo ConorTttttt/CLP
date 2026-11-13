@@ -3,7 +3,10 @@
   "private": true,
   "description": "CLP mixture classification calculator – verification suites",
   "scripts": {
-    "test": "node verification/run_all.js"
+    "test": "node verification/run_all.js",
+    "build:mobile": "node mobile/build.js",
+    "check:mobile": "node mobile/build.js --check",
+    "test:mobile-browser": "node mobile/smoke-test.js"
   },
   "engines": { "node": ">=18" }
 }
