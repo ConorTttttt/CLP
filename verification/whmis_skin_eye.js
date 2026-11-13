@@ -38,7 +38,7 @@ function calculate(ingredients){
   }
   const sSteps=[
     "8.2.11(1): ingredients ≥1% are summed; <1% only with evidence of skin hazard at present concentration.",
-    ...sParts.filter(x=>x.p>0).map(x=>"Skin Corr. "+x.cat+": "+x.p.toFixed(4)+"%"),
+    ...sParts.filter(x=>x.pct>0).map(x=>"Σ Skin Corr. "+x.cat+" (relevant ingredients) = "+x.pct.toFixed(4)+"%"),
     "Σ skin corrosion ingredients = "+sc.toFixed(4)+"%; Σ skin irritation 2 = "+si.toFixed(4)+"%",
     "Irritation weighted test = 10 × "+sc.toFixed(4)+" + "+si.toFixed(4)+" = "+(10*sc+si).toFixed(4)+"%",
     sCat?"Additive result: Skin "+(sCat==="2"?"Irritation":"Corrosion")+" — Category "+sCat:"No additive skin threshold met."

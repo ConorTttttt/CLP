@@ -57,17 +57,17 @@ check("Runtime catalog lists all 32 HPA active classes with identical names",()=
  assert.deepEqual(catalog.CATALOG.map(x=>x.name).sort(),expected.map(x=>x.name).sort());
  assert.equal(catalog.COUNTS.total,32);
 });
-check("Partial statuses match implemented screening families (12 of 32)",()=>{
+check("Partial statuses match implemented screening families (13 of 32)",()=>{
  const partial=catalog.CATALOG.filter(x=>x.status==="partial").map(x=>x.name).sort();
  assert.deepEqual(partial,[
    "Acute toxicity","Skin corrosion/irritation","Serious eye damage/eye irritation",
    "Respiratory or skin sensitization","Germ cell mutagenicity","Carcinogenicity",
    "Reproductive toxicity","Specific target organ toxicity — single exposure",
    "Specific target organ toxicity — repeated exposure","Aspiration hazard",
-   "Health hazards not otherwise classified","Chemicals under pressure"
+   "Health hazards not otherwise classified","Chemicals under pressure","Flammable liquids"
  ].sort());
- assert.equal(catalog.COUNTS.partial,12);
- assert.equal(catalog.COUNTS.notImplemented,20);
+ assert.equal(catalog.COUNTS.partial,13);
+ assert.equal(catalog.COUNTS.notImplemented,19);
 });
 check("No environmental or repealed class appears as active",()=>{
  assert.ok(!catalog.CATALOG.some(x=>x.name===null));

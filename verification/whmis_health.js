@@ -94,19 +94,27 @@ function evaluate(input){
    ingredients.forEach((i,ix)=>{
      const cat=category(h(i)[key]);if(!["1","1A","1B"].includes(cat))return;
      const state=h(i).ingredientState;
-     if(!["gas","liquid","solid"].includes(state)){
-       missingBasis.push(sourceName(i,ix)+": confirm physical state (gas, liquid or solid) before applying sensitiser cut-offs.");
-       return;
-     }
      const gas=state==="gas";
      const conc=gas?number(i.volumePct):pct(i);
      if(conc===null){
        missingBasis.push(sourceName(i,ix)+": a gas sensitizer requires % v/v; no % w/w substitution.");
        return;
      }
+     // The physical state only changes the respiratory 1B cut-off (0.2% v/v
+     // for gases) and the concentration basis. An unspecified state must not
+     // silently drop a sensitiser: screen it on the % w/w basis used for
+     // solids/liquids and ask for confirmation instead.
+     const stateKnown=["gas","liquid","solid"].includes(state);
      const min=cat==="1B"?(resp&&gas?0.2:1):0.1;
+     if(!stateKnown){
+       if(resp&&cat==="1B"&&!meets(conc,1)&&meets(conc,0.2))
+         missingBasis.push(sourceName(i,ix)+": physical state not established. Respiratory 1B at "+conc+
+           "% w/w is below the 1.0% solid/liquid cut-off but would meet the 0.2% gas cut-off if the ingredient is a gas (then enter % v/v).");
+       else if(meets(conc,min))
+         missingBasis.push(sourceName(i,ix)+": physical state not established; screened on % w/w (solid/liquid basis). Confirm the state; a gas ingredient requires % v/v.");
+     }
      if(meets(conc,min))matches.push({ingredient:sourceName(i,ix),pct:conc,cat,
-       detail:"sensitizer "+cat+" at ≥"+min+"% ("+(gas?"v/v":"w/w")+")"});
+       detail:"sensitizer "+cat+" at ≥"+min+"% ("+(gas?"v/v":"w/w")+(stateKnown?"":", state not established")+")"});
    });
    let chosen=null;
    if(matches.some(x=>x.cat==="1A"))chosen="1A";
@@ -169,6 +177,8 @@ function evaluate(input){
    if(pair.length>=2&&meets(sum,20))combined.push(...pair.map(x=>({...x,detail:effect+" Σ="+sum+"% from ≥2 ingredients (8.8.5(1)(d))"})));
    if(eligible.length)effectNotes.push(effect+": individual ≥20% or known elicitation; combined ≥2 ingredients each ≥1% and sum ≥20%.");
  });
+ if(se.some(x=>x.cat==="1")&&se.some(x=>x.cat==="2"))
+   review.push("STOT — Single Exposure: Category 2 ingredient(s) are present alongside a Category 1 ingredient. Category 1 is reported; if they affect different target organs, also classify Category 2 for those organs (organ-specific data are not captured here).");
  const cat3=direct.length>0||(!seMain&&combined.length>0);
  const chosen=[...(seMain?[seMain]:[]),...(cat3?["3"]:[])];
  if(seMain&&combined.length&&!direct.length)review.push("STOT SE: Category 3 summation under 8.8.5(1)(d) is not added to a Category 1/2 result; 8.8.5(2) allows coexistence only via paragraph (1)(c).");
@@ -178,6 +188,8 @@ function evaluate(input){
    "Category 1 or 2 can coexist with Category 3 only where 8.8.5(1)(c) applies.",...effectNotes]);
  // STOT RE: 1% per-ingredient for both Cat 1 and 2.
  const re=triggers("stotRE",["1","2"],{1:1,2:1});
+ if(re.some(x=>x.cat==="1")&&re.some(x=>x.cat==="2"))
+   review.push("STOT — Repeated Exposure: Category 2 ingredient(s) are present alongside a Category 1 ingredient. Category 1 is reported; if they affect different target organs, also classify Category 2 for those organs (organ-specific data are not captured here).");
  report("stot-re","STOT — Repeated Exposure","HPR 8.9.2–8.9.5",
    re.some(x=>x.cat==="1")?"1":re.some(x=>x.cat==="2")?"2":null,re,
    ["Each relevant ingredient must independently meet the 1.0% limit; do not apply an invented summation threshold."]);
@@ -197,19 +209,42 @@ function evaluate(input){
    "HPR 8.10.5(b): separate layers each require their own aspiration ingredient concentration and viscosity assessment.",
    "HPR 8.10.3 whole-mixture data and 8.10.4 bridging take priority; low-viscosity liquid hydrocarbon/human aspiration evidence must be reviewed."
  ];
+ // Any recorded aspiration ingredient (even <1%) matters for layer review:
+ // a separated layer can concentrate it above the bulk value.
+ const anyAspiration=ingredients.some(i=>h(i).aspiration===true&&h(i).ingredientState!=="gas"&&(pct(i)||0)>0);
+ const validViscosity=viscosity!==null&&viscosity>=0;
+ const bulkMet=validViscosity&&meets(total,10)&&viscosity<=20.5;
  if(!["yes","no","unknown"].includes(separated)){
    aspStatus="invalid";aspNotes.push("Unrecognised phase separation status.");
+ }else if(!anyAspiration){
+   aspStatus="not_established";
+   aspNotes.push("No ingredient is recorded as an aspiration hazard, so the HPR 8.10.5 ingredient route cannot trigger. This is not a negative determination for unrecorded hydrocarbons.");
  }else if(separated==="yes"){
    aspStatus="requires_review";aspNotes.push("Phase separation confirmed: the layer-specific HPR 8.10.5(b) route is NOT automated. Do not classify using bulk viscosity alone.");
- }else if(separated==="unknown"){
-   aspStatus="requires_review";aspNotes.push("Confirm whether the mixture separates into layers; do not infer a negative aspiration assessment.");
- }else if(viscosity===null||!(viscosity>=0)){
+ }else if(separated==="no"&&!meets(total,10)){
+   aspStatus="not_established";
+   aspNotes.push("Σ aspiration toxicants (each ≥1%) = "+total.toFixed(4)+"% < 10%: HPR 8.10.5(a) is not met regardless of viscosity.");
+ }else if(!validViscosity&&separated==="unknown"){
+   aspStatus="requires_review";aspNotes.push("Confirm whether the mixture separates into layers and enter its measured kinematic viscosity at 40°C (mm²/s); do not infer a negative aspiration assessment.");
+ }else if(!validViscosity){
    aspStatus="requires_data";aspNotes.push("Enter measured bulk kinematic viscosity at 40°C (mm²/s).");
+ }else if(separated==="unknown"){
+   aspNotes.push("Σ aspiration toxicants = "+total.toFixed(4)+"%; bulk viscosity = "+viscosity+" mm²/s.");
+   if(bulkMet){
+     // Conservative: the bulk HPR 8.10.5(a) criteria are met and only
+     // homogeneity is unconfirmed, so the candidate is reported, not hidden.
+     aspCat="1";aspStatus="provisional";
+     aspNotes.push("Bulk HPR 8.10.5(a) criteria are met. Category 1 is reported provisionally; confirm the mixture does not separate into layers (otherwise apply 8.10.5(b)).");
+   }else{
+     aspStatus="requires_review";
+     aspNotes.push("Bulk criteria not met, but homogeneity is unconfirmed: a separated layer may still meet HPR 8.10.5(b). Confirm whether the mixture separates into layers.");
+   }
  }else{
-   aspCat=meets(total,10)&&viscosity<=20.5?"1":null;
+   aspCat=bulkMet?"1":null;
    aspStatus=aspCat?"provisional":"not_established";
    aspNotes.push("Σ aspiration toxicants = "+total.toFixed(4)+"%; bulk viscosity = "+viscosity+" mm²/s.");
  }
+ if(aspCat&&separated==="unknown")review.push("Aspiration: "+aspNotes[aspNotes.length-1]);
  calculations.push({route:"aspiration",label:"Aspiration Hazard",status:blocked?"evidence_review":aspStatus,ref:"HPR 8.10.2–8.10.5",
   candidate:aspCat,steps:[...asp.map(x=>x.ingredient+": "+x.pct+"% Cat 1"),"Sum (individual ingredients ≥1%): "+total.toFixed(4)+"%"],
   notes:aspNotes,triggered:asp});

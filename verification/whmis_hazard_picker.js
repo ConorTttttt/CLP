@@ -69,6 +69,7 @@ for(const [family,cat,code,phrase] of [
  ["Flam. Liq.","1","H224","Extremely flammable liquid and vapour"],
  ["Flam. Liq.","2","H225","Highly flammable liquid and vapour"],
  ["Flam. Liq.","3","H226","Flammable liquid and vapour"],
+ ["Flam. Liq.","4","H227","Combustible liquid"],
  ["Flam. Sol.","1","H228","Flammable solid"],
  ["Flam. Sol.","2","H228","Flammable solid"],
  ["Ox. Gas","1","H270","May cause or intensify fire; oxidizer"],

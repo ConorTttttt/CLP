@@ -31,9 +31,16 @@ t("HPR 8.4.5: respiratory 1B gas threshold 0.2% v/v, not mass%",()=>{
  const yes=r([ing("A",.01,{ingredientState:"gas",respSens:"1B"},.2),ing("B",99.99)]);
  assert.deepEqual(cat(yes,"respSens"),["1B"]);
 });
-t("Missing sensitiser ingredient state blocks classification pending review",()=>{
+t("Missing sensitiser state is screened on % w/w and flagged, never silently dropped",()=>{
  const a=r([ing("A",3,{respSens:"1B"}),ing("B",97)]);
- assert.deepEqual(cat(a,"respSens"),[]);assert.match(a.review.join(" "),/physical state/);
+ assert.deepEqual(cat(a,"respSens"),["1B"]);assert.match(a.review.join(" "),/physical state not established/);
+ // Skin sensitisation thresholds do not depend on state.
+ const s=r([ing("A",5,{skinSens:"1"}),ing("B",95)]);
+ assert.deepEqual(cat(s,"skinSens"),["1"]);
+ // Respiratory 1B between the gas (0.2%) and solid/liquid (1%) cut-offs:
+ // no candidate on w/w, but the gas ambiguity is raised for review.
+ const g=r([ing("A",.5,{respSens:"1B"}),ing("B",99.5)]);
+ assert.deepEqual(cat(g,"respSens"),[]);assert.match(g.review.join(" "),/would meet the 0\.2% gas cut-off/);
 });
 t("HPR 8.4.5 skin 1B threshold 1% and 1A 0.1%",()=>{
  assert.deepEqual(cat(r([ing("A",.99,{ingredientState:"liquid",skinSens:"1B"}),ing("B",99.01)]),"skinSens"),[]);
@@ -169,7 +176,7 @@ t("Only new health paths are added; EU engine remains separate",()=>{
  assert.equal(r0.valid,true);
  assert.ok(r0.outcomes.some(x=>x.route==="carcinogen"&&x.category==="1A"));
  assert.equal(r0.complete,false);
- assert.equal(r0.hazardCoverage.filter(x=>x.status==="partial").length,12);
+ assert.equal(r0.hazardCoverage.filter(x=>x.status==="partial").length,13);
 });
 t("Gas lactation screening uses volume rather than mass concentration",()=>{
  const low=r([ing("A",50,{ingredientState:"gas",reproLactation:true},.099),ing("B",50)]);

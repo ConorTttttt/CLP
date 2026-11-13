@@ -58,9 +58,9 @@
     "name": "Flammable liquids",
     "group": "physical",
     "reference": "HPA Schedule 2 physical item 6",
-    "status": "not_implemented",
-    "detail": "Not assessed by this Canadian pilot. No automatic classification or negative determination.",
-    "rule": "HPR Part 7"
+    "status": "partial",
+    "detail": "HPR 7.6 Categories 1–4 from the product's entered flash point and initial boiling point; flash point measurement/validity and bilingual labelling not automated.",
+    "rule": "HPR 7.6"
   },
   {
     "id": "HPA-S2-P07",
@@ -194,7 +194,7 @@
     "group": "health",
     "reference": "HPA Schedule 2 health item 1",
     "status": "partial",
-    "detail": "Oral/dermal ingredient ATE; inhalation ingredient, whole-mixture and recorded bridging candidates; water-reactive gases and other pathways not assessed.",
+    "detail": "Oral/dermal/inhalation ingredient ATE, whole-mixture and recorded bridging candidates; water-reactive gases and other pathways not assessed.",
     "rule": "HPR 8.1"
   },
   {

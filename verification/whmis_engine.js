@@ -1,7 +1,7 @@
 /* Canadian WHMIS 2022 / Hazardous Products Regulations: standalone pilot.
    A limited calculator, NOT a complete WHMIS determination.
    Sources: https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html
-   HPR ss. 2.2, 8.1.1–8.1.7, 8.12.4. Jurisdiction-specific logic only.
+   HPR ss. 2.2, 7.6, 8.1.1–8.1.7, 8.12.4. Jurisdiction-specific logic only.
 */
 (function(root,factory) {
   if(typeof module==="object" && module.exports) module.exports=factory();
@@ -20,6 +20,9 @@
   const HAZARD_CATALOG=(typeof module==="object"&&module.exports)
     ? require("./whmis_hazard_catalog.js")
     : (typeof globalThis!=="undefined" ? globalThis.WHMIS_HAZARD_CATALOG : null);
+  const PHYSICAL=(typeof module==="object"&&module.exports)
+    ? require("./whmis_physical.js")
+    : (typeof globalThis!=="undefined" ? globalThis.WHMIS_PHYSICAL : null);
   const PROFILE=Object.freeze({id:"CA-WHMIS-2022",country:"Canada",
     regulation:"Hazardous Products Regulations (SOR/2015-17)",
     effective:"2022-12-15",transitionEnded:"2025-12-14",
@@ -31,7 +34,7 @@
     dermal:{label:"Dermal",unit:"mg/kg",limits:[50,200,1000,2000],point:[5,50,300,1100],ref:"HPR 8.1.1 Table 2; 8.1.7"}
   });
   const UNSUPPORTED=Object.freeze([
-    "Physical hazards other than the limited Chemicals Under Pressure assessment, including combustible dust, simple asphyxiants, and PHNOC",
+    "Physical hazards other than the flash-point-based Flammable Liquids and limited Chemicals Under Pressure assessments, including combustible dust, simple asphyxiants, and PHNOC",
     "Inhalation toxic gas release on contact with water; unimplemented inhalation edge cases and scientific estimates",
     "Skin/eye tested-mixture data, bridging, special-ingredient cases under HPR 8.2.11(3) and 8.3.11(3)",
     "Sensitisation and CMR: conclusive whole-mixture studies, applicable bridging, and evidence below generic thresholds",
@@ -43,18 +46,62 @@
   ]);
   function value(n){if(n===""||n===null||n===undefined)return NaN;const x=Number(n);return Number.isFinite(x)?x:NaN;}
   function category(ate,route){const r=ROUTES[route];if(!(ate>0))return null;const k=r.limits.findIndex(limit=>ate<=limit+1e-10);return k<0?null:k+1;}
+  const blank=x=>x===null||x===undefined||(typeof x==="string"&&!x.trim());
+  // Returns {ate,source}, {invalid:message} or null (no usable data).
+  // Invalid entries are reported rather than silently treated as "unknown".
   function resolveATE(raw,route){
-    if(raw===null||raw===undefined||raw==="" ) return null;
+    if(blank(raw)) return null;
+    const r=ROUTES[route];
     if(typeof raw==="number"||typeof raw==="string"){
-      const n=value(raw);return n>0?{ate:n,source:"measured or entered ATE"}:null;
+      const n=value(raw);return n>0?{ate:n,source:"measured or entered ATE"}:{invalid:"ATE/LD50 must be a positive number."};
     }
-    if(typeof raw!=="object")return null;
-    if(raw.ate!==undefined && raw.ate!==""){
-      const n=value(raw.ate);return n>0?{ate:n,source:raw.source||"entered ATE"}:null;
+    if(typeof raw!=="object")return {invalid:"Unrecognised acute toxicity data type."};
+    if(!blank(raw.ate)){
+      const n=value(raw.ate);return n>0?{ate:n,source:raw.source||"entered ATE"}:{invalid:"ATE/LD50 must be a positive number."};
     }
-    const k=Number(raw.category);
-    return Number.isInteger(k)&&k>=1&&k<=4 ? {
-      ate:ROUTES[route].point[k-1],source:"HPR 8.1.7 category "+k+" point estimate"}:null;
+    if(!blank(raw.category)){
+      const k=Number(raw.category);
+      return Number.isInteger(k)&&k>=1&&k<=4 ? {
+        ate:r.point[k-1],source:"HPR 8.1.7 category "+k+" point estimate"}:
+        {invalid:"Acute toxicity category must be 1–4 (Category 5 is not adopted in Canada)."};
+    }
+    if(!blank(raw.rangeMin)||!blank(raw.rangeMax)){
+      // HPR 8.1.7(2): a range wholly within one category uses that category's
+      // point estimate; a range crossing categories uses its lowest value.
+      const low=value(raw.rangeMin),high=value(raw.rangeMax);
+      if(!(low>0)||!(high>=low))return {invalid:"Provide a positive LD50 range with minimum ≤ maximum."};
+      const lowCat=category(low,route),highCat=category(high,route);
+      if(lowCat&&lowCat===highCat)return {ate:r.point[lowCat-1],source:"HPR 8.1.7 point estimate for range wholly in Category "+lowCat};
+      if(lowCat)return {ate:low,source:"HPR 8.1.7(2): lowest value of a range crossing category boundaries"};
+      return {invalid:"LD50 range lies entirely above Category 4; enter a single value or expert-assess relevance under HPR 8.1.5."};
+    }
+    return null;
+  }
+  // HPR 8.1.3 (whole-mixture data) and 8.1.4 (bridging) precede the
+  // ingredient formula in 8.1.5–8.1.6. Returns null when neither is entered.
+  function mixtureEvidence(ev,route){
+    if(!ev||typeof ev!=="object")return null;
+    const def=ROUTES[route];
+    if(!blank(ev.wholeMixtureLD50)){
+      const n=value(ev.wholeMixtureLD50);
+      if(!(n>0))return {status:"invalid",ate:null,category:null,
+        steps:[],notes:["Whole-mixture "+def.label.toLowerCase()+" LD50 must be a positive number."]};
+      const cat=category(n,route);
+      return {status:"whole_mixture_candidate",ate:n,category:cat,
+        steps:["HPR 8.1.3: whole-mixture "+def.label.toLowerCase()+" LD50 = "+n+" "+def.unit+" takes precedence over bridging and ingredient additivity.",
+          cat?"HPR 8.1.1: Category "+cat+".":"Above the Category 4 limit ("+def.limits[3]+" "+def.unit+"): no "+def.label.toLowerCase()+" category from whole-mixture data."],
+        notes:["Verify the source, validity and applicability of the whole-mixture test (HPR 8.1.3)."]};
+    }
+    if(!blank(ev.bridgedCategory)){
+      const k=Number(ev.bridgedCategory);
+      if(!Number.isInteger(k)||k<1||k>4||!String(ev.bridgingEvidence||"").trim())
+        return {status:"requires_review",ate:null,category:null,steps:[],
+          notes:["A bridging candidate needs Category 1–4 and a documented basis under HPR 2.3 / 8.1.4; no category was assigned."]};
+      return {status:"bridging_candidate",ate:null,category:k,
+        steps:["HPR 8.1.4: bridging Category "+k+" entered; basis: "+String(ev.bridgingEvidence).trim()+"."],
+        notes:["Expert-review the applicability of the selected HPR 2.3 bridging principle and the tested mixture."]};
+    }
+    return null;
   }
   function classify(input){
     const ingredients=Array.isArray(input&&input.ingredients)?input.ingredients:[];
@@ -68,8 +115,21 @@
     if(!ingredients.length)issues.push("No ingredients provided.");
     if(ingredients.length&&Math.abs(total-100)>0.01)issues.push("Concentrations total "+total.toFixed(4)+"%, not 100%.");
     const valid=issues.length===0;
+    const acuteMixture=(input&&input.acuteMixture)||{};
     for(const [route,definition] of Object.entries(ROUTES)){
-      const contributions=[],missing=[];
+      const evidence=valid?mixtureEvidence(acuteMixture[route],route):null;
+      if(evidence){
+        calculations.push({route,label:definition.label,unit:definition.unit,ref:definition.ref,
+          status:evidence.status,ate:evidence.ate,category:evidence.category,candidate:evidence.category,
+          unknownPct:0,contributions:[],missing:[],steps:[...evidence.steps,
+            "Ingredient additivity (HPR 8.1.5–8.1.6) not used because higher-priority evidence was entered."],
+          notes:evidence.notes});
+        if(evidence.category)outcomes.push({id:"acute-"+route,label:"Acute Toxicity ("+definition.label+") — Category "+evidence.category,
+          route,category:evidence.category,ate:evidence.ate,status:evidence.status,ref:definition.ref});
+        review.push(...evidence.notes.map(n=>definition.label+" acute toxicity: "+n));
+        continue;
+      }
+      const contributions=[],missing=[],invalidData=[];
       let divisor=0,unknown=0;
       if(valid)ingredients.forEach((i,index)=>{
         const pct=value(i.pct);
@@ -84,9 +144,13 @@
         if(belowOneRelevant)review.push((i.name||"Ingredient "+(index+1))+
           ": "+route+" acute toxicity below 1% included on recorded evidence (HPR 2.5(1)); verify supporting data.");
         const converted=resolveATE(raw,route);
-        if(converted){
-          if(converted.ate>5000 && route!=="dermal" && route!=="oral")return;
-          // Oral and dermal values to 5000 are relevant in HPR 8.1.5.
+        if(converted&&converted.invalid){
+          // Conservative: unusable data are counted as unknown, and flagged.
+          unknown+=pct;missing.push({ingredient:i.name||"Ingredient "+(index+1),pct});
+          invalidData.push((i.name||"Ingredient "+(index+1))+": "+converted.invalid);
+        } else if(converted){
+          // Oral and dermal values to 5000 are relevant in HPR 8.1.5;
+          // above 5000 the ingredient is neither a contributor nor unknown.
           if(converted.ate<=5000){
             const fraction=pct/converted.ate;divisor+=fraction;
             contributions.push({ingredient:i.name||"Ingredient "+(index+1),pct,ate:converted.ate,
@@ -121,6 +185,8 @@
         review.push("Canadian supplemental label/SDS statement required for unknown acute "+route+
           " toxicity ("+unknown+"%); draft English only — verify and provide compliant English and French wording.");
       }
+      invalidData.forEach(msg=>review.push(definition.label+" acute toxicity input not usable, treated as unknown — "+msg));
+      if(invalidData.length)calculations[calculations.length-1].notes.push(...invalidData.map(m=>"Invalid input treated as unknown: "+m));
       if(hasUnknown)review.push("Verify unknown "+route+" toxicity: "+unknown+
         "% of relevant ingredients have no usable ATE or explicit not-acutely-toxic evidence.");
       if(valid&&!cat&&!hasUnknown&&divisor===0)review.push("No "+route+" acute toxicity classification calculated: verify negative evidence for all ingredients; missing ATE must not imply safety.");
@@ -169,11 +235,20 @@
     }else{
       review.push("Canadian inhalation, Chemicals Under Pressure and scope modules unavailable.");
     }
+    let physical=null;
+    if(PHYSICAL){
+      if(valid){
+        physical=PHYSICAL.classify(input);
+        outcomes.push(...physical.outcomes);
+        calculations.push(...physical.calculations);
+        review.push(...physical.review);
+      }else review.push("Flammable liquids (HPR 7.6) not evaluated because ingredient concentrations are invalid.");
+    }else review.push("Canadian physical hazard module (flammable liquids) unavailable.");
     review.push("Check whole-mixture data and bridging principles BEFORE using ingredient calculations (HPR 2.2, 8.1.2–8.1.6).");
-    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,healthResult,
+    return {profile:PROFILE,phase:"limited pilot",complete:false,valid,scope,extension,healthResult,physical,
       hazardCoverage:HAZARD_CATALOG?HAZARD_CATALOG.CATALOG:[],
       outcomes,calculations,issues,review,supplementalStatements,
-      notAssessed:[...UNSUPPORTED,...(extension?extension.notAssessed:[])],
+      notAssessed:[...UNSUPPORTED,...(physical?physical.notAssessed:[]),...(extension?extension.notAssessed:[])],
       note:"Not a complete WHMIS classification, SDS or label decision. No CLP output is reused."};
   }
   return {PROFILE,ROUTES,UNSUPPORTED,category,resolveATE,classify};

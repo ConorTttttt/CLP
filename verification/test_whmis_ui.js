@@ -82,7 +82,7 @@ t("Extended module and HPA class catalogue precede core engine",()=>{
 t("HPA scope result and extended classifications go through normal safe rendering",()=>{
  assert.ok(html.includes("r.scope.status.replace"));
  assert.ok(html.includes("safe(r.scope.reason)"));
- assert.ok(html.includes("WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture})"));
+ assert.ok(html.includes("WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture,acuteMixture,flammableLiquid})"));
 });
 t("All WHMIS preview text remains explicit about incomplete classification",()=>{
  assert.match(html,/Decision-support only/);

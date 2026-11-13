@@ -214,7 +214,7 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 <header><h1>WHMIS Mixture Calculator</h1><span class="sub">Canada &middot; Hazardous Products Regulations (WHMIS 2022) &middot; Local and offline &middot; Regulatory review required</span></header>
 <nav class="workspace-nav" aria-label="Calculator sections"><a href="#mixture-card">Mixture</a><a href="#ingredients-card">Ingredients</a><a href="#results">Results</a><a href="#source-card">Regulatory scope</a></nav>
 <div class="banner" role="note"><b>Decision-support only — not a final classification or label.</b> This Canadian pilot covers selected health hazard pathways.
- <details><summary>Read calculation scope and regulatory limitations</summary><div class="scope-note">Selected acute, skin/eye additive, sensitisation, CMR, STOT, aspiration and Chemicals Under Pressure paths are provisionally implemented. Whole-mixture studies and bridging are not fully automated for most classes; special non-additive chemistry, biohazards, remaining physical hazards, Schedule 4 prescribed classifications and bilingual WHMIS labelling still require review. A missing result does not establish that a product is non-hazardous.</div></details>
+ <details><summary>Read calculation scope and regulatory limitations</summary><div class="scope-note">Selected acute, skin/eye additive, sensitisation, CMR, STOT, aspiration, Flammable Liquids and Chemicals Under Pressure paths are provisionally implemented. Whole-mixture studies and bridging are not fully automated for most classes; special non-additive chemistry, biohazards, remaining physical hazards, Schedule 4 prescribed classifications and bilingual WHMIS labelling still require review. A missing result does not establish that a product is non-hazardous.</div></details>
 </div>
 <main class="wrap">
 <section id="inputs" aria-label="Formulation inputs">
@@ -240,8 +240,17 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
   </div>
 </div>
 <div class="card" id="inhalation-inputs">
- <h2>3. Acute toxicity — inhalation (HPR 8.1)</h2>
- <p class="hint">Select gas, vapour or dust/mist. The substance LC₅₀ is entered per ingredient under Edit details. Tested-mixture data take precedence over bridging and ingredient additivity.</p>
+ <h2>3. Acute toxicity — mixture evidence and inhalation (HPR 8.1)</h2>
+ <p class="hint">Oral and dermal: enter whole-mixture LD₅₀ data (HPR 8.1.3) or a documented bridging category (HPR 8.1.4) only if they exist; they take precedence over the ingredient ATE calculation. Leave blank to use ingredient additivity (HPR 8.1.5–8.1.6).</p>
+ <div class="g g2">
+  <div><label for="oral-whole">Oral: whole-mixture LD₅₀ (mg/kg, optional)</label><input id="oral-whole" type="number" min="0" step="any" placeholder="Test result"></div>
+  <div><label for="oral-bridge">Oral: bridging candidate</label><select id="oral-bridge"><option value="">None entered</option><option value="1">Category 1</option><option value="2">Category 2</option><option value="3">Category 3</option><option value="4">Category 4</option></select></div>
+  <div style="grid-column:1/-1"><label for="oral-bridge-evidence">Oral: bridging principle and evidence reference</label><input id="oral-bridge-evidence" placeholder="e.g. HPR 2.3 dilution with tested mixture study ID"></div>
+  <div><label for="dermal-whole">Dermal: whole-mixture LD₅₀ (mg/kg, optional)</label><input id="dermal-whole" type="number" min="0" step="any" placeholder="Test result"></div>
+  <div><label for="dermal-bridge">Dermal: bridging candidate</label><select id="dermal-bridge"><option value="">None entered</option><option value="1">Category 1</option><option value="2">Category 2</option><option value="3">Category 3</option><option value="4">Category 4</option></select></div>
+  <div style="grid-column:1/-1"><label for="dermal-bridge-evidence">Dermal: bridging principle and evidence reference</label><input id="dermal-bridge-evidence" placeholder="e.g. HPR 2.3 dilution with tested mixture study ID"></div>
+ </div>
+ <p class="hint">Inhalation: select gas, vapour or dust/mist. The substance LC₅₀ is entered per ingredient under Edit details. Tested-mixture data take precedence over bridging and ingredient additivity.</p>
  <div class="g g2">
   <div><label for="inh-form">Exposure form</label><select id="inh-form"><option value="">Not assessed</option><option value="gas">Gas (ppmV; % v/v concentrations)</option><option value="vapour">Vapour (mg/L; % w/w)</option><option value="dustMist">Dust or mist (mg/L; % w/w)</option></select></div>
   <div><label for="inh-whole">Whole-mixture LC₅₀ (optional)</label><input id="inh-whole" type="number" min="0" step="any" placeholder="Test result"></div>
@@ -252,7 +261,17 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
  <p class="hint">Other inhalation exceptions, including toxic gases released on contact with water, still require expert review. <span id="gas-total" aria-live="polite"></span></p>
 </div>
 <div class="card" id="pressure-inputs">
- <h2>4. Chemicals Under Pressure (HPR 7.21)</h2>
+ <h2>4. Physical hazards — Flammable liquids (HPR 7.6) and Chemicals Under Pressure (HPR 7.21)</h2>
+ <label class="check"><input id="flam-assess" type="checkbox"> Evaluate Flammable Liquids from the finished product's flash point</label>
+ <div class="g g2">
+  <div><label for="flam-state">Physical state of the product</label><select id="flam-state"><option value="">Not established</option><option value="liquid">Liquid</option><option value="solid">Solid (not eligible)</option><option value="gas">Gas (not eligible)</option></select></div>
+  <div><label for="flam-aerosol">Aerosol dispenser?</label><select id="flam-aerosol"><option value="">Unknown</option><option value="no">No</option><option value="yes">Yes — HPR 7.3 applies instead</option></select></div>
+  <div><label for="flam-fp">Flash point (°C)</label><input id="flam-fp" type="number" step="any" placeholder="Closed-cup result"></div>
+  <div><label for="flam-method">Flash point method</label><select id="flam-method"><option value="">Not recorded</option><option value="closed_cup">Closed cup (measured)</option><option value="open_cup">Open cup (measured)</option><option value="calculated">Calculated</option><option value="literature">Literature / supplier value</option></select></div>
+  <div><label for="flam-ibp">Initial boiling point (°C)</label><input id="flam-ibp" type="number" step="any" placeholder="Needed when flash point &lt;23 °C"></div>
+ </div>
+ <p class="hint">Categories: 1 — flash point &lt;23 °C and IBP ≤35 °C; 2 — flash point &lt;23 °C and IBP &gt;35 °C; 3 — 23–60 °C; 4 — &gt;60 °C to 93 °C (Canada retains Category 4). Ingredient flammability declarations never classify the product on their own.</p>
+ <hr>
  <label class="check"><input id="pressure-assess" type="checkbox"> Evaluate Chemicals Under Pressure using package and physical-property data</label>
  <div class="g g2">
   <div><label for="pressure-state">Physical state of contents</label><select id="pressure-state"><option value="">Unknown</option><option value="liquid">Liquid</option><option value="solid">Solid / paste / powder</option><option value="gas">Gas (not eligible for this class)</option></select></div>
@@ -287,12 +306,12 @@ tbody tr td.ing-extra:nth-child(16){grid-column:auto;align-items:stretch}
 <section aria-label="Classification results">
  <div class="workspace-heading"><h2>Classification results</h2><span class="mini-tag">Canada &middot; WHMIS 2022</span></div>
  <div class="card" id="results" aria-live="polite"><h2>3. WHMIS classification results</h2><p class="hint">Click Calculate to view classifications, HPA scope and regulatory audit trails.</p></div>
- <div class="card" id="source-card"><h2>Regulatory references and limitations</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Only inhalation has a limited tested-mixture/bridging input. Oral/dermal, skin/eye and special ingredient pathways still require additional evidence and review.</p><details class="scope" id="coverage-list"><summary>All 32 Canadian WHMIS hazard classes and implementation status</summary><p class="hint">Coverage list loads with the classification engine.</p></details></div>
+ <div class="card" id="source-card"><h2>Regulatory references and limitations</h2><p class="hint">Based on the <a href="https://laws-lois.justice.gc.ca/eng/regulations/SOR-2015-17/FullText.html" target="_blank" rel="noopener">Hazardous Products Regulations, SOR/2015-17</a>, especially sections 2.2, 7.6, 7.21, 8.1.1–8.1.7, 8.2.9–8.2.11, 8.3.9–8.3.11 and 8.12.4.</p><p class="hint">This is a limited pilot. Acute oral, dermal and inhalation accept limited tested-mixture/bridging inputs. Skin/eye, other health classes and special ingredient pathways still require additional evidence and review.</p><details class="scope" id="coverage-list"><summary>All 32 Canadian WHMIS hazard classes and implementation status</summary><p class="hint">Coverage list loads with the classification engine.</p></details></div>
 </section>
 </main>
 <footer>Canadian WHMIS 2022 classification pilot. Regulatory reference: English HPR XML consolidated 1 January 2023. English/French compliant WHMIS labels and SDSs are not generated.</footer>
 
-<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_health.js"></script><script src="verification/whmis_hazard_picker.js"></script><script src="verification/whmis_engine.js"></script><script>
+<script src="verification/whmis_skin_eye.js"></script><script src="verification/whmis_extended.js"></script><script src="verification/whmis_hazard_catalog.js"></script><script src="verification/whmis_health.js"></script><script src="verification/whmis_hazard_picker.js"></script><script src="verification/whmis_physical.js"></script><script src="verification/whmis_engine.js"></script><script>
 (function(){
 const rows=document.getElementById("rows"),results=document.getElementById("results");
 const PICKER=window.WHMIS_HAZARD_PICKER;
@@ -559,11 +578,16 @@ const chemicalsUnderPressure={assess:document.getElementById("pressure-assess").
 const healthMixture={otherEvidence:document.getElementById("health-other-evidence").checked,
   phaseSeparated:document.getElementById("asp-phase").value,
   aspirationViscosity40:num("asp-viscosity")};
-const r=WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
+const val=id=>document.getElementById(id).value;
+const acuteMixture={oral:{wholeMixtureLD50:num("oral-whole"),bridgedCategory:val("oral-bridge"),bridgingEvidence:val("oral-bridge-evidence")},
+  dermal:{wholeMixtureLD50:num("dermal-whole"),bridgedCategory:val("dermal-bridge"),bridgingEvidence:val("dermal-bridge-evidence")}};
+const flammableLiquid={assess:document.getElementById("flam-assess").checked,physicalState:val("flam-state"),aerosolDispenser:bool("flam-aerosol"),
+  flashPointC:num("flam-fp"),initialBoilingPointC:num("flam-ibp"),flashPointMethod:val("flam-method")};
+const r=WHMIS.classify({ingredients,scope,inhalation,chemicalsUnderPressure,healthMixture,acuteMixture,flammableLiquid});updateTotal();let html='<h2>WHMIS pilot results</h2><p class="warning">Not a full WHMIS classification. '+(r.valid?"Formulation percentages validated.":"Review invalid formulation.")+'</p>';
 if(r.scope){const klass=r.scope.status==="potentially_in_scope"?"whmis-scope-status":"whmis-scope-status warning-status";
 html+='<div class="'+klass+'"><strong>HPA Part II scope: '+safe(r.scope.status.replace(/_/g," "))+'</strong><p>'+safe(r.scope.reason)+'</p><p class="small">'+safe(r.scope.ref)+'</p></div>';}
 if(r.issues.length)html+='<div class="error">'+r.issues.map(x=>'<p>'+safe(x)+'</p>').join("")+'</div>';
-html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
+html+=r.outcomes.length?r.outcomes.map(o=>'<div class="outcome"><strong>'+safe(o.label)+'</strong><div class="small">'+safe(o.ref)+(o.ate?' · ATE '+safe(o.ate.toPrecision(6)):"")+(o.hazardCode?' · reference preview: '+safe(o.hazardCode)+' '+safe(o.hazardStatement)+' ('+safe(o.signalWord)+')':"")+'</div></div>').join(""):'<p>No positive classification in the implemented pathways. This is NOT a determination of non-hazardous status.</p>';
 const manualPhysical=ingredients.flatMap(i=>(i.declaredPhysicalHazards||[]).map(id=>({name:i.name||"Unnamed ingredient",choice:PICKER.byId(id)}))).filter(x=>x.choice);
 if(manualPhysical.length){
  html+='<div class="warning"><strong>Raw-material physical classifications recorded — not used as mixture results.</strong>'+

@@ -51,11 +51,12 @@ The code is isolated in `verification/whmis_hazard_picker.js` and the picker cat
 
 - Browser pilot: `canada_whmis_calculator.html`.
 - Core engine: `verification/whmis_engine.js` — no EU CLP code reused.
-- Health hazard extension HPR 8.4–8.10: `verification/whmis_health.js` (12/32 classes now partially covered in aggregate).
+- Health hazard extension HPR 8.4–8.10: `verification/whmis_health.js`.
+- Physical hazards from product data, HPR 7.6 Flammable liquids: `verification/whmis_physical.js`.
 - Skin/eye additive module: `verification/whmis_skin_eye.js`.
 - New HPA scope, HPR 8.1 inhalation and HPR 7.21 Chemicals Under Pressure pilot: `verification/whmis_extended.js`.
-- The full list of 32 legally active classes and implementation status: `verification/whmis_hazard_catalog.js` (5 partially implemented; 27 unimplemented).
-- Verification: `verification/test_whmis.js`, `verification/test_whmis_skin_eye.js`, `verification/test_whmis_extended.js`, `verification/test_whmis_hpa_manifest.js`, `verification/test_whmis_guidance.js`, `verification/test_whmis_ui.js`; `npm test` executes these and existing EU CLP suites.
+- The full list of 32 legally active classes and implementation status: `verification/whmis_hazard_catalog.js` (13 partially implemented; 19 not implemented).
+- Verification: `verification/test_whmis.js`, `verification/test_whmis_engine_review.js`, `verification/test_whmis_skin_eye.js`, `verification/test_whmis_extended.js`, `verification/test_whmis_hpa_manifest.js`, `verification/test_whmis_guidance.js`, `verification/test_whmis_ui.js`; `npm test` executes these and existing EU CLP suites.
 
 ## Health hazard expansion — HPR 8.4–8.10 (2026-11-07)
 
@@ -84,7 +85,7 @@ The HPR **2(3)–(5) prescribed classifications in Schedule 4**, **2.4 synergy**
 
 **Regulatory evidence precedence is hazard-specific:** HPR 8.4, 8.8, 8.9 and 8.10 generally use whole-mixture data and bridging before ingredient calculations. HPR 8.5–8.7 instead contain ingredient-first criteria with specifically defined scientific mixture-study exceptions and restricted bridging. A single global flag is a conservative review hold, not a substitute for the detailed rules.
 
-The complete HPA Schedule 2 list now identifies **12 partially implemented class families** and **20 not implemented**. All HPR 8.4–8.10 class results are provisional; none generates a legally compliant bilingual WHMIS label/SDS.
+The complete HPA Schedule 2 list now identifies **13 partially implemented class families** and **19 not implemented** (Flammable liquids added 2026-11-13). All HPR 8.4–8.10 class results are provisional; none generates a legally compliant bilingual WHMIS label/SDS.
 
 ## New WHMIS 2022 classification work (2026-11-07)
 
@@ -148,13 +149,41 @@ HPR 8.2.11 and 8.3.11 are not identical to EU CLP. Mixed corrosion subcategories
 
 For skin/eye, below-1% ingredients enter additive sums **only when there is evidence that the hazard occurs at the actual concentration**. The user must record this explicitly.
 
+## Engine review and improvements (2026-11-13)
+
+A review of the Canadian engine found and fixed the following. Regression tests: `verification/test_whmis_engine_review.js`.
+
+### Defects fixed
+
+| Area | Problem | Fix |
+| --- | --- | --- |
+| Sensitisation (HPR 8.4.5) | An ingredient with **no recorded physical state** was silently dropped — e.g. 5% Skin Sens. 1 gave **no** classification. The UI defaults state to "Not established" and the hazard picker never sets it, so this hit normal use. | State only changes the respiratory 1B cut-off and the concentration basis. Unspecified state is now screened on % w/w (solid/liquid basis) and flagged for confirmation; respiratory 1B between 0.2% and 1% w/w raises a "would trigger if gas" review. Declared gases still require % v/v. |
+| Skin (HPR 8.2.11) | Per-subcategory (1A/1B/1C) sums never appeared in the calculation trail (property-name bug). | Fixed; each subcategory sum is listed. |
+| Aspiration (HPR 8.10.5) | Every mixture — even with no aspiration ingredient — produced a "confirm layers" review prompt. When the bulk criteria were met but homogeneity was unconfirmed, the Category 1 candidate was hidden entirely. | No prompt when no aspiration ingredient is recorded; a confirmed-homogeneous mixture below 10% no longer asks for viscosity. Bulk criteria met + homogeneity unconfirmed now reports Category 1 **provisionally** with a homogeneity check (conservative). Confirmed phase separation still withholds the bulk result. |
+| Acute oral/dermal (HPR 8.1) | Invalid inputs (negative ATE, "Category 5", which Canada does not adopt) were silently treated as unknown. | Still counted as unknown (conservative), but now reported in the calculation notes and review list. |
+| STOT SE/RE (HPR 8.8.5, 8.9.5) | Category 2 ingredients alongside a Category 1 ingredient were silently absorbed into Category 1. | Category 1 is still reported; a review item now notes that Category 2 may also apply for different target organs (organ data are not captured). |
+
+### New capabilities
+
+- **Oral/dermal evidence precedence (HPR 8.1.3, 8.1.4).** `input.acuteMixture.oral|dermal = {wholeMixtureLD50, bridgedCategory, bridgingEvidence}`. Whole-mixture LD₅₀ overrides bridging, which overrides ingredient additivity. Bridging requires a documented basis or no category is assigned. Brings oral/dermal in line with the existing inhalation route.
+- **LD₅₀ ranges (HPR 8.1.7(2)).** `ingredient.acute.oral|dermal = {rangeMin, rangeMax}`: a range wholly within one category uses that category's point estimate; a range crossing categories uses its lowest value; a range wholly above Category 4 is flagged.
+- **Flammable liquids (HPR 7.6).** `input.flammableLiquid = {assess, physicalState, aerosolDispenser, flashPointC, initialBoilingPointC, flashPointMethod}`. Categories 1–4, including Canada's **Category 4** (flash point >60 °C to ≤93 °C, H227). A flash point <23 °C without an IBP returns *requires data* ("at least Category 2"), never a guessed category. Open-cup, calculated and literature flash points are flagged. Ingredients declared as flammable liquids prompt a product flash-point determination but never classify the mixture. The hazard picker now offers Flam. Liq. 4 / H227.
+
+### Assessment of remaining gaps (priority order)
+
+1. **Skin/eye tested-mixture and bridging inputs** (HPR 8.2.9–8.2.10, 8.3.9–8.3.10) — the same pattern now used for acute toxicity can be reused.
+2. **Special-chemistry skin/eye route** (HPR 8.2.11(3), 8.3.11(3): pH ≤2 / ≥11.5, non-additive ingredients) — currently a review flag only.
+3. **Organ-level STOT data** so Category 1 and Category 2 for different organs can both be reported.
+4. **Other physical classes with simple product-data rules** (e.g. flammable gases, gases under pressure, oxidising/flammable solids from test results) and Canadian-specific classes (combustible dusts, simple asphyxiants) as evidence-backed declarations.
+5. **Label elements**: pictogram/signal-word selection with HPR precedence, and bilingual text — currently English reference previews only for Flammable liquids and Chemicals Under Pressure.
+
 ## Important limitations
 
 - **The order of evidence is mandatory**: whole-mixture evidence, bridging (when indicated), then ingredient methods (HPR 2.2; each Part 8 subpart). The pilot does not yet accept full tested-mixture or bridging datasets and therefore does not produce a final legally defensible determination.
 - Sections 2.4 (synergistic effects), 2.5 (evidence above/below generic concentration limits) and 2.6 (maximum concentration) require regulatory review.
 - Special chemistry including acids, bases, inorganic salts, aldehydes, phenols and surfactants (HPR 8.2.11(3) / 8.3.11(3)) is **not calculated**. Checking 'special' only creates a review flag.
-- Inhalation toxicity (including water-activated toxicants), other health classes, all physical classes, Schedule 4 prescribed classifications, product exemptions, bilingual labelling and SDS content are not calculated.
-- Percentages in the pilot are mass-based. Do not use these pathways for gaseous volume concentration without implementation of HPR requirements.
+- Water-activated toxicants, remaining health-class evidence routes, physical classes other than Flammable liquids and Chemicals Under Pressure, Schedule 4 prescribed classifications, product exemptions, bilingual labelling and SDS content are not calculated.
+- Oral/dermal acute toxicity, skin/eye and HHNOC use mass % (w/w). Gas inhalation ATE and gas ingredients in the HPR 8.4–8.10 health routes use separately entered % v/v; mass % is never substituted for a gas.
 - Unknown toxicity is not an ATE of zero or evidence of safety. Explicit 'no acute hazard' input requires scientific evidence. Missing data are flagged.
 - Absence of an automated result must not be interpreted as a negative hazard assessment.
 
@@ -203,7 +232,7 @@ The GHS source is section **2.3.2**, printed pages **61–63**, PDF pages **67�
 
 ## Next work
 
-1. Implement whole-mixture/bridging for oral/dermal, skin/eye and other health hazards and verify HPR 2.4–2.6 evidence precedence; the inhalation panel currently accepts limited whole-mixture LC₅₀ and bridging candidates only.
+1. Implement whole-mixture/bridging for skin/eye and other health hazards and verify HPR 2.4–2.6 evidence precedence (oral, dermal and inhalation accept limited whole-mixture and bridging candidates as of 2026-11-13).
 2. Complete HPR 8.1 inhalation beyond the implemented gas/vapour/dust-mist ATE, 1-hour to 4-hour conversion and limited tested-mixture/bridging routes, particularly water-contact release of toxic gases and further scientific evidence handling.
 3. Implement and test special chemistry under 8.2.11(3) and 8.3.11(3).
 4. Complete tested-mixture science and bridging under HPR 8.4–8.10, implement 2.5 lower-limit evidence and HPR 8.10.5(b) aspiration layers, then the remaining physical hazards.
