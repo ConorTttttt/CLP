@@ -23,7 +23,7 @@ check('source records the amendment and retrieval date', /91 FR 566/.test(US.SOU
 const r0 = run([ing('Water', 100)]);
 check('no unverified cut-offs reported', r0.unverifiedCutoffs.length === 0 && !r0.warnings.some((w) => /not yet been verified/.test(w)));
 check('report states the rules source', /Rules: 29 CFR 1910\.1200 Appendix A .* as amended through 91 FR 566/.test(US.report({}, r0)) && !/NOT YET VERIFIED/.test(US.report({}, r0)));
-check('respiratory-tract corrosivity (A.1.2.4, HazCom 2024) listed as not assessed', r0.notAssessed.some((x) => /respiratory tract \(A\.1\.2\.4/.test(x)));
+check('respiratory-tract corrosivity (A.1.2.4, HazCom 2024) has its own section, not assessed without data', section(r0, 'respCorr').status === 'not-assessed');
 
 // --- A.2 Skin -------------------------------------------------------------------------
 check('Skin Cat 1 sum 5 % → Category 1', cat(one(5, 'H314'), 'Skin Corrosion') === '1');

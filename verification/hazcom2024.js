@@ -23,10 +23,9 @@
     dust_mist:{label:"Inhalation — dust/mist",unit:"mg/L",limits:[0.05,0.5,1,5],conv:[0.005,0.05,0.5,1.5],codes:["H330","H330","H331","H332"],statements:["Fatal if inhaled","Fatal if inhaled","Toxic if inhaled","Harmful if inhaled"]}
   });
   const UNASSESSED=Object.freeze([
-    "Flammable gases, aerosols, chemicals under pressure, flammable solids and other physical hazards (Appendix B)",
-    "Hazards not otherwise classified (HNOC), combustible dust, simple asphyxiants and hazards of chemical reactions or changes in physical form",
+    "Explosives (B.1), flammable solids (B.7), self-reactive chemicals (B.8), pyrophoric liquids and solids (B.9–B.10), self-heating chemicals (B.11), chemicals which in contact with water emit flammable gases (B.12), oxidizing liquids and solids (B.13–B.14), organic peroxides (B.15) and desensitized explosives (B.17)",
+    "Hazards of chemical reactions or changes in physical form during use",
     "Tested-mixture data, bridging principles and weight-of-evidence for every health class (Appendix A, A.0.4 / class-specific sections)",
-    "Corrosivity to the respiratory tract (A.1.2.4, added by HazCom 2024): assess from ingredient and mixture evidence",
     "Eye Irritation Category 2B needs ingredient data recorded as 2B; Category 2 ingredients are assessed with the 2A criteria (A.3.2.1.2)",
     "Complete OSHA Appendix C labeling and Appendix D SDS preparation"
   ]);
@@ -348,6 +347,170 @@
     return s;
   }
 
+  /* ---------------- Appendix B physical hazards from mixture test data, and OSHA-defined hazards ----------------
+     Inputs: mix.physical (test results and declarations for the mixture as supplied).
+     Physical hazards are classified from data on the mixture, not from ingredients.
+     Missing data → "not assessed". Criteria quoted from Appendix B / C as retrieved (SOURCE). */
+  const PHYS_SOURCE="29 CFR 1910.1200 Appendix B";
+  const phys=mix=>mix&&mix.physical&&typeof mix.physical==="object"?mix.physical:{};
+  const n=v=>pct(v);
+  const has=v=>Number.isFinite(v);
+  const choice=v=>String(v===undefined||v===null?"":v).trim();
+  const FLAMMABLE_CODES=/\bH(220|221|224|225|226|227|228)\b/i;   // flammable gas, liquid (incl. Cat 4), solid
+  // Flammable components (by mass): entered value, else an estimate from ingredient H-codes.
+  function flammableComponents(mix,steps){
+    const entered=n(phys(mix).flammableComponentsPct);
+    if(has(entered)){steps.push("Flammable components (by mass): "+fmt(entered)+"% (entered).");return entered;}
+    const list=present(mix);
+    if(!list.length||!list.some(x=>String(x.i.hcodes||"").trim())){steps.push("Flammable components: not entered and no ingredient H-codes to estimate from.");return NaN;}
+    const flam=list.filter(x=>FLAMMABLE_CODES.test(String(x.i.hcodes||"")));
+    const t=sum(flam);
+    steps.push("Flammable components (by mass) estimated from ingredient H-codes H220/H221/H224–H228: "+(flam.length?flam.map(x=>name(x.i)+" "+fmt(x.p)+"%").join(" + "):"none")+" = "+fmt(t)+"%. Pyrophoric, self-heating and water-reactive components are not flammable components. Enter a declared value to override.");
+    return t;
+  }
+  const packaging=mix=>choice(phys(mix).packaging);
+  function aerosol(mix){
+    const s=section("aerosol","Aerosols",PHYS_SOURCE+" B.3.1, Table B.3.1; Appendix C.4.16");
+    if(packaging(mix)!=="aerosol"){s.status="not-applicable";s.steps.push("Not packaged as an aerosol dispenser.");return s;}
+    const p=phys(mix),fc=flammableComponents(mix,s.steps),hoc=n(p.heatOfCombustion),form=choice(p.aerosolForm);
+    if(has(hoc))s.steps.push("Chemical heat of combustion: "+fmt(hoc)+" kJ/g.");
+    const considered=(has(fc)&&fc>1+EPS)||(has(hoc)&&ge(hoc,20));
+    if(!considered){
+      if(has(fc)&&has(hoc)){s.steps.push("≤1% flammable components and heat of combustion <20 kJ/g → Category 3 (Table B.3.1 (2)).");s.outcomes.push(outcome("Aerosol",3,"Pressurized container: may burst if heated","H229",s.source,{signal:"Warning",pictogram:null}));}
+      else{s.status="not-assessed";s.steps.push("Enter the flammable components (%) and the chemical heat of combustion to classify.");}
+      return s;
+    }
+    s.steps.push(">1% flammable components or heat of combustion ≥20 kJ/g: Categories 1 or 2 must be considered (B.3.1.2.1).");
+    let cat=null;
+    if(has(fc)&&ge(fc,85)&&has(hoc)&&ge(hoc,30)){cat=1;s.steps.push("≥85% flammable components and heat of combustion ≥30 kJ/g → Category 1.");}
+    const dist=n(p.ignitionDistanceCm),te=n(p.enclosedTimeEquivalent),dd=n(p.enclosedDeflagrationDensity),fh=n(p.foamFlameHeightCm),fd=n(p.foamFlameDurationS);
+    const tested=form==="spray"?has(dist)||has(te)||has(dd):form==="foam"?has(fh)&&has(fd):false;
+    if(!cat&&!tested){cat=1;s.steps.push("No flammability test results"+(form?" for the "+form+" aerosol":" (spray/foam form not stated)")+": Note 3 to Table B.3.1 → Category 1 by default.");}
+    if(!cat&&form==="spray"){
+      if(has(dist)&&ge(dist,75)){cat=1;s.steps.push("Ignition distance "+fmt(dist)+" cm ≥75 cm → Category 1.");}
+      else if((has(dist)&&ge(dist,15))||(has(te)&&te<=300+EPS)||(has(dd)&&dd<=300+EPS)){cat=2;s.steps.push("Ignition distance ≥15 cm or enclosed space ignition (time equivalent ≤300 s/m³ or deflagration density ≤300 g/m³) → Category 2.");}
+      else{cat=3;s.steps.push("Spray aerosol flammability tests negative for Categories 1 and 2 → Category 3.");}
+    }
+    if(!cat&&form==="foam"){
+      if((ge(fh,20)&&ge(fd,2))||(ge(fh,4)&&ge(fd,7))){cat=1;s.steps.push("Foam flame height "+fmt(fh)+" cm, duration "+fmt(fd)+" s → Category 1.");}
+      else if(ge(fh,4)&&ge(fd,2)){cat=2;s.steps.push("Foam flame height ≥4 cm and duration ≥2 s → Category 2.");}
+      else{cat=3;s.steps.push("Foam flammability test negative for Categories 1 and 2 → Category 3.");}
+    }
+    const L={1:["Extremely flammable aerosol. Pressurized container: may burst if heated","H222, H229","Danger","Flame"],2:["Flammable aerosol. Pressurized container: may burst if heated","H223, H229","Warning","Flame"],3:["Pressurized container: may burst if heated","H229","Warning",null]}[cat];
+    s.outcomes.push(outcome("Aerosol",cat,L[0],L[1],s.source,{signal:L[2],pictogram:L[3]}));
+    return s;
+  }
+  function chemicalUnderPressure(mix){
+    const s=section("cup","Chemicals under pressure",PHYS_SOURCE+" B.3.2, Table B.3.2; Appendix C.4.16");
+    if(packaging(mix)!=="pressurized"){s.status="not-applicable";s.steps.push("Not a liquid or solid pressurized with a gas in a pressure receptacle (other than an aerosol).");return s;}
+    const p=phys(mix),g=n(p.gaugePressureKPa);
+    if(has(g)&&g<200-EPS){s.status="not-applicable";s.steps.push("Gauge pressure "+fmt(g)+" kPa at 20 °C is below 200 kPa: not a chemical under pressure (B.3.2.1).");return s;}
+    const fc=flammableComponents(mix,s.steps),hoc=n(p.heatOfCombustion);
+    if(!has(fc)||!has(hoc)){s.status="not-assessed";s.steps.push("Enter the flammable components (%) and the heat of combustion (kJ/g) to classify.");return s;}
+    s.steps.push("Heat of combustion "+fmt(hoc)+" kJ/g.");
+    const cat=ge(fc,85)&&ge(hoc,20)?1:fc<=1+EPS&&hoc<20-EPS?3:2;
+    s.steps.push("Table B.3.2 → Category "+cat+".");
+    const L={1:["Extremely flammable chemical under pressure. May explode if heated","H282","Danger","Flame, Gas cylinder"],2:["Flammable chemical under pressure. May explode if heated","H283","Warning","Flame, Gas cylinder"],3:["Chemical under pressure: may explode if heated","H284","Warning","Gas cylinder"]}[cat];
+    s.outcomes.push(outcome("Chemical Under Pressure",cat,L[0],L[1],s.source,{signal:L[2],pictogram:L[3]}));
+    return s;
+  }
+  const isGasProduct=mix=>mix.state==="gas"&&!["aerosol","pressurized"].includes(packaging(mix));
+  function flammableGas(mix){
+    const s=section("flamGas","Flammable gases",PHYS_SOURCE+" B.2, Table B.2.1; Appendix C.4.15");
+    if(!isGasProduct(mix)){s.status="not-applicable";s.steps.push(mix.state==="gas"?"Aerosols and chemicals under pressure are not classified as flammable gases (Table B.2.1 note 1).":"Mixture is not a gas.");return s;}
+    const p=phys(mix),flam=choice(p.gasFlammable),lfl=n(p.lflPct),ufl=n(p.uflPct),bv=n(p.burningVelocity),pyro=choice(p.pyrophoricGas),pyroPct=n(p.pyrophoricComponentsPct),unstable=choice(p.unstableGas);
+    const range=has(lfl)&&has(ufl);
+    if(flam==="no"&&!range){s.steps.push("Not flammable in air at 20 °C and 101.3 kPa (ISO 10156 test or calculation) → not a flammable gas.");return s;}
+    if(flam!=="yes"&&!range){s.status="not-assessed";s.steps.push("Enter whether the gas has a flammable range in air (ISO 10156) and, if so, its lower and upper flammability limits.");return s;}
+    let cat="2";
+    if(range){
+      s.steps.push("Flammable range "+fmt(lfl)+"–"+fmt(ufl)+"% in air ("+fmt(ufl-lfl)+" percentage points).");
+      if(lfl<=13+EPS||ufl-lfl>=12-EPS){cat="1A";s.steps.push("Ignitable at ≤13% in air or range ≥12 points → meets Category 1A flammability criteria.");}
+      else s.steps.push("Flammable range but not ≤13% LFL or ≥12 points → Category 2.");
+    }else{cat="1A";s.steps.push("Flammable, but no flammability limits entered: Category 1A by default (Table B.2.1 note 2); enter the limits to refine.");}
+    const pyrophoric=pyro==="yes"||(pyro===""&&has(pyroPct)&&pyroPct>1+EPS);
+    if(pyro===""&&has(pyroPct)&&pyroPct>1+EPS)s.steps.push("Not tested for pyrophoricity and contains "+fmt(pyroPct)+"% (>1%) pyrophoric components → pyrophoric gas (Table B.2.1 note 4).");
+    if(cat==="1A"&&!pyrophoric&&!["A","B"].includes(unstable)&&((has(lfl)&&lfl>6+EPS)||(has(bv)&&bv<10-EPS))){cat="1B";s.steps.push("Not pyrophoric or chemically unstable, and LFL >6% or burning velocity <10 cm/s → Category 1B.");}
+    else if(cat==="1A")s.steps.push("Category 1B needs LFL >6% or burning velocity <10 cm/s with no pyrophoricity or chemical instability; otherwise Category 1A (note 2).");
+    const statements=[cat==="1B"||cat==="2"?"Flammable gas":"Extremely flammable gas"],codes=[cat==="1A"?"H220":"H221"];
+    if(pyrophoric){statements.push("May ignite spontaneously if exposed to air");codes.push("H232");cat="1A";}
+    if(unstable==="A"){statements.push("May react explosively even in the absence of air");codes.push("H230");}
+    if(unstable==="B"){statements.push("May react explosively even in the absence of air at elevated pressure and/or temperature");codes.push("H231");}
+    if(pyro===""&&!has(pyroPct)&&cat!=="2")s.steps.push("Pyrophoricity not recorded: confirm by test, handling experience or pyrophoric-component content (B.2.3.2–B.2.3.3).");
+    const label=cat+(pyrophoric?" (pyrophoric gas)":"")+(unstable==="A"||unstable==="B"?" (chemically unstable gas "+unstable+")":"");
+    s.outcomes.push(outcome("Flammable Gas",label,statements.join(". "),codes.join(", "),s.source,{signal:cat==="2"?"Warning":"Danger",pictogram:cat==="2"?null:"Flame"}));
+    return s;
+  }
+  function oxidizingGas(mix){
+    const s=section("oxGas","Oxidizing gases",PHYS_SOURCE+" B.4, Table B.4.1; Appendix C.4.17");
+    if(!isGasProduct(mix)){s.status="not-applicable";s.steps.push("Mixture is not a gas.");return s;}
+    const op=n(phys(mix).oxidizingPowerPct);
+    if(!has(op)){s.status="not-assessed";s.steps.push("Enter the oxidizing power (ISO 10156) to classify.");return s;}
+    if(op>23.5+EPS){s.steps.push("Oxidizing power "+fmt(op)+"% >23.5% → Category 1.");s.outcomes.push(outcome("Oxidizing Gas",1,"May cause or intensify fire; oxidizer","H270",s.source,{signal:"Danger",pictogram:"Flame over circle"}));}
+    else s.steps.push("Oxidizing power "+fmt(op)+"% ≤23.5% → not an oxidizing gas.");
+    return s;
+  }
+  function gasUnderPressure(mix){
+    const s=section("gasPressure","Gases under pressure",PHYS_SOURCE+" B.5, Table B.5.1; Appendix C.4.18");
+    if(!isGasProduct(mix)){s.status="not-applicable";s.steps.push(mix.state==="gas"?"Aerosols and chemicals under pressure are not classified as gases under pressure (Table B.5.1 note).":"Mixture is not a gas.");return s;}
+    const p=phys(mix);let group=choice(p.gasGroup);const tc=n(p.criticalTempC);
+    if(!group&&has(tc)){group=tc<=-50+EPS?"compressed":tc<=65+EPS?"liquefied_high":"liquefied_low";s.steps.push("Critical temperature "+fmt(tc)+" °C → "+group.replace("_"," ").replace("high","(high pressure)").replace("low","(low pressure)")+" gas, if contained at ≥200 kPa (gauge) at 20 °C or liquefied.");}
+    if(!group){s.status="not-assessed";s.steps.push("Select the gas group (compressed, liquefied, refrigerated liquefied, dissolved or not under pressure) or enter the critical temperature.");return s;}
+    if(group==="none"){s.steps.push("Not contained at ≥200 kPa (gauge) at 20 °C, and not liquefied → not a gas under pressure.");return s;}
+    const names={compressed:"Compressed gas",liquefied_high:"Liquefied gas (high pressure)",liquefied_low:"Liquefied gas (low pressure)",refrigerated:"Refrigerated liquefied gas",dissolved:"Dissolved gas"};
+    if(!names[group]){s.status="not-assessed";s.steps.push("Unknown gas group "+JSON.stringify(group)+".");return s;}
+    const refr=group==="refrigerated";
+    s.steps.push("Group: "+names[group]+" (Table B.5.1).");
+    s.outcomes.push(outcome("Gas Under Pressure",names[group],refr?"Contains refrigerated gas; may cause cryogenic burns or injury":"Contains gas under pressure; may explode if heated",refr?"H281":"H280",s.source,{signal:"Warning",pictogram:"Gas cylinder"}));
+    return s;
+  }
+  function corrosiveToMetals(mix){
+    const s=section("metals","Corrosive to metals",PHYS_SOURCE+" B.16, Table B.16.1; Appendix C.4.29");
+    const p=phys(mix),st=n(p.corrosionSteel),al=n(p.corrosionAluminium);
+    if(mix.state==="gas"&&!has(st)&&!has(al)){s.status="not-applicable";s.steps.push("Gas: the UN 37.4 corrosion test applies to liquids and solids that may become liquid.");return s;}
+    if(!has(st)&&!has(al)){s.status="not-assessed";s.steps.push("Enter the UN 37.4 corrosion rate at 55 °C on steel and/or aluminium (mm/year).");return s;}
+    [["steel",st],["aluminium",al]].forEach(([m,v])=>{if(has(v))s.steps.push("Corrosion rate on "+m+": "+fmt(v)+" mm/year "+(v>6.25+EPS?"> 6.25 → corrosive":"≤ 6.25")+".");});
+    if((has(st)&&st>6.25+EPS)||(has(al)&&al>6.25+EPS)){s.outcomes.push(outcome("Corrosive to Metals",1,"May be corrosive to metals","H290",s.source,{signal:"Warning",pictogram:"Corrosion"}));}
+    else if(has(st)&&has(al))s.steps.push("Not corrosive on either metal → not classified.");
+    else{s.status="not-assessed";s.steps.push("A negative result needs both steel and aluminium (Table B.16.1); one metal was not tested.");}
+    return s;
+  }
+  function oshaDefined(mix,outcomesSoFar){
+    const out=[],p=phys(mix);
+    const sa=section("asphyxiant","Simple asphyxiant","29 CFR 1910.1200(c) definition; Appendix C.4.31");
+    const a=choice(p.simpleAsphyxiant);
+    if(a==="yes"){sa.steps.push("Recorded as a substance or mixture that displaces oxygen in the ambient atmosphere (1910.1200(c)).");sa.outcomes.push(outcome("Simple Asphyxiant","—","May displace oxygen and cause rapid suffocation","—",sa.source,{signal:"Warning",pictogram:null}));}
+    else if(a==="no")sa.steps.push("Recorded as not a simple asphyxiant.");
+    else{sa.status="not-assessed";sa.steps.push(mix.state==="gas"?"Gas mixture: record whether it can displace oxygen (e.g. nitrogen, argon, carbon dioxide).":"Record whether the chemical is a simple asphyxiant (usually gases).");}
+    out.push(sa);
+    const cd=section("dust","Combustible dust","29 CFR 1910.1200(c) definition; Appendix C.4.31 and footnote 2");
+    const d=choice(p.combustibleDust);
+    if(d==="dust"||d==="may_form"){
+      const st=d==="dust"?"May form combustible dust concentrations in air":"May form combustible dust concentrations in air if small particles are generated during further processing, handling or by other means";
+      cd.steps.push(d==="dust"?"Shipped in dust form and presents a combustible dust hazard downstream ((f)(1)).":"Not shipped as a dust, but may form combustible dust during processing or handling: label per (f)(4) (C.4.31 note 2).");
+      cd.outcomes.push(outcome("Combustible Dust","—",st,"—",cd.source,{signal:"Warning",pictogram:null}));
+    }else if(d==="no")cd.steps.push("Recorded as not a combustible dust hazard.");
+    else{cd.status=mix.state==="solid"?"not-assessed":"not-applicable";cd.steps.push(mix.state==="solid"?"Solid: record whether it is (or may form) finely divided particulates posing a flash-fire or explosion hazard.":"Not a solid.");}
+    out.push(cd);
+    const rt=section("respCorr","Corrosive to the respiratory tract","29 CFR 1910.1200 Appendix A.1.2.4 (HazCom 2024)");
+    const r=choice(p.respiratoryCorrosive);
+    if(r==="lethal"){
+      rt.steps.push("Corrosive to the respiratory tract with lethal effect: add the statement and the corrosion pictogram to the acute toxicity label elements (A.1.2.4.1).");
+      if(!outcomesSoFar.some(o=>/^Acute Toxicity — Inhalation/.test(o.name)))rt.steps.push("No acute inhalation toxicity classification was calculated: check the inhalation data, since A.1.2.4.1 applies in addition to it.");
+      rt.outcomes.push(outcome("Corrosive to the Respiratory Tract","—","Corrosive to the respiratory tract","—",rt.source,{signal:null,pictogram:"Corrosion"}));
+    }else if(r==="non_lethal")rt.steps.push("Corrosive to the respiratory tract without lethality: address under STOT (A.8), or under skin/eye classes if STOT data are insufficient (A.1.2.4.2). Record the ingredient STOT/skin/eye data accordingly.");
+    else if(r==="no")rt.steps.push("Recorded as not corrosive to the respiratory tract.");
+    else{rt.status="not-assessed";rt.steps.push("Record whether data show the mechanism of inhalation toxicity is corrosivity (A.1.2.4).");}
+    out.push(rt);
+    const hn=section("hnoc","Hazards not otherwise classified (HNOC)","29 CFR 1910.1200(c) definition; (f)(1); Appendix C.2.3.3");
+    const lines=String(p.hnoc||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
+    lines.forEach(x=>hn.outcomes.push(outcome("Hazard Not Otherwise Classified","—",x,"—",hn.source,{signal:null,pictogram:null,labelRequired:false})));
+    if(lines.length)hn.steps.push(lines.length+" HNOC recorded. Disclose on the SDS; HNOCs need not be on the shipped-container label ((f)(1)); the exclamation mark may be used with the words “Hazard Not Otherwise Classified” or “HNOC” (C.2.3.3).");
+    else hn.steps.push("No HNOC recorded. HNOCs are effects identified from scientific evidence that meet no OSHA hazard class (not effects below a cut-off, nor unadopted GHS categories such as acute toxicity Category 5).");
+    out.push(hn);
+    return out;
+  }
+
   function classify(mix){
     mix=mix||{};const warnings=[];
     const ing=Array.isArray(mix.ingredients)?mix.ingredients:[];
@@ -356,12 +519,20 @@
     if(ing.length&&Math.abs(total-100)>0.05)warnings.push("Ingredient concentrations total "+fmt(total)+"%, not 100%; correct the formulation before relying on results.");
     if(ing.some(i=>i&&i.scl&&Object.values(i.scl).some(v=>v!==""&&v!==null&&v!==undefined)))
       warnings.push("Specific concentration limits entered for EU CLP are not applied in this US screen; Appendix A cut-offs are used. Where data show a hazard below a cut-off, assess it separately.");
-    const sections=[flammable(mix,warnings),...acute(mix,warnings),skinCorrosion(mix),eyeDamage(mix),...sensitization(mix),...cmr(mix),...stot(mix),aspiration(mix)];
+    const flam=flammable(mix,warnings);
+    if(["aerosol","pressurized"].includes(packaging(mix))&&flam.status!=="not-applicable"){
+      flam.status="not-applicable";flam.outcomes.length=0;
+      flam.steps.push((packaging(mix)==="aerosol"?"Aerosols":"Chemicals under pressure")+" are not additionally classified as flammable liquids (Table B.3.1 / B.3.2 note 2); see that class instead.");
+    }
+    const health=[...acute(mix,warnings),skinCorrosion(mix),eyeDamage(mix),...sensitization(mix),...cmr(mix),...stot(mix),aspiration(mix)];
+    const physicalSections=[aerosol(mix),chemicalUnderPressure(mix),flammableGas(mix),oxidizingGas(mix),gasUnderPressure(mix),corrosiveToMetals(mix)];
+    const healthOutcomes=health.flatMap(x=>x.outcomes);
+    const sections=[flam,...physicalSections,...health,...oshaDefined(mix,healthOutcomes)];
     const outcomes=sections.flatMap(x=>x.outcomes);
     const labelled=outcomes.filter(o=>o.labelRequired!==false);
     const signal=labelled.some(o=>o.signal==="Danger")?"Danger":labelled.some(o=>o.signal==="Warning")?"Warning":null;
     const unverifiedCutoffs=Object.entries(CUTOFFS).filter(([,c])=>!c.verified).map(([id,c])=>({id,label:c.label,value:c.value,unit:c.unit,basis:c.basis}));
-    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 and flammable liquids are calculated from ingredient data with the HazCom 2024 cut-offs (Appendix A as amended through "+SOURCE.amendedThrough.split(" (")[0]+"). Other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-mixture data, bridging and all Appendix C label elements still need independent assessment.");
+    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 from ingredient data with the HazCom 2024 cut-offs (Appendix A as amended through "+SOURCE.amendedThrough.split(" (")[0]+"); flammable liquids, aerosols, chemicals under pressure, flammable and oxidizing gases, gases under pressure and corrosive to metals from mixture test data; OSHA-defined hazards as recorded. Other Appendix B classes, tested-mixture data, bridging and the full Appendix C/D label and SDS content still need independent assessment.");
     if(unverifiedCutoffs.length)warnings.push(unverifiedCutoffs.length+" Appendix A cut-off value(s) used here have not yet been verified against the current 29 CFR 1910.1200 text (see the cut-off list). Treat results as provisional.");
     return {jurisdiction:"US",regulation:"OSHA HazCom 2024 (29 CFR 1910.1200)",status:"partial-screen",source:SOURCE,outcomes,sections,warnings,signal,unverifiedCutoffs,notAssessed:UNASSESSED.slice(),notRequired:["Aquatic environmental hazards are not classification requirements of OSHA HazCom; other US environmental laws may apply.","EU CLP endocrine disruption / PBT / PMT / ozone categories are not automatically US OSHA HCS classifications."],deadline:"Mixture manufacturer/importer/distributor compliance date: November 19, 2027 (January 2026 extension)."};
   }

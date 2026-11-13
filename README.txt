@@ -29,14 +29,19 @@ EUH statements are never used. It calculates:
     eye incl. 2A/2B (A.3), sensitizers (A.4), mutagenicity (A.5), carcinogenicity (A.6,
     incl. the Category 2 "SDS required, label optional" band), reproductive toxicity and
     lactation (A.7), STOT SE/RE incl. Category 3 (A.8–A.9) and aspiration (A.10).
-Not assessed: other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-
-mixture data/bridging, and OSHA Appendix C label / Appendix D SDS elements. No environmental
-classes (not part of OSHA HazCom).
+  * Physical hazards from mixture test data entered under "Physical hazard data" (US mode):
+    aerosols, chemicals under pressure, flammable and oxidizing gases, gases under pressure
+    and corrosive to metals (Appendix B), plus simple asphyxiants, combustible dust,
+    respiratory-tract corrosivity (A.1.2.4) and HNOCs.
+Not assessed yet: explosives, flammable solids, self-reactive, pyrophoric, self-heating,
+water-reactive, oxidizing liquids/solids, organic peroxides, desensitized explosives, tested-
+mixture data/bridging, and full OSHA Appendix C label / Appendix D SDS content. No
+environmental classes (not part of OSHA HazCom).
 Cut-offs and label elements follow the HazCom 2024 text of 29 CFR 1910.1200 Appendices A–C
 (as amended through 91 FR 566, Jan. 8, 2026), verified 2026-11-13; the verification record is
 in docs/us_hazcom_2024_initial_mode.md.
 HazCom 2024 mixture compliance date: 19 November 2027 (2026 OSHA extension).
-Tests: node verification/test_us_hazcom2024.js and verification/test_us_hazcom2024_health.js
+Tests: node verification/test_us_hazcom2024.js, test_us_hazcom2024_health.js, test_us_hazcom2024_physical.js
 
 EMBEDDED ENGINES
 clp_mixture_calculator.html contains copies of verification/engine.js and

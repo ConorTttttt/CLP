@@ -68,6 +68,24 @@ Appendix A.1 Tables A.1.1 and A.1.2, with route-specific category limits and poi
 
 Missing data give **not assessed**, never "not hazardous". The result has a screen `signal` word (outcomes with `labelRequired: false` do not set it). Signal words, pictograms and hazard statements follow Appendix C.4.4–C.4.13 (checked against the same text).
 
+### Physical hazards from mixture test data (Appendix B) and OSHA-defined hazards
+
+Physical hazards are classified from data on the mixture as supplied, entered in **Physical hazard data** (shown in US mode; stored as `physical` on the formulation, so other jurisdictions can reuse it). Blank data → *not assessed*.
+
+| Class | Rule implemented |
+|---|---|
+| Aerosols (B.3.1) | Considered for Categories 1/2 when >1 % flammable components or heat of combustion ≥20 kJ/g. Category 1: ≥85 % and ≥30 kJ/g, spray ignition distance ≥75 cm, or foam ≥20 cm/≥2 s or ≥4 cm/≥7 s. Category 2: spray ≥15 cm or enclosed-space time equivalent ≤300 s/m³ or deflagration density ≤300 g/m³; foam ≥4 cm/≥2 s. Otherwise Category 3; ≤1 % and <20 kJ/g → Category 3. **Note 3:** not submitted to the flammability tests → Category 1. Not additionally classified as flammable liquid/gas or gas under pressure (note 2) |
+| Chemicals under pressure (B.3.2, new in HazCom 2024) | ≥200 kPa gauge. Category 1: ≥85 % flammable and ≥20 kJ/g; Category 3: ≤1 % and <20 kJ/g; otherwise Category 2 |
+| Flammable gases (B.2) | Category 1A: LFL ≤13 % or range ≥12 points; 1B when also LFL >6 % or burning velocity <10 cm/s and not pyrophoric/unstable (default 1A, note 2); otherwise Category 2. Pyrophoric gas by test, or untested with >1 % pyrophoric components (note 4). Chemically unstable gas A/B |
+| Oxidizing gases (B.4) | Oxidizing power >23.5 % (ISO 10156) → Category 1 |
+| Gases under pressure (B.5) | Compressed / liquefied (high or low pressure by critical temperature −50 °C / +65 °C) / refrigerated liquefied / dissolved |
+| Corrosive to metals (B.16) | Corrosion rate >6.25 mm/year at 55 °C on steel or aluminium → Category 1; a negative needs both metals |
+| Simple asphyxiant, combustible dust (1910.1200(c), C.4.31) | As recorded; combustible dust wording depends on whether it is shipped as dust or may form in processing |
+| Respiratory tract corrosivity (A.1.2.4) | Lethal effect → corrosion pictogram and statement in addition to acute inhalation toxicity; non-lethal → address under STOT (or skin/eye) |
+| HNOC (1910.1200(c), (f)(1), C.2.3.3) | One per line; SDS required, not required on the shipped-container label |
+
+"Flammable components" is the entered value, otherwise estimated from ingredient H-codes H220/H221/H224–H228 (pyrophoric, self-heating and water-reactive components excluded). Label elements follow Appendix C.4.15–C.4.18, C.4.29 and C.4.31.
+
 ### Verification record
 
 Source: 29 CFR 1910.1200 Appendix A (Mandatory), osha.gov, as amended through 91 FR 566-594 (Jan. 8, 2026) — the HazCom 2024 rule is 89 FR 44360 (May 20, 2024). Retrieved 2026-11-13; SHA-256 of the retrieved page begins `8d338a736dc14160`. Every value in `CUTOFFS` (`verification/hazcom2024.js`) was compared with these rows and has `verified: true`:
@@ -86,6 +104,19 @@ Source: 29 CFR 1910.1200 Appendix A (Mandatory), osha.gov, as amended through 91
 | A.8.3.4.5 | Category 3: 20 % additive per endpoint, relevant ingredients ≥1 % | `stotCategory3Sum` |
 | A.10.3.3 | Σ Category 1 ≥10 % and kinematic viscosity ≤20.5 mm²/s at 40 °C | `aspiration*` |
 
+Appendix B and C rows checked against the same retrieval (osha.gov Appendices B and C; main section definitions from eCFR, current text):
+
+| Table / paragraph | Row (as published) |
+|---|---|
+| B.2.1 | 1A: ignitable at ≤13 % in air or range ≥12 points; pyrophoric gas ≤54 °C; chemically unstable A (20 °C, 101.3 kPa) / B (higher T or p). 1B: meets 1A, not pyrophoric or unstable, LFL >6 % or burning velocity <10 cm/s. 2: other flammable range. Notes 2 and 4 |
+| B.3.1 (Table B.3.1, notes 1–3) | as in the table above |
+| B.3.2 (Table B.3.2) | Category 1 ≥85 % and ≥20 kJ/g; 2: >1 % and <20 kJ/g, or <85 % and ≥20 kJ/g; 3: ≤1 % and <20 kJ/g; 200 kPa gauge |
+| B.4.1 | oxidizing power >23.5 % (ISO 10156) |
+| B.5.1 | compressed (critical temperature ≤−50 °C), liquefied high (−50 to +65 °C) / low (>+65 °C), refrigerated, dissolved |
+| B.16.1 | >6.25 mm/year at 55 °C on steel or aluminium |
+| C.4.15–C.4.18, C.4.29, C.4.31 | signal words, pictograms and hazard statements as implemented (e.g. Aerosol 3 and Flammable Gas 2: no pictogram; Chemical under pressure 3: gas cylinder) |
+| 1910.1200(c) | definitions of combustible dust, simple asphyxiant, HNOC; (f)(1) HNOCs need not be on shipped-container labels |
+
 Two apparent typographical errors in the published tables are read in line with the surrounding text: Table A.3.3 prints "≥1% but >3%" (read as <3 %), and Table A.3.4 prints "Acid with pH >2" (read as ≤2, as in A.3.3.1.2 and Table A.2.4).
 
 Corrections made when the text was checked (the earlier provisional values were written without access to it): sensitizer Sub-category 1B 1.0 % (gas 0.2 %), not 0.1 %; STOT Category 1 ingredients classify the mixture as Category 1 from 1.0 %, not 10 %; skin sub-categories are cumulative; sensitizer and CMR mixtures are classified "Category 1", not by ingredient sub-category.
@@ -94,7 +125,7 @@ To re-verify after an OSHA amendment: compare each table above with the amended 
 
 ## Explicitly not implemented
 
-Corrosivity to the respiratory tract (A.1.2.4, new in HazCom 2024), physical hazards other than flammable liquids (including aerosols, chemicals under pressure and desensitized explosives), combustible dust, simple asphyxiants, HNOCs, hazards from changes in physical form or chemical reactions during use, tested-mixture data and bridging principles, and full Appendix C label/Appendix D SDS outputs. The US result explicitly enumerates omitted groups. No US-compliant final label or SDS is produced.
+Explosives (B.1), flammable solids (B.7), self-reactive chemicals (B.8), pyrophoric liquids and solids (B.9–B.10), self-heating chemicals (B.11), water-reactive chemicals (B.12), oxidizing liquids and solids (B.13–B.14), organic peroxides (B.15) and desensitized explosives (B.17); hazards from changes in physical form or chemical reactions during use, tested-mixture data and bridging principles, and full Appendix C label/Appendix D SDS outputs. The US result explicitly enumerates omitted groups. No US-compliant final label or SDS is produced.
 
 **OSHA's HazCom does not require environmental hazard classification.** EU CLP aquatic, ED, PBT, PMT and ozone classifications must not automatically appear as US OSHA classifications. Other US environmental legislation may have separate requirements.
 
@@ -105,6 +136,7 @@ Run:
 npm test
 node verification/test_us_hazcom2024.js
 node verification/test_us_hazcom2024_health.js
+node verification/test_us_hazcom2024_physical.js
 ```
 
 Tested scenarios include flash point/boiling point boundaries, Category 4, unknown ATE >10%, formula conversion, dilution vs undiluted-category edge cases, form-specific inhalation and exclusion of EU-only outcomes.
