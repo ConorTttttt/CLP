@@ -144,6 +144,36 @@ class EULegalTests(unittest.TestCase):
         with self.assertRaises(InvalidAssessment):
             assess(p,RULES)
 
+    def test_wrong_type_is_missing_data_not_a_negative(self):
+        # Text booleans ("true") are common from forms and spreadsheets. They
+        # must not silently turn REQUIRED child-resistant/tactile rules into
+        # NOT_TRIGGERED; they must surface as missing data.
+        def stringify(x):
+            if isinstance(x, dict):
+                return {k: stringify(v) for k, v in x.items()}
+            if isinstance(x, list):
+                return [stringify(v) for v in x]
+            return 'true' if x is True else 'false' if x is False else x
+        baseline = assess(PRODUCT, RULES)
+        self.assertEqual(baseline['child_resistant_fastening'], 'REQUIRED_BY_ONE_OR_MORE_RULES')
+        p = stringify(copy.deepcopy(PRODUCT))
+        p['classification']['approved_by_user'] = True
+        out = assess(p, RULES)
+        for issue in ('child_resistant_fastening', 'tactile_warning'):
+            self.assertEqual(out[issue], 'UNDETERMINED_MISSING_FACTS_AND_PARTIAL_RULESET', issue)
+        required = [d['id'] for d in baseline['decisions'] if d['status'] == 'REQUIRED']
+        for rule_id in required:
+            self.assertEqual(status(out, rule_id), 'INSUFFICIENT_DATA', rule_id)
+        mismatches = [c for d in out['decisions'] for c in d['conditions'] if 'type_mismatch' in c]
+        self.assertTrue(mismatches)
+        self.assertEqual(mismatches[0]['type_mismatch'], 'expected bool, got str')
+
+    def test_int_and_float_still_compare_equal(self):
+        from engine import same_kind
+        self.assertTrue(same_kind(125, 125.0))
+        self.assertFalse(same_kind(True, 1))
+        self.assertFalse(same_kind('true', True))
+
 
 if __name__=='__main__':
     unittest.main()

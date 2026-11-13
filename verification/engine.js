@@ -26,6 +26,10 @@
     return isFinite(n) ? n : NaN;
   };
   const has = (x) => typeof x === 'number' && isFinite(x);
+  // Ingredient concentrations: one number with an optional trailing "%"
+  // ("5", "5 %", "0,5%"). Anything else ("<1", "1-5", "5 ppm") is NaN and is
+  // reported by normalise(); it is never silently treated as "no ingredient".
+  const parsePct = (x) => num(typeof x === 'string' ? x.trim().replace(/\s*%$/, '') : x);
 
 
   // A recorded numerical input is not silently replaced by a default when
@@ -37,6 +41,13 @@
     return validPositive(value) && num(value) <= 100 ? num(value) : NaN;
   };
   const concentrationLimit = (i, key, generic) => has(sclValue(i,key)) ? sclValue(i,key) : generic;
+  // An SCL that was entered but is not a valid percentage (<= 0 or > 100) is
+  // never applied: every hazard class falls back to its generic limit and the
+  // trail says so, rather than letting e.g. "150" switch a classification off.
+  const sclEnteredButInvalid = (ingredient, key) =>
+    entered((ingredient.scl || {})[key]) && !has(sclValue(ingredient, key));
+  const invalidSclNote = (ingredient, key, generic) =>
+    `${nm(ingredient)}: entered SCL ${JSON.stringify((ingredient.scl || {})[key])} for ${key} is not a valid percentage (greater than 0 and at most 100) and was ignored; the generic limit ${fmt(generic)} % was applied.`;
   // Annex I 4.1.3.5.5.5, Table 4.1.3: M-factors are powers of ten (1, 10, 100, ...).
   // Any other value (e.g. 5) is invalid input, never a usable multiplier.
   const isValidMFactor = (raw) => {
@@ -303,6 +314,36 @@
 
   function acute(mix, ings, ctx) {
     const H = hz('acute', 'Acute toxicity', 'Annex I 3.1.3.6 (cons. pp.138–139); Table 3.1.1 (p.134); conversions Table 3.1.2 (pp.139–140); cut-offs Table 1.1 (p.68)');
+    // A gaseous mixture is assessed for inhalation as a gas, in ppmV (Table 3.1.2).
+    // Ingredients default to the "vapour" form, so category-only or unknown inhalation
+    // entries are re-assessed with the gas values. An ATE recorded in mg/l cannot be
+    // converted to ppmV without the substance's molar mass: it is flagged, never
+    // silently compared against vapour limits.
+    let gasUnitIssue = false;
+    if (mix.state === 'gas') {
+      const converted = [];
+      ings = ings.map((i) => {
+        const inh = i.acute.inh;
+        if (inh.form === 'gas') return i;
+        if (validPositive(inh.ate)) {
+          gasUnitIssue = true;
+          const detail = nm(i) + ': the mixture is a gas, but the inhalation ATE ' + fmt(num(inh.ate)) +
+            ' is recorded as ' + inh.form + ' (mg/l). Convert it to ppmV and set the inhalation form to gas; ' +
+            'the inhalation result is not reliable until then.';
+          H.notes.push(detail); ctx.warnings.push('DATA VALIDATION: ' + detail);
+          return i;
+        }
+        const hasCat = ['1', '2', '3', '4'].includes(String(inh.cat));
+        if (!hasCat && !(i.acute.unknown || inh.unknown)) return i;
+        converted.push(nm(i));
+        return Object.assign({}, i, { acute: Object.assign({}, i.acute, { inh: Object.assign({}, inh, { form: 'gas' }) }) });
+      });
+      if (converted.length) {
+        const detail = 'Gaseous mixture: inhalation entries for ' + converted.join(', ') +
+          ' were recorded as vapour or dust/mist and are assessed as a gas (ppmV conversion values, Table 3.1.2). Set their inhalation form to gas.';
+        H.notes.push(detail); ctx.warnings.push('DATA REVIEW: ' + detail);
+      }
+    }
     const unknown = ings.filter((i) => {
       if (!ge(i.pct,1)) return false;
       return ['oral','dermal','inh'].some(key => {
@@ -400,6 +441,7 @@
     });
     if (H.outcomes.length > 1) H.notes.push('Classified for more than one route: the pictogram and signal word reflect the most severe category and all hazard statements are used (3.1.3.2).');
     if (!H.steps.length) H.steps.push('No acute-toxicity route could be calculated.');
+    if (gasUnitIssue && H.status !== 'classified') H.status = 'incomplete';
     return H;
   }
 
@@ -565,9 +607,11 @@
     ings.forEach((i) => {
       const cat = def.get(i); if (!cat) return;
       const gcl = def.gcl(cat, mix); if (gcl === undefined) return;
-      const scl = num((i.scl || {})[def.sclKey || def.id]);
-      const lim = has(scl) && scl > 0 ? scl : gcl;
-      const isScl = lim !== gcl;
+      const key = def.sclKey || def.id;
+      const scl = sclValue(i, key);
+      const lim = has(scl) ? scl : gcl;
+      const isScl = has(scl);
+      if (sclEnteredButInvalid(i, key)) H.notes.push(invalidSclNote(i, key, gcl));
       const ok = ge(i.pct, lim);
       const line = `${nm(i)} [${def.catLabel(cat)}] ${fmt(i.pct)} % ${ok ? '≥' : '<'} ${fmt(lim)} % (${isScl ? 'specific concentration limit' : 'generic limit'})`;
       H.steps.push(line + (ok ? ' → triggers' : ''));
@@ -605,8 +649,8 @@
       const named = [];
       ings.forEach((i) => {
         const c = i[f]; if (!c) return;
-        const scl = num((i.scl || {})[f]);
-        const lim = has(scl) && scl > 0 ? scl / 10 : el[c];
+        const scl = sclValue(i, f);
+        const lim = has(scl) ? scl / 10 : el[c];
         if (ge(i.pct, lim)) {
           const driver = H.status === 'classified' && (H.triggeredIngredients || []).includes(i);
           named.push({ i, c, lim, driver });
@@ -646,12 +690,14 @@
     const assess = (field, name) => {
       let best = '';
       ings.filter((i) => rank[i[field]]).forEach((i) => {
-        const exact = num((i.scl || {})[field]), common = num((i.scl || {}).repro);
-        const lim = exact > 0 ? exact : common > 0 ? common : genericLimit[i[field]];
+        const exact = sclValue(i, field), common = sclValue(i, 'repro');
+        const lim = has(exact) ? exact : has(common) ? common : genericLimit[i[field]];
         const triggered = ge(i.pct, lim);
+        [field, 'repro'].filter((key, n, keys) => keys.indexOf(key) === n && sclEnteredButInvalid(i, key))
+          .forEach((key) => r.notes.push(invalidSclNote(i, key, genericLimit[i[field]])));
         r.steps.push(name + ': ' + nm(i) + ' Repr. ' + i[field] + ' ' + fmt(i.pct) +
           ' % ' + (triggered ? '≥' : '<') + ' ' + fmt(lim) + ' % (' +
-          (exact > 0 ? 'effect-specific SCL' : common > 0 ? 'common reproductive SCL' : 'generic limit') +
+          (has(exact) ? 'effect-specific SCL' : has(common) ? 'common reproductive SCL' : 'generic limit') +
           ')' + (triggered ? ' → triggers' : ''));
         if (triggered && (!best || rank[i[field]] > rank[best])) best = i[field];
       });
@@ -701,7 +747,8 @@
       const trig1 = [], trig2 = [];
       ings.forEach((i) => {
         const c = i[f]; if (c !== '1' && c !== '2') return;
-        const scl = num((i.scl || {})[f]); const useScl = has(scl) && scl > 0;
+        const scl = sclValue(i, f); const useScl = has(scl);
+        if (sclEnteredButInvalid(i, f)) H.notes.push(invalidSclNote(i, f, 10));
         if (c === '1') {
           const l1 = useScl ? scl : 10;
           // Annex VI entries may give a banded SCL for the Category 2 range of a
@@ -1254,6 +1301,7 @@
   function normalise(mix) {
     const m = Object.assign({ state: 'liquid' }, mix || {});
     const warnings = [];
+    const pctReported = new Set();
     const ings = (m.ingredients || []).map((raw) => {
       const i = Object.assign(blankIngredient(), raw);
       const id = (raw.name || raw.cas || 'Unnamed ingredient').trim();
@@ -1300,7 +1348,16 @@
       i.acute = Object.assign({}, blankIngredient().acute, raw.acute || {});
       ['oral', 'dermal', 'inh'].forEach((r) => (i.acute[r] = Object.assign({}, blankIngredient().acute[r], (raw.acute || {})[r] || {})));
       i.scl = Object.assign({}, raw.scl || {});
-      i.pct = num(raw.pct);
+      i.pct = parsePct(raw.pct);
+      const pctText = raw.pct === null || raw.pct === undefined ? '' : String(raw.pct).trim();
+      if (pctText !== '' && !has(i.pct)) {
+        pctReported.add(i);
+        warnings.push('DATA VALIDATION: '+id+' — concentration '+JSON.stringify(raw.pct)+
+          ' could not be read, so this ingredient is NOT included in the calculation. Enter a single number in % (e.g. 5 or 5 %); for a range, enter the value you can justify (normally the upper limit).');
+      } else if (has(i.pct) && i.pct < 0) {
+        pctReported.add(i);
+        invalid('concentration', raw.pct, 'Concentration must be greater than 0 %; this ingredient is NOT included in the calculation.');
+      }
       // Re-derive source H-code differentiations without overwriting manual category edits.
       i.hcodeDetails = parseHCodeTokens(i.hcodes).codes;
       // Recover differentiated effects from legacy saved formulations, preserving a
@@ -1320,7 +1377,14 @@
       }
       return i;
     }).filter((i) => {
-      if (!has(i.pct) || i.pct <= 0) { if ((i.name || '').trim() || i.pct === 0) warnings.push(`Ingredient "${nm(i)}" has no concentration > 0 and is ignored.`); return false; }
+      if (!has(i.pct) || i.pct <= 0) {
+        // Warn for any row that identifies an ingredient (name, CAS/EC or H-codes),
+        // not only named rows, unless a validation error was already reported.
+        const label = String(i.name || i.cas || '').trim();
+        if (!pctReported.has(i) && (label || i.pct === 0 || String(i.hcodes || '').trim()))
+          warnings.push(`Ingredient "${label || nm(i)}" has no concentration > 0 and is ignored.`);
+        return false;
+      }
       return true;
     });
     return { m, ings, warnings };
@@ -1553,5 +1617,5 @@
     return t.replace(/\u0000(\d+)\u0000/g, (_, n) => pairs[+n][1]);
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor, parsePct };
 });

@@ -28,6 +28,14 @@ def get_field(data: dict[str, Any], path: str) -> tuple[bool, Any]:
     return obj is not None, obj
 
 
+def same_kind(actual: Any, expected: Any) -> bool:
+    """True when the values can be compared: numbers with numbers (a bool is not a
+    number here), anything else only with exactly the same type."""
+    def number(x: Any) -> bool:
+        return type(x) in (int, float)
+    return (number(actual) and number(expected)) or type(actual) is type(expected)
+
+
 def condition(data: dict[str, Any], test: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     exists, actual = get_field(data, test["field"])
     evidence = {
@@ -38,7 +46,13 @@ def condition(data: dict[str, Any], test: dict[str, Any]) -> tuple[str, dict[str
         return "UNKNOWN", evidence
     op, expected = test["op"], test["value"]
     if op == "eq":
-        result = type(actual) is type(expected) and actual == expected
+        # A value of the wrong type (e.g. the string "true" for true) is missing
+        # information, not a "no": it must never turn a REQUIRED rule into a
+        # negative result.
+        if not same_kind(actual, expected):
+            evidence["type_mismatch"] = f"expected {type(expected).__name__}, got {type(actual).__name__}"
+            return "UNKNOWN", evidence
+        result = actual == expected
     elif op == "gte":
         if type(actual) not in (int, float) or type(expected) not in (int, float):
             return "UNKNOWN", evidence

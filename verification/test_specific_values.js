@@ -230,5 +230,71 @@ const anon=C.report(many,C.classify(many),{anonymise:true});
 check('More than 26 ingredients get distinct labels',anon.includes('Ingredient Z:')&&anon.includes('Ingredient AA:')&&anon.includes('Ingredient AB:'));
 check('No raw names with many ingredients',!/Comp\d+X/.test(anon));
 }
+// An invalid SCL (<= 0 or > 100) must never switch a classification off: every
+// hazard class falls back to its generic limit, as skin/eye already did.
+{
+const cases=[
+  [{carc:'1B'},'carc','Carc. 1B'],[{muta:'1B'},'muta','Muta. 1B'],[{skinSens:'1'},'skinSens','Skin Sens. 1'],
+  [{respSens:'1'},'respSens','Resp. Sens. 1'],[{edHH:'1'},'edHH','ED HH 1'],[{reproDev:'1B'},'reproDev','Repr. 1B'],
+  [{reproFert:'1B'},'repro','Repr. 1B']];
+for (const [hazard,key,expected] of cases) for (const bad of ['150','1000','-1']) {
+  const x=single(5,{...hazard,scl:{[key]:bad}});
+  check(expected+' with invalid SCL '+bad+' still classified',label(x,expected));
+  check(expected+' with invalid SCL '+bad+' flagged',warn(x,'invalid SCL '+key));
+}
+for (const [stot,expected] of [['stotRE','STOT RE 1'],['stotSE','STOT SE 1']]) {
+  const x=single(15,{[stot]:'1',scl:{[stot]:'150'}});
+  check(expected+' with SCL 150 is not downgraded',label(x,expected)&&!label(x,expected.replace(' 1',' 2')));
+  check(expected+' invalid SCL explained in the trail',H(x,stot).notes.some(n=>/was ignored; the generic limit 10 % was applied/.test(n)));
+}
+const t=H(single(5,{carc:'1B',scl:{carc:'150'}}),'carc');
+check('Invalid SCL explained in the carcinogenicity trail',t.notes.some(n=>/not a valid percentage/.test(n)));
+check('Trail shows the generic limit was used',t.steps.some(s=>/0\.1 % \(generic limit\)/.test(s)));
+check('A valid SCL above the generic limit is still honoured',!label(single(5,{carc:'1B',scl:{carc:10}}),'Carc. 1B'));
+const e=C.classify({ingredients:[{name:'sens',pct:0.15,skinSens:'1',scl:{skinSens:'150'}},{name:'w',pct:99.85}]});
+check('Invalid sensitiser SCL does not suppress EUH208 elicitation',e.label.euhStatements.some(x=>x.code==='EUH208'));
+}
+// Concentrations: accept a trailing "%", report anything else; never drop silently.
+{
+check('parsePct "5%"',C.parsePct('5%')===5);
+check('parsePct " 5 % "',C.parsePct(' 5 % ')===5);
+check('parsePct "0,5%"',C.parsePct('0,5%')===0.5);
+check('parsePct number',C.parsePct(12.5)===12.5);
+for (const bad of ['<1','1-5','5 ppm','%','five']) check('parsePct rejects '+JSON.stringify(bad),Number.isNaN(C.parsePct(bad)));
+const both=C.classify({ingredients:[{name:'',cas:'50-00-0',pct:'5%',carc:'1B'},{name:'w',pct:'95 %'}]});
+check('"5%" and "95 %" are read as concentrations',label(both,'Carc. 1B')&&!warn(both,'add up to'));
+for (const bad of ['<1','1-5']) {
+  const x=C.classify({ingredients:[{name:'',cas:'50-00-0',pct:bad,carc:'1B'},{name:'w',pct:95}]});
+  check('Unreadable concentration '+bad+' on a CAS-only row is reported',warn(x,'DATA VALIDATION: 50-00-0 — concentration "'+bad+'" could not be read'));
+  check('Unreadable concentration '+bad+' says the ingredient is excluded',warn(x,'NOT included in the calculation'));
+  check('No duplicate "no concentration" message for '+bad,!warn(x,'has no concentration > 0'));
+}
+const neg=C.classify({ingredients:[{name:'n',pct:-5,carc:'1B'},{name:'w',pct:100}]});
+check('Negative concentration reported',warn(neg,'invalid concentration'));
+const cas=C.classify({ingredients:[{name:'',cas:'64-17-5',pct:'',hcodes:'H225'},{name:'w',pct:100}]});
+check('CAS-only row with no concentration is reported',warn(cas,'Ingredient "64-17-5" has no concentration > 0'));
+const blank=C.classify({ingredients:[{name:'',cas:'',pct:''},{name:'w',pct:100}]});
+check('A completely blank row is not reported',!blank.warnings.some(w=>/no concentration|could not be read/.test(w)));
+}
+// Gas mixtures: inhalation is assessed in ppmV (gas), not with vapour values.
+{
+const gasIng=(pct,extra)=>{const i=C.blankIngredient();Object.assign(i,{name:'toxic gas',pct});C.applyHCodes(i,'H332');Object.assign(i.acute.inh,extra||{});return i;};
+const n2={name:'nitrogen',pct:50};
+const x=C.classify({state:'gas',ingredients:[gasIng(50),n2]});
+check('Gas mixture: 50 % Acute Tox. 4 gas ingredient gives Acute Tox. 4',label(x,'Acute Tox. 4 (inhalation)'));
+check('Gas mixture: calculation uses gas ppmV values',H(x,'acute').steps.some(s=>/inhalation \(gas\) \(ppmV\)/.test(s)&&s.includes('4500')));
+check('Gas mixture: vapour-form entry reported for correction',warn(x,'DATA REVIEW: Gaseous mixture'));
+const y=C.classify({state:'gas',ingredients:[gasIng(50,{form:'gas'}),n2]});
+check('Gas mixture: explicit gas form unchanged and not flagged',label(y,'Acute Tox. 4 (inhalation)')&&!warn(y,'Gaseous mixture'));
+const z=C.classify({state:'gas',ingredients:[gasIng(50,{cat:'',ate:'5'}),n2]});
+check('Gas mixture: mg/l ATE flagged for ppmV conversion',warn(z,'DATA VALIDATION: toxic gas: the mixture is a gas'));
+const z2=C.classify({state:'gas',ingredients:[gasIng(5,{cat:'',ate:'5'}),{name:'nitrogen',pct:95}]});
+check('Gas mixture: unconverted ATE without a classification is incomplete',H(z2,'acute').status==='incomplete');
+const u=C.blankIngredient();Object.assign(u,{name:'unknown gas',pct:20});u.acute.unknown=true;
+const g=C.classify({state:'gas',ingredients:[gasIng(60,{form:'gas'}),u,{name:'nitrogen',pct:20}]});
+check('Gas mixture: unknown-toxicity ingredient counted in the gas route',H(g,'acute').steps.some(s=>/inhalation \(gas\) unknown data: unknown gas/.test(s)));
+const l=C.classify({state:'liquid',ingredients:[gasIng(50),{name:'water',pct:50}]});
+check('Liquid mixture: vapour assessment unchanged',!label(l,'Acute Tox. 4 (inhalation)')&&!warn(l,'Gaseous mixture'));
+}
 console.log('\n'+pass+' specific-value checks passed, '+fail+' failed');
 process.exit(fail?1:0);

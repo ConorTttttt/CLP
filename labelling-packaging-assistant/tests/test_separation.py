@@ -73,5 +73,18 @@ class SeparationTests(unittest.TestCase):
         with self.assertRaises(UnsupportedAssessment):
             evaluate(p, self.gb, 'GB')
 
+    def test_text_boolean_is_missing_data_not_a_negative(self):
+        baseline = evaluate(self.eu_product, self.eu, 'EU')
+        self.assertEqual(baseline['child_resistant_fastening_summary'], 'REQUIRED_BY_DEMONSTRATED_RULE')
+        for product, rules, system in ((self.eu_product, self.eu, 'EU'), (self.gb_product, self.gb, 'GB')):
+            p = copy.deepcopy(product)
+            p['general_public'] = 'true'
+            result = evaluate(p, rules, system)
+            self.assertNotEqual(result['child_resistant_fastening_summary'], 'REQUIRED_BY_DEMONSTRATED_RULE')
+            self.assertEqual(result['child_resistant_fastening_summary'],
+                             'UNDETERMINED_MISSING_INPUTS_AND_INCOMPLETE_RULES', system)
+            flagged = [e for d in result['decisions'] for e in d['evidence'] if 'type_mismatch' in e]
+            self.assertTrue(flagged, system)
+
 if __name__ == '__main__':
     unittest.main()

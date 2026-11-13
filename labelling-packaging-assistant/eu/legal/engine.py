@@ -26,6 +26,14 @@ def lookup(data, path):
     return current is not None, current
 
 
+def same_kind(actual, expected):
+    """True when the values can be compared: numbers with numbers (a bool is not a
+    number here), anything else only with exactly the same type."""
+    def number(x):
+        return type(x) in (int, float)
+    return (number(actual) and number(expected)) or type(actual) is type(expected)
+
+
 def predicate(data, clause):
     valid, actual = lookup(data, clause['field'])
     evidence = {'field': clause['field'], 'operator': clause['op'], 'expected': clause['value'], 'actual': actual if valid else '<missing>'}
@@ -33,7 +41,13 @@ def predicate(data, clause):
         return 'UNKNOWN', evidence
     op, expected = clause['op'], clause['value']
     if op == 'eq':
-        result = type(actual) is type(expected) and actual == expected
+        # A value of the wrong type (e.g. the string "true" for true) is missing
+        # information, not a "no": it must never turn a REQUIRED rule into
+        # NOT_TRIGGERED.
+        if not same_kind(actual, expected):
+            evidence['type_mismatch'] = f'expected {type(expected).__name__}, got {type(actual).__name__}'
+            return 'UNKNOWN', evidence
+        result = actual == expected
     elif op in ('gt', 'gte'):
         if type(actual) not in (int, float) or type(expected) not in (int, float):
             return 'UNKNOWN', evidence
