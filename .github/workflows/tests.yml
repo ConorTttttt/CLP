@@ -11,3 +11,14 @@ jobs:
         with:
           node-version: 22
       - run: npm test
+  # Draft rule sets (e.g. the EU/GB physical hazard rules) must be reviewed and
+  # signed off before they can be merged into main. See verification/review_gate.js.
+  review-gate:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node verification/review_gate.js

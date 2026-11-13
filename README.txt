@@ -50,6 +50,14 @@ verification/hazcom2024.js (between BEGIN/END EMBEDDED markers) so it works as o
 file. Edit the files in verification/, then run "npm run sync:engines"; tests fail if a copy
 is out of date. Then run "npm run build:mobile" for the mobile version.
 
+EU / GB CLP PHYSICAL HAZARDS — DRAFT, NEEDS REVIEW (NOT APPROVED FOR MAIN)
+The "Physical hazard data" panel also feeds draft EU/GB CLP Annex I Part 2 rules (explosives,
+flammable gases, aerosols, oxidising gases, gases under pressure, flammable solids, self-reactive,
+pyrophoric, self-heating, water-reactive, oxidisers, organic peroxides, corrosive to metals,
+desensitised explosives). Every result is marked DRAFT. The CI "review-gate" job fails pull
+requests into main until PHYSICAL_RULES is signed off. Checklist: docs/clp_physical_hazards_draft.md
+(or run: npm run check:review).
+
 MOBILE VERSION
 mobile/index.html is a phone-friendly, local-only build of this calculator: same engine
 and features, no Gemini, and no network access (enforced by a Content-Security-Policy).

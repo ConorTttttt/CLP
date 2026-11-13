@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mbTgtmrntSgFFob3UEYukxGTY+odKZDezIetXLvz1BM=' 'sha256-SQ82080u14QZFHTwTcIfXuyECzfEc8uuVl5LstL+urI=' 'sha256-uPI013AD/AXooeALrsrVepxvfgaCNlH06+O7R4bTqNQ=' 'sha256-yrr2/y+EwDtGHFUO1pbmwDmehk4WxECUmmOod7TQaZw='; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'; worker-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-mbTgtmrntSgFFob3UEYukxGTY+odKZDezIetXLvz1BM=' 'sha256-cXPPbmYLAjeOdKh8xc9Xj50XuDELXeB3qaYu9dp4Bjw=' 'sha256-B0uuuAr6/+7ZilAEnpozCJVifvr4dTHL7yd6F7kM4R8=' 'sha256-yrr2/y+EwDtGHFUO1pbmwDmehk4WxECUmmOod7TQaZw='; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'; worker-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1565c0">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -337,6 +337,9 @@ header .sub{font-size:12px}
 .jurisdiction-card ul{margin:6px 0 0;padding-left:18px}
 .jurisdiction-card .jur-same{color:var(--mute)}
 .us-summary{font-size:13px;margin:10px 0;line-height:1.5}
+.draft-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;background:#fff1c7;color:#6b4b00;border:1px solid #e0b84a;font-size:11px;font-weight:700;vertical-align:middle}
+.draft-alert{margin:0 0 6px}
+@media(prefers-color-scheme:dark){.draft-badge{background:#4a3a0e;color:#ffd77a;border-color:#8a6d1c}}
 .phys-grid fieldset{border:1px solid var(--line);border-radius:9px;margin:10px 0 0;padding:8px 12px 12px}
 .phys-grid legend{font-size:12px;font-weight:700;color:var(--mute);padding:0 4px}
 .phys-grid select,.phys-grid input{width:100%}
@@ -649,9 +652,10 @@ details>summary{min-height:40px}
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="mart26"> Omit optional Article 26 physical pictograms (GHS02/GHS03/GHS04, where eligible; mandatory rules always apply)</label>
   </div>
 
-  <details class="card disclosure-card" id="physicalsettings" hidden>
-    <summary>Physical hazard data <small>US HazCom: test results for the mixture as supplied, and OSHA-defined hazards</small></summary>
+  <details class="card disclosure-card" id="physicalsettings">
+    <summary>Physical hazard data <small>Test results for the mixture as supplied (EU/GB CLP Annex I Part 2, US HazCom Appendix B)</small></summary>
     <div class="card-inner phys-grid">
+      <div class="alert draft-alert" id="phys-draft-note" role="note"><b>Draft: needs regulatory review.</b> In EU CLP and GB CLP mode, physical classifications from these data use draft Annex I Part 2 rules that have not been reviewed and are not yet approved for main. Every result they produce is marked DRAFT. (The US HazCom rules were checked against the published regulation.)</div>
       <div class="hint">Physical hazards come from data on the mixture itself, not from ingredients. Leave a field blank if no data: that class is then reported as <i>not assessed</i>, never as non-hazardous.</div>
       <fieldset><legend>Packaging (Appendix B.3)</legend>
         <div class="g g3">
@@ -729,7 +733,7 @@ details>summary{min-height:40px}
           <div><label for="phys-h2o2">Hydrogen peroxide, %</label><input id="phys-h2o2" data-phys="opHydrogenPeroxide" inputmode="decimal"></div>
         </div>
       </fieldset>
-      <fieldset><legend>OSHA-defined hazards and respiratory tract</legend>
+      <fieldset><legend>OSHA-defined hazards and respiratory tract (US HazCom only)</legend>
         <div class="g g3">
           <div><label for="phys-asph">Simple asphyxiant</label><select id="phys-asph" data-phys="simpleAsphyxiant"><option value="">Not assessed</option><option value="yes">Yes: displaces oxygen</option><option value="no">No</option></select></div>
           <div><label for="phys-dust">Combustible dust</label><select id="phys-dust" data-phys="combustibleDust"><option value="">Not assessed</option><option value="dust">Yes: shipped as a dust</option><option value="may_form">May form dust in processing/handling</option><option value="no">No</option></select></div>
@@ -1775,6 +1779,167 @@ function mobilePictogramSrc(code) { return MOBILE_PICTOGRAMS[code] || ""; }
     return H;
   }
 
+  /* ---------------- Annex I Part 2 physical hazards from mixture test data — DRAFT ----------------
+     STATUS: DRAFT, NOT YET REVIEWED. Do not merge into main until a regulatory reviewer has
+     checked every item in PHYSICAL_RULES.reviewItems and set status to 'reviewed'. The CI
+     review gate (verification/review_gate.js) fails pull requests into main while it is draft.
+     Inputs: mix.physical, the same test-data record the US HazCom engine reads. */
+  const PHYSICAL_RULES = Object.freeze({
+    id: 'clp-annex-i-part-2-physical',
+    status: 'draft-needs-review',
+    scope: 'EU CLP and GB CLP Annex I Part 2 physical hazard classes 2.1–2.5 and 2.7–2.17 (2.6 flammable liquids was already implemented)',
+    source: 'GB CLP Annex I Part 2 (retained Regulation (EC) No 1272/2008), legislation.gov.uk data.xml, last modified 2026-06-10, retrieved 2026-11-13. The EU consolidated text (EUR-Lex) could not be retrieved in the session that wrote these rules.',
+    reviewItems: Object.freeze([
+      'EU: confirm the current consolidated EU CLP Annex I Part 2 matches the GB text used here (EUR-Lex was not reachable), including any EU amendments to Part 2 adopted after 31 December 2020.',
+      'EU: confirm whether EU CLP now contains a "chemicals under pressure" class (GHS Rev. 7). It is not in the GB text, so it is not applied for EU or GB.',
+      'EU: confirm whether EU CLP explosives still use Divisions 1.1–1.6 or have moved to the GHS Rev. 8 categories.',
+      'Aerosols: the Category 1/2/3 thresholds (≥85 % and ≥30 kJ/g; ignition distance ≥75 cm / ≥15 cm; enclosed space ≤300 s/m³ or ≤300 g/m³; foam 20 cm/2 s, 4 cm/7 s, 4 cm/2 s) are in Figures 2.3.1(a)–(c), which are images in the source; they were taken from the GHS decision logic and must be checked against the figures.',
+      'Pictogram codes (GHS01–GHS05) for physical classes are shown as images in several source label tables; they follow the standard CLP allocation and must be checked against Tables 2.1.2–2.17.2.',
+      'Aerosol flammable components: CLP counts any liquid with a flash point ≤93 °C (2.3.2.1); the estimate from ingredient H-codes cannot see unclassified liquids with a flash point of 60–93 °C.',
+      'Interaction rules (aerosols not also flammable liquid/gas/gas under pressure; desensitised explosives not also explosive or flammable liquid/solid; self-reactive exclusions; pyrophorics not self-heating) and Article 26 pictogram precedence for the new classes.'
+    ])
+  });
+  const PHYS_DRAFT_NOTE = 'DRAFT rule (not yet reviewed): verify against the official Annex I Part 2 text before use.';
+  function physicalCLP(m, ings, ctx, profile) {
+    const p = (m.physical && typeof m.physical === 'object') ? m.physical : {};
+    const val = (k) => num(typeof p[k] === 'string' ? p[k].trim().replace(/\s*%$/, '') : p[k]);
+    const pick = (k) => String(p[k] === undefined || p[k] === null ? '' : p[k]).trim();
+    const pack = pick('packaging'), st = m.state || 'liquid';
+    const list = [];
+    const H = (id, name, ref) => { const h = hz(id, name, 'Annex I ' + ref + ' — DRAFT, needs review'); h.draft = true; list.push(h); return h; };
+    const res = (h, label, codes, signal, picto) => { h.status = 'classified'; h.outcomes.push(out(label, codes, signal, picto, { draft: true })); };
+    const na = (h, why) => { h.status = 'na'; h.steps.push(why); };
+    const missing = (h, why) => { h.status = 'nodata'; h.steps.push(why); };
+    const isGas = st === 'gas' && pack !== 'aerosol' && pack !== 'pressurized';
+    // 2.1 Explosives
+    { const h = H('pExpl', 'Explosives', '2.1, Table 2.1.1–2.1.2'); const r = pick('explosiveResult');
+      const knownExplosive = ings.some((i) => /\bH20[0-5]\b/i.test(String(i.hcodes || '')));
+      const L = { unstable: ['Unst. Expl.', 'H200', 'Danger', ['GHS01']], '1.1': ['Expl. 1.1', 'H201', 'Danger', ['GHS01']], '1.2': ['Expl. 1.2', 'H202', 'Danger', ['GHS01']], '1.3': ['Expl. 1.3', 'H203', 'Danger', ['GHS01']], '1.4': ['Expl. 1.4', 'H204', 'Warning', ['GHS01']], '1.5': ['Expl. 1.5', 'H205', 'Danger', []], '1.6': ['Expl. 1.6', '', null, []] }[r];
+      if (st === 'gas') na(h, 'Explosives are solid or liquid.');
+      else if (/^screen_/.test(r)) { if (knownExplosive) missing(h, 'An ingredient is a known explosive (H200–H205): the acceptance procedure is required; the screening exemption (2.1.4.3) cannot be used.'); else h.steps.push('Acceptance procedure need not be applied: screening exemption (2.1.4.3) recorded.'); }
+      else if (r === 'not_explosive') h.steps.push('UN acceptance procedure: not an explosive.');
+      else if (L) { h.steps.push('UN Part I result: ' + L[0] + '.'); res(h, L[0], L[1] ? [L[1]] : [], L[2], L[3]); }
+      else missing(h, 'Record the screening outcome (2.1.4.3) or the UN test result.'); }
+    // 2.17 Desensitised explosives
+    { const h = H('pDesen', 'Desensitised explosives', '2.17, Table 2.17.1'); const d = pick('desensitized'), ac = val('desensBurningRate');
+      if (st === 'gas') na(h, 'Desensitised explosives are solid or liquid.');
+      else if (d === 'no') h.steps.push('Not a desensitised explosive.');
+      else if (d !== 'yes') missing(h, 'Record whether the chemical is a desensitised explosive.');
+      else if (!has(ac)) missing(h, 'Enter the corrected burning rate Ac.');
+      else if (ac > 1200 + EPS) { h.steps.push('Ac ' + fmt(ac) + ' kg/min >1200: classify as an explosive instead (2.17.2.1).'); h.reclassify = true; }
+      else { const c = ac >= 300 - EPS ? 1 : ac >= 140 - EPS ? 2 : ac >= 60 - EPS ? 3 : 4; h.steps.push('Ac ' + fmt(ac) + ' kg/min → Category ' + c + '.');
+        res(h, 'Desen. Expl. ' + c, [c === 1 ? 'H206' : c === 4 ? 'H208' : 'H207'], c <= 2 ? 'Danger' : 'Warning', ['GHS02']); } }
+    // 2.2 Flammable gases, 2.4 oxidising gases, 2.5 gases under pressure
+    { const h = H('pFlamGas', 'Flammable gases', '2.2, Table 2.2.1'); const lfl = val('lflPct'), ufl = val('uflPct'), bv = val('burningVelocity'), fl = pick('gasFlammable'), py = pick('pyrophoricGas'), pyPct = val('pyrophoricComponentsPct'), un = pick('unstableGas');
+      if (!isGas) na(h, st === 'gas' ? 'Aerosols are not classified as flammable gases (Table 2.2.1 note 1).' : 'Mixture is not a gas.');
+      else if (fl === 'no' && !(has(lfl) && has(ufl))) h.steps.push('Not flammable in air (ISO 10156).');
+      else if (fl !== 'yes' && !(has(lfl) && has(ufl))) missing(h, 'Enter the flammability limits or whether the gas is flammable.');
+      else { let c = has(lfl) && has(ufl) ? (lfl <= 13 + EPS || ufl - lfl >= 12 - EPS ? '1A' : '2') : '1A';
+        const pyro = py === 'yes' || (py === '' && has(pyPct) && pyPct > 1 + EPS), unst = un === 'A' || un === 'B';
+        if (c === '1A' && !pyro && !unst && ((has(lfl) && lfl > 6 + EPS) || (has(bv) && bv < 10 - EPS))) c = '1B';
+        h.steps.push((has(lfl) ? 'Flammable range ' + fmt(lfl) + '–' + fmt(ufl) + '% → ' : 'Flammable, no limits → default ') + 'Category ' + c + (pyro ? ', pyrophoric gas' : '') + (unst ? ', chemically unstable gas ' + un : '') + ' (Table 2.2.1).');
+        const codes = [c === '1A' ? 'H220' : 'H221']; if (pyro) codes.push('H232'); if (un === 'A') codes.push('H230'); if (un === 'B') codes.push('H231');
+        res(h, 'Flam. Gas ' + c, codes, c === '2' ? 'Warning' : 'Danger', c === '2' ? [] : ['GHS02']);
+        if (pyro) h.outcomes.push(out('Pyr. Gas', [], 'Danger', ['GHS02'], { draft: true }));
+        if (unst) h.outcomes.push(out('Chem. Unst. Gas ' + un, [], 'Danger', ['GHS02'], { draft: true })); } }
+    { const h = H('pOxGas', 'Oxidising gases', '2.4, Table 2.4.1'); const op = val('oxidizingPowerPct');
+      if (!isGas) na(h, 'Mixture is not a gas.'); else if (!has(op)) missing(h, 'Enter the oxidising power (ISO 10156).');
+      else if (op > 23.5 + EPS) { h.steps.push('Oxidising power ' + fmt(op) + '% >23.5% → Category 1.'); res(h, 'Ox. Gas 1', ['H270'], 'Danger', ['GHS03']); }
+      else h.steps.push('Oxidising power ' + fmt(op) + '% ≤23.5% → not classified.'); }
+    { const h = H('pPress', 'Gases under pressure', '2.5, Table 2.5.1'); let g = pick('gasGroup'); const tc = val('criticalTempC');
+      if (!g && has(tc)) g = tc <= -50 + EPS ? 'compressed' : tc <= 65 + EPS ? 'liquefied_high' : 'liquefied_low';
+      const L = { compressed: ['Press. Gas (Comp.)', 'H280'], liquefied_high: ['Press. Gas (Liq.)', 'H280'], liquefied_low: ['Press. Gas (Liq.)', 'H280'], refrigerated: ['Press. Gas (Ref. Liq.)', 'H281'], dissolved: ['Press. Gas (Diss.)', 'H280'] }[g];
+      if (!isGas) na(h, st === 'gas' ? 'Aerosols are not classified as gases under pressure (Table 2.5.1 note).' : 'Mixture is not a gas.');
+      else if (g === 'none') h.steps.push('Not a gas under pressure.'); else if (!L) missing(h, 'Select the gas group or enter the critical temperature.');
+      else { h.steps.push('Group: ' + L[0] + '.'); res(h, L[0], [L[1]], 'Warning', ['GHS04']); } }
+    // 2.3 Aerosols
+    { const h = H('pAerosol', 'Aerosols', '2.3 and Figures 2.3.1(a)–(c)');
+      if (pack === 'pressurized') na(h, 'Chemicals under pressure are not a hazard class in the ' + profile.short + ' text used for these rules (see review items).');
+      else if (pack !== 'aerosol') na(h, 'Not an aerosol dispenser.');
+      else { let fc = val('flammableComponentsPct'); const hoc = val('heatOfCombustion'), form = pick('aerosolForm');
+        if (!has(fc) && ings.some((i) => String(i.hcodes || '').trim())) { fc = sum(ings.filter((i) => /\bH(220|221|224|225|226|228)\b/i.test(String(i.hcodes || ''))).map((i) => i.pct));
+          h.steps.push('Flammable components estimated from ingredient H-codes: ' + fmt(fc) + '%. Liquids with a flash point ≤93 °C also count (2.3.2.1); add any that are not classified.'); }
+        const considered = (has(fc) && fc > 1 + EPS) || (has(hoc) && ge(hoc, 20));
+        let c = null;
+        if (!considered) { if (has(fc) && has(hoc)) c = 3; else missing(h, 'Enter the flammable components and heat of combustion.'); }
+        else if (has(fc) && ge(fc, 85) && has(hoc) && ge(hoc, 30)) c = 1;
+        else { const d = val('ignitionDistanceCm'), te = val('enclosedTimeEquivalent'), dd = val('enclosedDeflagrationDensity'), fh = val('foamFlameHeightCm'), fd = val('foamFlameDurationS');
+          if (form === 'spray' && (has(d) || has(te) || has(dd))) c = has(d) && ge(d, 75) ? 1 : (has(d) && ge(d, 15)) || (has(te) && te <= 300 + EPS) || (has(dd) && dd <= 300 + EPS) ? 2 : 3;
+          else if (form === 'foam' && has(fh) && has(fd)) c = (ge(fh, 20) && ge(fd, 2)) || (ge(fh, 4) && ge(fd, 7)) ? 1 : ge(fh, 4) && ge(fd, 2) ? 2 : 3;
+          else { c = 1; h.steps.push('Not submitted to the flammability classification procedures → Category 1 (2.3.2.2).'); } }
+        if (c) { h.steps.push('Aerosol Category ' + c + '.');
+          res(h, 'Aerosol ' + c, c === 1 ? ['H222', 'H229'] : c === 2 ? ['H223', 'H229'] : ['H229'], c === 1 ? 'Danger' : 'Warning', c === 3 ? [] : ['GHS02']); } } }
+    // 2.7 Flammable solids
+    { const h = H('pFlamSol', 'Flammable solids', '2.7, Table 2.7.1'); const t = pick('flamSolidType');
+      if (st !== 'solid' || pack === 'aerosol') na(h, st !== 'solid' ? 'Mixture is not a solid.' : 'Aerosols are not classified as flammable solids.');
+      else if (t === 'negative') h.steps.push('UN N.1: not a flammable solid.');
+      else if (t === 'metal_powder') { const mm = val('metalBurnMin'); if (!has(mm)) missing(h, 'Enter the metal powder spread time.');
+        else { const c = mm <= 5 + EPS ? 1 : mm <= 10 + EPS ? 2 : 0; h.steps.push('Metal powder ' + fmt(mm) + ' min → ' + (c ? 'Category ' + c : 'not classified') + '.'); if (c) res(h, 'Flam. Sol. ' + c, ['H228'], c === 1 ? 'Danger' : 'Warning', ['GHS02']); } }
+      else if (t === 'non_metal') { const bt = val('burningTimeS'), br = val('burningRateMmS'), w = pick('wettedZone');
+        if (!has(bt) && !has(br)) missing(h, 'Enter the burning time or rate (UN N.1).');
+        else if ((has(bt) && bt < 45 - EPS) || (has(br) && br > 2.2 + EPS)) { const c = w === 'stopped4' ? 2 : 1;
+          h.steps.push('Burning time <45 s or rate >2.2 mm/s; wetted zone ' + (w === 'stopped4' ? 'stops the fire ≥4 min → Category 2' : w === 'not_stopped' ? 'does not stop the fire → Category 1' : 'not recorded → Category 1 unless it stops the fire ≥4 min') + '.');
+          res(h, 'Flam. Sol. ' + c, ['H228'], c === 1 ? 'Danger' : 'Warning', ['GHS02']); }
+        else h.steps.push('Burning time ≥45 s and rate ≤2.2 mm/s → not classified.'); }
+      else missing(h, 'Record the UN N.1 result.'); }
+    // 2.8 Self-reactive, 2.15 Organic peroxides
+    const TYPE = { A: ['H240', 'Danger', ['GHS01']], B: ['H241', 'Danger', ['GHS01', 'GHS02']], C: ['H242', 'Danger', ['GHS02']], D: ['H242', 'Danger', ['GHS02']], E: ['H242', 'Warning', ['GHS02']], F: ['H242', 'Warning', ['GHS02']], G: ['', null, []] };
+    { const h = H('pSelfReact', 'Self-reactive substances and mixtures', '2.8, 2.8.2.1–2.8.2.3, Table 2.8.1'); const t = pick('selfReactiveType'), e = val('decompositionEnergy'), sadt = val('sadtC');
+      if (st === 'gas') na(h, 'Self-reactive substances are liquids or solids.');
+      else if (t === 'exempt') h.steps.push('Screening: not self-reactive (2.8.2.1, 2.8.4).');
+      else if (TYPE[t]) { h.steps.push('UN test series A–H: Type ' + t + (t === 'G' ? ' (no label elements allocated)' : '') + '.'); res(h, 'Self-react. ' + t, TYPE[t][0] ? [TYPE[t][0]] : [], TYPE[t][1], TYPE[t][2]); }
+      else if (has(e) && e < 300 - EPS) h.steps.push('Heat of decomposition ' + fmt(e) + ' J/g <300 → not classified (2.8.2.1).');
+      else if (has(sadt) && sadt > 75 + EPS) h.steps.push('SADT ' + fmt(sadt) + ' °C >75 → not classified (2.8.2.1).');
+      else missing(h, 'Record the screening result or Type A–G.'); }
+    { const h = H('pOrgPerox', 'Organic peroxides', '2.15, 2.15.2.1–2.15.2.2'); const t = pick('opType'), ao = val('opAvailableOxygen'), h2 = val('opHydrogenPeroxide');
+      const exempt = has(ao) && (((has(h2) ? h2 : 0) <= 1 + EPS && ao <= 1 + EPS) || (has(h2) && h2 > 1 + EPS && h2 <= 7 + EPS && ao <= 0.5 + EPS));
+      if (st === 'gas') na(h, 'Organic peroxides are liquids or solids.');
+      else if (t === 'none') h.steps.push('Contains no organic peroxide.');
+      else if (exempt) h.steps.push('Available oxygen ' + fmt(ao) + '% within the 2.15.2.1 exemption → not considered.');
+      else if (TYPE[t]) { h.steps.push('UN test series A–H: Type ' + t + '.'); res(h, 'Org. Perox. ' + t, TYPE[t][0] ? [TYPE[t][0]] : [], TYPE[t][1], TYPE[t][2]); }
+      else missing(h, 'Record the organic peroxide content or Type A–G.'); }
+    // 2.9/2.10 Pyrophoric, 2.11 Self-heating, 2.12 Water-reactive, 2.13/2.14 Oxidisers, 2.16 Metals
+    const pyH = H('pPyro', st === 'liquid' ? 'Pyrophoric liquids' : 'Pyrophoric solids', st === 'liquid' ? '2.9, Table 2.9.1' : '2.10, Table 2.10.1');
+    { const r = pick('pyrophoric');
+      if (st === 'gas') na(pyH, 'Pyrophoric gases are assessed under 2.2.');
+      else if (r === 'yes') { pyH.steps.push('Ignites within 5 min in air → Category 1.'); res(pyH, st === 'liquid' ? 'Pyr. Liq. 1' : 'Pyr. Sol. 1', ['H250'], 'Danger', ['GHS02']); }
+      else if (r === 'no' || r === 'experience') pyH.steps.push(r === 'no' ? 'Tested: not pyrophoric.' : 'Experience: stable in air for days; procedure need not be applied.');
+      else missing(pyH, 'Record the pyrophoricity result.'); }
+    { const h = H('pSelfHeat', 'Self-heating substances and mixtures', '2.11, Table 2.11.1'); const a = pick('sh25at140'), b = pick('sh100at140'), c120 = pick('sh100at120'), c100 = pick('sh100at100'), v = val('shUnitVolumeL');
+      if (st === 'gas') na(h, 'Self-heating applies to liquids and solids.');
+      else if (pyH.outcomes.length) na(h, 'Classified as pyrophoric: not also self-heating.');
+      else if (pick('selfHeatingScreen') === 'exempt') h.steps.push('Screening shows not self-heating.');
+      else if (a === 'pos') { h.steps.push('25 mm cube positive at 140 °C → Category 1.'); res(h, 'Self-heat. 1', ['H251'], 'Danger', ['GHS02']); }
+      else if (b === 'neg') h.steps.push('100 mm cube negative at 140 °C → not classified.');
+      else if (a === 'neg' && b === 'pos') { if ((has(v) && v > 3000 + EPS) || (c120 === 'pos' && has(v) && v > 450 + EPS) || c100 === 'pos') { h.steps.push('Table 2.11.1 Category 2 condition met.'); res(h, 'Self-heat. 2', ['H252'], 'Warning', ['GHS02']); }
+        else if (!has(v) && !c120 && !c100) missing(h, 'Enter the package volume and 100 mm results at 120 °C and 100 °C.'); else h.steps.push('No Category 2 condition met → not classified.'); }
+      else missing(h, 'Record the UN N.4 cube test results.'); }
+    { const h = H('pWater', 'Substances and mixtures which in contact with water emit flammable gases', '2.12, Table 2.12.1'); const scr = pick('wrScreen'), ig = pick('wrIgnition'), pm = val('wrRatePerMinute'), ph = val('wrRatePerHour');
+      if (st === 'gas') na(h, 'Applies to liquids and solids.');
+      else if (scr) h.steps.push('Screening: classification procedure need not be applied (2.12.4).');
+      else { const c = ig === 'yes' || (has(pm) && pm >= 10 - EPS) ? 1 : has(ph) && ph >= 20 - EPS ? 2 : has(ph) && ph > 1 + EPS ? 3 : 0;
+        if (c) { h.steps.push('UN N.5 → Category ' + c + '.'); res(h, 'Water-react. ' + c, [c === 1 ? 'H260' : 'H261'], c === 3 ? 'Warning' : 'Danger', ['GHS02']); }
+        else if (has(ph)) h.steps.push('Gas evolution ≤1 L/kg/h → not classified.'); else missing(h, 'Record the UN N.5 result.'); } }
+    { const liq = st === 'liquid'; const h = H('pOxid', liq ? 'Oxidising liquids' : 'Oxidising solids', liq ? '2.13, Table 2.13.1' : '2.14, Table 2.14.1'); const r = pick('oxidizerResult');
+      if (st === 'gas') na(h, 'Oxidising gases are assessed under 2.4.');
+      else if (r === 'exempt' || r === 'negative') h.steps.push(r === 'exempt' ? 'Screening: procedure not applied.' : 'Tested: not an oxidiser.');
+      else if (['1', '2', '3'].includes(r)) { h.steps.push('UN ' + (liq ? 'O.2' : 'O.1/O.3') + ': Category ' + r + '.'); res(h, (liq ? 'Ox. Liq. ' : 'Ox. Sol. ') + r, [r === '1' ? 'H271' : 'H272'], r === '3' ? 'Warning' : 'Danger', ['GHS03']); }
+      else missing(h, 'Record the screening outcome or UN category.'); }
+    { const h = H('pMetal', 'Corrosive to metals', '2.16, Table 2.16.1'); const s1 = val('corrosionSteel'), a1 = val('corrosionAluminium');
+      if (!has(s1) && !has(a1)) { if (st === 'gas') na(h, 'Gas.'); else missing(h, 'Enter the UN 37.4 corrosion rates.'); }
+      else if ((has(s1) && s1 > 6.25 + EPS) || (has(a1) && a1 > 6.25 + EPS)) { h.steps.push('Corrosion rate >6.25 mm/year → Category 1.'); res(h, 'Met. Corr. 1', ['H290'], 'Warning', ['GHS05']); }
+      else if (has(s1) && has(a1)) h.steps.push('≤6.25 mm/year on both metals → not classified.'); else missing(h, 'A negative result needs both steel and aluminium.'); }
+    // Exclusions between classes (2.3.2.1 note 2; 2.17 note; 2.8.2.1).
+    const byId = (id) => list.find((x) => x.id === id);
+    const exclude = (h, why) => { if (h && h.status !== 'na') { h.status = 'na'; h.outcomes.length = 0; h.steps.push(why); } };
+    if (byId('pDesen').outcomes.length) { exclude(byId('pExpl'), 'Desensitised explosive: not additionally an explosive.'); exclude(byId('pFlamSol'), 'Desensitised explosive: not additionally a flammable solid.'); }
+    if (byId('pDesen').reclassify && !byId('pExpl').outcomes.length) { byId('pExpl').status = 'nodata'; byId('pExpl').steps.push('Desensitised explosive with Ac >1200 kg/min: assign the explosive division from the UN tests.'); }
+    if (byId('pExpl').outcomes.length) exclude(byId('pSelfReact'), 'Classified as explosive: not self-reactive (2.8.2.1).');
+    if (byId('pOrgPerox').outcomes.length) exclude(byId('pSelfReact'), 'Classified as organic peroxide: not self-reactive (2.8.2.1).');
+    list.forEach((h) => { if (h.outcomes.length || h.status === 'classified') h.notes.push(PHYS_DRAFT_NOTE); });
+    return list;
+  }
+
   function newClasses(mix, ings, ctx) {
     const list = [];
     const profile = ctx.profile || JURISDICTIONS.EU;
@@ -2315,7 +2480,29 @@ function mobilePictogramSrc(code) { return MOBILE_PICTOGRAMS[code] || ""; }
     else if (Math.abs(total - 100) > 0.5) warnings.push(`Concentrations add up to ${fmt(total)} %, not 100 %. Classification uses the percentages as entered.`);
     if(total>100+EPS) warnings.push('DATA VALIDATION: Total mixture concentration exceeds 100%; SCL, ATE and aquatic summation results may be misleading. Correct the formulation.');
     const hazards = [];
-    hazards.push(flammability(m));
+    const flamLiquid = flammability(m);
+    hazards.push(flamLiquid);
+    // Annex I Part 2 physical classes from mixture test data (DRAFT — see PHYSICAL_RULES).
+    const physical = physicalCLP(m, ings, ctx, profile);
+    const physUsed = m.physical && typeof m.physical === 'object' && Object.values(m.physical).some((v) => String(v === undefined || v === null ? '' : v).trim() !== '');
+    const physById = (id) => physical.find((x) => x.id === id);
+    if (String((m.physical || {}).packaging || '') === 'aerosol' && flamLiquid.status !== 'na') {
+      flamLiquid.status = 'na'; flamLiquid.outcomes.length = 0;
+      flamLiquid.steps.push('Aerosols do not fall additionally within flammable liquids (2.3.2.1 note 2). DRAFT rule — needs review.');
+    }
+    if (physById('pDesen').outcomes.length && flamLiquid.status !== 'na') {
+      flamLiquid.status = 'na'; flamLiquid.outcomes.length = 0;
+      flamLiquid.steps.push('Desensitised explosives do not fall additionally within flammable liquids. DRAFT rule — needs review.');
+    }
+    if (physUsed) hazards.push(...physical);
+    else {
+      // No physical test data at all: one honest summary line instead of 13 "no data" entries.
+      const summary = hz('pNone', 'Other physical hazards (Annex I Part 2)', 'Annex I 2.1–2.5, 2.7–2.17 — DRAFT rules, needs review');
+      summary.status = 'nodata';
+      summary.steps.push('No physical hazard test data entered: explosives, flammable gases, aerosols, oxidising gases, gases under pressure, flammable solids, self-reactive, pyrophoric, self-heating, water-reactive, oxidisers, organic peroxides, corrosive to metals and desensitised explosives are NOT assessed. Enter test results in "Physical hazard data".');
+      hazards.push(summary);
+    }
+    if (physUsed) warnings.push('DRAFT RULES: physical hazard classes (Annex I Part 2, from the "Physical hazard data" panel) are draft and have NOT been reviewed. Results marked DRAFT must be checked against the official text before use.');
     hazards.push(acute(m, ings, ctx));
     hazards.push(...corrosionHazards(m, ings, ctx));
     hazards.push(...sensitisation(m, ings, ctx));
@@ -2403,7 +2590,8 @@ function mobilePictogramSrc(code) { return MOBILE_PICTOGRAMS[code] || ""; }
         supplemental: ctx.supplemental
       },
       sds: [...new Set(ctx.sds)], notes, warnings, incomplete: incomplete.map((h) => h.name), nodata: nodata.map((h) => h.name),
-      jurisdiction: { id: profile.id, short: profile.short, name: profile.name, legalBasis: profile.legalBasis, appliesTo: profile.appliesTo }
+      jurisdiction: { id: profile.id, short: profile.short, name: profile.name, legalBasis: profile.legalBasis, appliesTo: profile.appliesTo },
+      reviewStatus: { physicalRules: PHYSICAL_RULES.status }
     };
     // Outside the EU profile, show exactly how the result differs from EU CLP for
     // the same formulation (the EU result is calculated with the same engine).
@@ -2479,9 +2667,10 @@ function mobilePictogramSrc(code) { return MOBILE_PICTOGRAMS[code] || ""; }
         ? ['Specific value source: '+(anon?'[reference withheld]':String(i.valueSource).trim())] : [];
       L.push(`- ${label(i, k)}: ${fmt(i.pct)} % — ${c.concat(scl,provenance).join('; ') || 'not classified'}`);
     });
+    if (result.outcomes.some((o) => o.draft)) L.push('', 'DRAFT: physical hazard classifications marked [DRAFT] come from Annex I Part 2 rules that have NOT been reviewed (' + PHYSICAL_RULES.status + ').');
     L.push('', `RESULT – classification of the mixture:`);
     if (!result.outcomes.length) L.push('Not classified in any hazard class covered by the calculator.');
-    result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}`));
+    result.outcomes.forEach((o) => L.push(`- ${o.label}${o.h.length ? ' — ' + o.h.join(', ') : ''}${o.omitOnLabel ? ' (may be omitted on the label)' : ''}${o.draft ? ' [DRAFT – not reviewed]' : ''}`));
     L.push('', 'LABEL ELEMENTS (Article 26/27 applied; Article 28 P statements are provisional, NOT a final label): ',
       `Signal word: ${result.label.signal || 'none'}`,
       `Pictograms (Article 26 selected): ${result.label.pictograms.map((p) => p.code + ' (' + p.name + ')').join(', ') || 'none'}`,
@@ -2567,7 +2756,7 @@ function mobilePictogramSrc(code) { return MOBILE_PICTOGRAMS[code] || ""; }
     return t.replace(/\u0000(\d+)\u0000/g, (_, n) => pairs[+n][1]);
   }
 
-  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor, parsePct, JURISDICTIONS };
+  return { classify, report, applyHCodes, parseHCodeTokens, selectArticle26, selectArticle27, selectArticle28, P28_RULES, ARTICLE27_RULES, blankIngredient, normalise, AT, HTEXT, PICTO, catFromATE, num, fmt, isValidMFactor, parsePct, JURISDICTIONS, PHYSICAL_RULES };
 });
 /* END EMBEDDED verification/engine.js */
 /* BEGIN EMBEDDED verification/hazcom2024.js — copy of the source file; edit that file and run: npm run sync:engines */
@@ -4849,7 +5038,7 @@ function renderResult(r) {
   if (r.incomplete.length) L.push(`<div class="alert bad"><b>Needs more data before the result is complete:</b> ${r.incomplete.map(esc).join("; ")}.</div>`);
   L.push(jurisdictionCardHTML(r));
   const cls = r.outcomes.length
-    ? r.outcomes.map((o) => `<div class="hrow"><code>${esc(o.h.join(", ") || "–")}</code><div><b>${esc(o.label)}</b>${o.omitOnLabel ? ' <small>(may be omitted on label)</small>' : ""}${o.ate ? ` <small>ATEmix ${esc(CLP.fmt(o.ate))}</small>` : ""}<br><small>${esc(o.hazard)}${o.signal ? " · " + esc(o.signal) : ""}${o.picto.length ? " · " + esc(o.picto.join(", ")) : ""}</small></div></div>`).join("")
+    ? r.outcomes.map((o) => `<div class="hrow"><code>${esc(o.h.join(", ") || "–")}</code><div><b>${esc(o.label)}</b>${o.draft ? ' <span class="draft-badge" title="Draft Annex I Part 2 rule: not yet reviewed">DRAFT – not reviewed</span>' : ""}${o.omitOnLabel ? ' <small>(may be omitted on label)</small>' : ""}${o.ate ? ` <small>ATEmix ${esc(CLP.fmt(o.ate))}</small>` : ""}<br><small>${esc(o.hazard)}${o.signal ? " · " + esc(o.signal) : ""}${o.picto.length ? " · " + esc(o.picto.join(", ")) : ""}</small></div></div>`).join("")
     : '<div class="hint">Not classified in any hazard class covered by the calculator.</div>';
   L.push(`<div class="card" data-view="classification"><h2>Classification of the mixture</h2>${cls}</div>`);
   const pics = L0.pictograms.map((p) => `
@@ -4972,7 +5161,8 @@ function compute() {
     const us = mix.jurisdiction === "US";
     // The US screen has its own engine; EU CLP results never feed into it.
     $("viewersettings").hidden = us; // EU Article 26–28 display settings do not apply to OSHA results.
-    $("physicalsettings").hidden = !us; // read only by the US engine for now
+    $("physicalsettings").hidden = false;
+    $("phys-draft-note").hidden = us; // EU/GB physical rules are DRAFT pending review
     if (us) {
       last = null;
       shownResult = HazCom2024.classify(mix);

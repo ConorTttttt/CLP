@@ -204,7 +204,7 @@ t('FP 22.9 IBP 35 -> Cat 1 H224', (() => { const o = fl('22.9', '35').outcomes.f
 t('FP 22.9 IBP 35.1 -> Cat 2', has(fl('22.9', '35.1'), 'Flam. Liq. 2'));
 t('FP 23 -> Cat 3; FP 60 -> Cat 3; 60.1 -> none', has(fl('23', ''), 'Flam. Liq. 3') && has(fl('60', ''), 'Flam. Liq. 3') && !labels(fl('60.1', '')).some((l) => l.startsWith('Flam')));
 t('FP 20 no IBP -> incomplete', fl('20', '').incomplete.length === 1);
-t('FP not entered -> nodata', fl('', '').nodata.length === 1);
+t('FP not entered -> nodata', fl('', '').nodata.filter((n) => /Flammable liquid/.test(n)).length === 1);
 
 /* ---------- 13. H-code parser ---------- */
 {
