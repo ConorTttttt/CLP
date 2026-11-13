@@ -23,7 +23,7 @@
     dust_mist:{label:"Inhalation — dust/mist",unit:"mg/L",limits:[0.05,0.5,1,5],conv:[0.005,0.05,0.5,1.5],codes:["H330","H330","H331","H332"],statements:["Fatal if inhaled","Fatal if inhaled","Toxic if inhaled","Harmful if inhaled"]}
   });
   const UNASSESSED=Object.freeze([
-    "Explosives (B.1), flammable solids (B.7), self-reactive chemicals (B.8), pyrophoric liquids and solids (B.9–B.10), self-heating chemicals (B.11), chemicals which in contact with water emit flammable gases (B.12), oxidizing liquids and solids (B.13–B.14), organic peroxides (B.15) and desensitized explosives (B.17)",
+    "Solids which may cause fire through friction (B.7.2.3, classified by analogy, e.g. matches)",
     "Hazards of chemical reactions or changes in physical form during use",
     "Tested-mixture data, bridging principles and weight-of-evidence for every health class (Appendix A, A.0.4 / class-specific sections)",
     "Eye Irritation Category 2B needs ingredient data recorded as 2B; Category 2 ingredients are assessed with the 2A criteria (A.3.2.1.2)",
@@ -475,6 +475,174 @@
     else{s.status="not-assessed";s.steps.push("A negative result needs both steel and aluminium (Table B.16.1); one metal was not tested.");}
     return s;
   }
+  /* ---- Batch 2: energetic and reactive classes (B.1, B.7–B.15, B.17) ---- */
+  const state=mix=>String(mix.state||"liquid");
+  const EXPLOSIVE_CODES=/\bH20[0-5]\b/i;
+  const containsKnownExplosive=mix=>present(mix).some(x=>EXPLOSIVE_CODES.test(String(x.i.hcodes||"")));
+  function explosives(mix){
+    const s=section("explosive","Explosives",PHYS_SOURCE+" B.1 (UN Part I test series 1–7); Appendix C.4.14");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("Explosives are solid or liquid chemicals.");return s;}
+    const r=choice(phys(mix).explosiveResult);
+    const screens={screen_no_groups:"no chemical groups associated with explosive properties (B.1.3.4(a))",screen_oxygen_balance:"explosive groups containing oxygen with calculated oxygen balance < −200 (B.1.3.4(b))",screen_decomposition:"organic: exothermic decomposition energy <500 J/g and onset <500 °C (B.1.3.4(c))",screen_oxidizer:"inorganic oxidizer with organic material below 15 % (Category 1/2 oxidizer) or 30 % (Category 3) (B.1.3.4(d))"};
+    if(screens[r]){
+      if(containsKnownExplosive(mix)){s.status="not-assessed";s.steps.push("An ingredient is a known explosive (H200–H205): the acceptance procedure is necessary (B.1.3.3); the screening exemption cannot be used.");return s;}
+      s.steps.push("Not classified as explosive: "+screens[r]+".");return s;
+    }
+    if(r==="not_explosive"){s.steps.push("UN acceptance procedure (test series 2–4) or test series 6: not an explosive. If test series 2 was positive, communicate the explosive properties in SDS sections 2 and 9 (B.1.3.1 note 3).");return s;}
+    const L={unstable:["Unstable Explosive","Unstable explosive","H200","Danger","Exploding bomb"],"1.1":["Division 1.1","Explosive; mass explosion hazard","H201","Danger","Exploding bomb"],"1.2":["Division 1.2","Explosive; severe projection hazard","H202","Danger","Exploding bomb"],"1.3":["Division 1.3","Explosive; fire, blast or projection hazard","H203","Danger","Exploding bomb"],"1.4":["Division 1.4","Fire or projection hazard","H204","Warning","Exploding bomb (none for 1.4S small arms ammunition)"],"1.5":["Division 1.5","May mass explode in fire","H205","Danger",null],"1.6":["Division 1.6","No hazard statement","—",null,null]}[r];
+    if(!L){s.status="not-assessed";s.steps.push(containsKnownExplosive(mix)?"An ingredient is a known explosive (H200–H205): the acceptance procedure is necessary (B.1.3.3).":"Record the screening outcome (B.1.3.4) or the UN test result (unstable explosive or Division 1.1–1.6).");return s;}
+    s.steps.push("UN Part I result: "+L[0]+" (B.1.2).");
+    s.outcomes.push(outcome("Explosive",r==="unstable"?"Unstable":L[0],L[1],L[2],s.source,{signal:L[3],pictogram:L[4]}));
+    return s;
+  }
+  function desensitizedExplosives(mix){
+    const s=section("desensitized","Desensitized explosives",PHYS_SOURCE+" B.17, Table B.17.1; Appendix C.4.30");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("Desensitized explosives are solid or liquid.");return s;}
+    const p=phys(mix),d=choice(p.desensitized),ac=n(p.desensBurningRate);
+    if(d==="no"){s.steps.push("Not a desensitized explosive: contains no explosives (B.17.3.1(a)) or exothermic decomposition energy <300 J/g (B.17.3.1(b)).");return s;}
+    if(d!=="yes"){s.status="not-assessed";s.steps.push("Record whether the chemical is a desensitized (phlegmatized) explosive.");return s;}
+    if(!has(ac)){s.status="not-assessed";s.steps.push("Enter the corrected burning rate Ac (UN Part V, 51.4).");return s;}
+    if(ac>1200+EPS){s.steps.push("Corrected burning rate "+fmt(ac)+" kg/min >1200: classify as an explosive instead (B.17.2.1).");s.reclassifyAsExplosive=true;return s;}
+    const cat=ac>=300-EPS?1:ac>=140-EPS?2:ac>=60-EPS?3:4;
+    s.steps.push("Corrected burning rate "+fmt(ac)+" kg/min → Category "+cat+" (Table B.17.1). Not additionally an explosive, flammable liquid or flammable solid (note 3).");
+    const st=cat===4?"Fire hazard; increased risk of explosion if desensitizing agent is reduced":"Fire, blast or projection hazard; increased risk of explosion if desensitizing agent is reduced";
+    s.outcomes.push(outcome("Desensitized Explosive",cat,st,cat===4?"H208":cat===1?"H206":"H207",s.source,{signal:cat<=2?"Danger":"Warning",pictogram:"Flame"}));
+    return s;
+  }
+  function flammableSolid(mix){
+    const s=section("flamSolid","Flammable solids",PHYS_SOURCE+" B.7, Table B.7.1 (UN N.1); Appendix C.4.20");
+    if(state(mix)!=="solid"){s.status="not-applicable";s.steps.push("Mixture is not a solid.");return s;}
+    if(["aerosol","pressurized"].includes(packaging(mix))){s.status="not-applicable";s.steps.push("Aerosols and chemicals under pressure are not classified as flammable solids (Table B.7.1 note 2).");return s;}
+    const p=phys(mix),t=choice(p.flamSolidType);let cat=null;
+    if(t==="negative"){s.steps.push("UN N.1 burning rate test: not a flammable solid.");return s;}
+    if(t==="metal_powder"){
+      const m=n(p.metalBurnMin);
+      if(!has(m)){s.status="not-assessed";s.steps.push("Metal powder: enter the time for the reaction to spread over the whole sample (min), or record a negative result.");return s;}
+      cat=m<=5+EPS?1:m<=10+EPS?2:null;
+      s.steps.push("Metal powder: reaction spreads over the sample in "+fmt(m)+" min → "+(cat?"Category "+cat:"not a flammable solid (>10 min)")+" (B.7.2.2, Table B.7.1).");
+    }else if(t==="non_metal"){
+      const bt=n(p.burningTimeS),br=n(p.burningRateMmS),w=choice(p.wettedZone);
+      if(!has(bt)&&!has(br)){s.status="not-assessed";s.steps.push("Enter the burning time (s) or burning rate (mm/s) from UN N.1.");return s;}
+      const positive=(has(bt)&&bt<45-EPS)||(has(br)&&br>2.2+EPS);
+      s.steps.push("Burning time "+(has(bt)?fmt(bt)+" s":"not entered")+", burning rate "+(has(br)?fmt(br)+" mm/s":"not entered")+": "+(positive?"<45 s or >2.2 mm/s → flammable solid":"not <45 s and not >2.2 mm/s → not a flammable solid")+" (B.7.2.1).");
+      if(positive){
+        if(w==="stopped4"){cat=2;s.steps.push("Wetted zone stops the fire for at least 4 min → Category 2.");}
+        else{cat=1;s.steps.push(w==="not_stopped"?"Wetted zone does not stop the fire → Category 1.":"Wetted zone result not recorded: Category 1 applies unless the wetted zone stops the fire for at least 4 min (record it to confirm).");}
+      }
+    }else{s.status="not-assessed";s.steps.push("Record the UN N.1 result: metal powder, other solid, or not a flammable solid.");return s;}
+    if(cat)s.outcomes.push(outcome("Flammable Solid",cat,"Flammable solid","H228",s.source,{signal:cat===1?"Danger":"Warning",pictogram:"Flame"}));
+    return s;
+  }
+  const TYPE_LABELS={A:["Heating may cause an explosion","H240","Danger","Exploding bomb"],B:["Heating may cause a fire or explosion","H241","Danger","Exploding bomb, Flame"],C:["Heating may cause a fire","H242","Danger","Flame"],D:["Heating may cause a fire","H242","Danger","Flame"],E:["Heating may cause a fire","H242","Warning","Flame"],F:["Heating may cause a fire","H242","Warning","Flame"],G:["No label elements allocated (Appendix C)","—",null,null]};
+  function selfReactive(mix){
+    const s=section("selfReactive","Self-reactive chemicals",PHYS_SOURCE+" B.8 (UN Part II test series A–H); Appendix C.4.21");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("Self-reactive chemicals are liquids or solids.");return s;}
+    const p=phys(mix),t=choice(p.selfReactiveType),e=n(p.decompositionEnergy),sadt=n(p.sadtC);
+    if(t==="exempt"){s.steps.push("Not self-reactive: no explosive or self-reactive groups, SADT >75 °C, or exothermic decomposition energy <300 J/g (B.8.2.1(d)–(e), B.8.3.3).");return s;}
+    if(!TYPE_LABELS[t]){
+      if(has(e)&&e<300-EPS){s.steps.push("Exothermic decomposition energy "+fmt(e)+" J/g <300 J/g → not self-reactive (B.8.2.1(d)).");return s;}
+      if(has(sadt)&&sadt>75+EPS){s.steps.push("SADT "+fmt(sadt)+" °C >75 °C (50 kg package) → not self-reactive (B.8.2.1(e)).");return s;}
+      s.status="not-assessed";s.steps.push("Record the screening result or the UN test series A–H result (Type A–G).");return s;
+    }
+    const L=TYPE_LABELS[t];
+    s.steps.push("UN test series A–H: Type "+t+" (B.8.2.3).");
+    s.outcomes.push(outcome("Self-Reactive Chemical","Type "+t,L[0],L[1],s.source,{signal:L[2],pictogram:L[3],labelRequired:t!=="G"}));
+    return s;
+  }
+  function pyrophoric(mix){
+    const st=state(mix),liquid=st==="liquid";
+    const s=section("pyrophoric",liquid?"Pyrophoric liquids":"Pyrophoric solids",PHYS_SOURCE+(liquid?" B.9, Table B.9.1 (UN N.3); Appendix C.4.22":" B.10, Table B.10.1 (UN N.2); Appendix C.4.23"));
+    if(st==="gas"){s.status="not-applicable";s.steps.push("Pyrophoric gases are assessed under flammable gases (B.2).");return s;}
+    const r=choice(phys(mix).pyrophoric);
+    if(r==="yes"){s.steps.push(liquid?"Ignites within 5 min on an inert carrier or ignites/chars filter paper within 5 min → Category 1.":"Ignites within 5 min of contact with air → Category 1.");s.outcomes.push(outcome(liquid?"Pyrophoric Liquid":"Pyrophoric Solid",1,"Catches fire spontaneously if exposed to air","H250",s.source,{signal:"Danger",pictogram:"Flame"}));}
+    else if(r==="no")s.steps.push("Tested: does not ignite within 5 min → not pyrophoric.");
+    else if(r==="experience")s.steps.push("Experience in production or handling: stable at room temperature for prolonged periods (days) → classification procedure need not be applied ("+(liquid?"B.9.3":"B.10.3")+").");
+    else{s.status="not-assessed";s.steps.push("Record the pyrophoricity test result or handling experience.");}
+    return s;
+  }
+  function selfHeating(mix,pyrophoricClassified){
+    const s=section("selfHeating","Self-heating chemicals",PHYS_SOURCE+" B.11, Table B.11.1 (UN N.4); Appendix C.4.24");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("Self-heating chemicals are liquids or solids.");return s;}
+    if(pyrophoricClassified){s.status="not-applicable";s.steps.push("Classified as pyrophoric: self-heating chemicals are other than pyrophoric liquids or solids (B.11.1).");return s;}
+    const p=phys(mix),c25=choice(p.sh25at140),c140=choice(p.sh100at140),c120=choice(p.sh100at120),c100=choice(p.sh100at100),vol=n(p.shUnitVolumeL);
+    if(choice(p.selfHeatingScreen)==="exempt"){s.steps.push("Screening test adequately correlated with the classification test shows no self-heating (B.11.3).");return s;}
+    if(!c25&&!c140){s.status="not-assessed";s.steps.push("Record the UN N.4 cube test results (25 mm and 100 mm at 140 °C).");return s;}
+    if(c25==="pos"){s.steps.push("Positive in the 25 mm cube at 140 °C → Category 1.");s.outcomes.push(outcome("Self-Heating",1,"Self-heating; may catch fire","H251",s.source,{signal:"Danger",pictogram:"Flame"}));return s;}
+    if(c140==="neg"){s.steps.push("Negative in the 100 mm cube at 140 °C → not self-heating.");return s;}
+    if(c25!=="neg"||c140!=="pos"){s.status="not-assessed";s.steps.push("Category 2 needs a negative 25 mm and a positive 100 mm result at 140 °C; record both.");return s;}
+    const a=has(vol)&&vol>3000+EPS,b=c120==="pos"&&has(vol)&&vol>450+EPS,c=c100==="pos";
+    if(a||b||c){
+      s.steps.push("Negative 25 mm / positive 100 mm at 140 °C, and "+(a?"unit volume >3 m³":b?"positive 100 mm at 120 °C with unit volume >450 L":"positive 100 mm at 100 °C")+" → Category 2.");
+      s.outcomes.push(outcome("Self-Heating",2,"Self-heating in large quantities; may catch fire","H252",s.source,{signal:"Warning",pictogram:"Flame"}));
+    }else if(!has(vol)&&!c120&&!c100){s.status="not-assessed";s.steps.push("Negative 25 mm / positive 100 mm at 140 °C: enter the unit volume and the 100 mm results at 120 °C and 100 °C to decide Category 2 (Table B.11.1 (a)–(c)).");}
+    else s.steps.push("Negative 25 mm / positive 100 mm at 140 °C, but none of Table B.11.1 (a)–(c) is met → not classified.");
+    return s;
+  }
+  function waterReactive(mix){
+    const s=section("waterReactive","Chemicals which, in contact with water, emit flammable gases",PHYS_SOURCE+" B.12, Table B.12.1 (UN N.5); Appendix C.4.25");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("This class covers solids and liquids.");return s;}
+    const p=phys(mix),scr=choice(p.wrScreen),ign=choice(p.wrIgnition),perMin=n(p.wrRatePerMinute),perHour=n(p.wrRatePerHour);
+    const screens={no_metals:"the chemical structure contains no metals or metalloids (B.12.3(a))",experience:"experience shows it does not react with water, e.g. made or washed with water (B.12.3(b))",soluble:"known to dissolve in water to form a stable mixture (B.12.3(c))"};
+    if(screens[scr]){s.steps.push("Classification procedure need not be applied: "+screens[scr]+".");return s;}
+    if(!ign&&!has(perMin)&&!has(perHour)){s.status="not-assessed";s.steps.push("Record the UN N.5 result: spontaneous ignition, and the flammable gas evolution rates.");return s;}
+    let cat=null;
+    if(ign==="yes"){cat=1;s.steps.push("Spontaneous ignition in the test → classified; reacts with water and the gas tends to ignite spontaneously → Category 1 (B.12.2.2, Table B.12.1).");}
+    else if(has(perMin)&&perMin>=10-EPS){cat=1;s.steps.push("Flammable gas evolution "+fmt(perMin)+" L/kg over one minute ≥10 → Category 1.");}
+    else if(has(perHour)&&perHour>=20-EPS){cat=2;s.steps.push("Maximum evolution rate "+fmt(perHour)+" L/kg/h ≥20 → Category 2.");}
+    else if(has(perHour)&&perHour>1+EPS){cat=3;s.steps.push("Maximum evolution rate "+fmt(perHour)+" L/kg/h >1 → Category 3.");}
+    else if(has(perHour)){s.steps.push("Maximum evolution rate "+fmt(perHour)+" L/kg/h ≤1 and no spontaneous ignition → not classified.");}
+    else{s.status="not-assessed";s.steps.push("Enter the maximum flammable gas evolution rate (L/kg/h) to complete the classification.");}
+    const L={1:["In contact with water releases flammable gases, which may ignite spontaneously","H260","Danger"],2:["In contact with water releases flammable gas","H261","Danger"],3:["In contact with water releases flammable gas","H261","Warning"]}[cat];
+    if(L)s.outcomes.push(outcome("Emits Flammable Gas in Contact with Water",cat,L[0],L[1],s.source,{signal:L[2],pictogram:"Flame"}));
+    return s;
+  }
+  function oxidizer(mix){
+    const st=state(mix),liquid=st==="liquid";
+    const s=section("oxidizer",liquid?"Oxidizing liquids":"Oxidizing solids",PHYS_SOURCE+(liquid?" B.13, Table B.13.1 (UN O.2); Appendix C.4.26":" B.14, Table B.14.1 (UN O.1 or O.3); Appendix C.4.27"));
+    if(st==="gas"){s.status="not-applicable";s.steps.push("Oxidizing gases are assessed under B.4.");return s;}
+    const r=choice(phys(mix).oxidizerResult);
+    if(r==="exempt"){s.steps.push("Classification procedure not applied: organic chemical without O, F or Cl, or with these bonded only to C or H; or inorganic chemical without oxygen or halogen atoms ("+(liquid?"B.13.3.1–B.13.3.2":"B.14.3.1–B.14.3.2")+").");return s;}
+    if(r==="negative"){s.steps.push("Tested: does not meet Category 3 → not an oxidizer. Known handling experience showing oxidizing behaviour takes precedence over test results ("+(liquid?"B.13.3.3":"B.14.3.3")+").");return s;}
+    const L={"1":["May cause fire or explosion; strong oxidizer","H271","Danger"],"2":["May intensify fire; oxidizer","H272","Danger"],"3":["May intensify fire; oxidizer","H272","Warning"]}[r];
+    if(!L){s.status="not-assessed";s.steps.push("Record the screening outcome or the UN "+(liquid?"O.2":"O.1/O.3")+" category.");return s;}
+    s.steps.push("UN "+(liquid?"O.2":"O.1/O.3")+" result: Category "+r+".");
+    s.outcomes.push(outcome(liquid?"Oxidizing Liquid":"Oxidizing Solid",Number(r),L[0],L[1],s.source,{signal:L[2],pictogram:"Flame over circle"}));
+    return s;
+  }
+  function organicPeroxide(mix){
+    const s=section("organicPeroxide","Organic peroxides",PHYS_SOURCE+" B.15 (UN Part II test series A–H); Appendix C.4.28");
+    if(state(mix)==="gas"){s.status="not-applicable";s.steps.push("Organic peroxides are liquids or solids.");return s;}
+    const p=phys(mix),t=choice(p.opType),ao=n(p.opAvailableOxygen),h2o2=n(p.opHydrogenPeroxide);
+    if(t==="none"){s.steps.push("Contains no organic peroxide (no bivalent –O–O– organic structure).");return s;}
+    if(has(ao)){
+      const h=has(h2o2)?h2o2:0;
+      const exempt=(h<=1+EPS&&ao<=1+EPS)||(h>1+EPS&&h<=7+EPS&&ao<=0.5+EPS);
+      s.steps.push("Available oxygen "+fmt(ao)+"%, hydrogen peroxide "+(has(h2o2)?fmt(h2o2)+"%":"not entered (taken as ≤1%)")+".");
+      if(exempt){s.steps.push("Not considered for this class: ≤1.0% available oxygen with ≤1.0% H₂O₂, or ≤0.5% with >1.0–7.0% H₂O₂ (B.15.2.1).");return s;}
+    }
+    if(!TYPE_LABELS[t]){s.status="not-assessed";s.steps.push("Record whether the chemical contains an organic peroxide, its available oxygen, or the UN test series A–H result (Type A–G).");return s;}
+    const L=t==="B"?["Heating may cause an explosion","H241","Danger","Exploding bomb, Flame"]:TYPE_LABELS[t];
+    s.steps.push("UN test series A–H: Type "+t+" (B.15.2.2)."+(t==="B"?" Appendix C.4.28 prints “Heating may cause an explosion” for Type B; GHS H241 and the self-reactive Type B row read “Heating may cause a fire or explosion” — check the label text.":""));
+    s.outcomes.push(outcome("Organic Peroxide","Type "+t,L[0],L[1],s.source,{signal:L[2],pictogram:L[3],labelRequired:t!=="G"}));
+    return s;
+  }
+  // Apply Appendix B's own exclusions between classes.
+  function reconcile(list,mix){
+    const get=id=>list.find(x=>x.id===id);
+    const na=(s,why)=>{if(!s||s.status==="not-applicable")return;s.status="not-applicable";s.outcomes.length=0;s.steps.push(why);};
+    const des=get("desensitized"),exp=get("explosive"),op=get("organicPeroxide");
+    if(des&&des.reclassifyAsExplosive&&exp&&!exp.outcomes.length){exp.status="not-assessed";exp.steps.push("Desensitized explosive with corrected burning rate >1200 kg/min: assign the explosive division from the UN Part I tests (B.17.2.1).");}
+    if(des&&des.outcomes.length){
+      na(exp,"Classified as a desensitized explosive: not additionally an explosive (B.17 note 3).");
+      na(get("flammable"),"Classified as a desensitized explosive: not additionally a flammable liquid (B.17 note 3).");
+      na(get("flamSolid"),"Classified as a desensitized explosive: not additionally a flammable solid (B.17 note 3).");
+    }
+    if(exp&&exp.outcomes.length)na(get("selfReactive"),"Classified as an explosive: not a self-reactive chemical (B.8.2.1(a)).");
+    if(op&&op.outcomes.length)na(get("selfReactive"),"Classified as an organic peroxide: not a self-reactive chemical (B.8.2.1(c)).");
+    const ox=get("oxidizer"),sr=get("selfReactive");
+    if(ox&&ox.outcomes.length&&sr&&sr.status!=="not-applicable")sr.steps.push("Oxidizers are excluded from self-reactive classification unless the mixture contains ≥5% combustible organic substances (B.8.2.1(b), B.8.2.2).");
+  }
+
   function oshaDefined(mix,outcomesSoFar){
     const out=[],p=phys(mix);
     const sa=section("asphyxiant","Simple asphyxiant","29 CFR 1910.1200(c) definition; Appendix C.4.31");
@@ -525,14 +693,17 @@
       flam.steps.push((packaging(mix)==="aerosol"?"Aerosols":"Chemicals under pressure")+" are not additionally classified as flammable liquids (Table B.3.1 / B.3.2 note 2); see that class instead.");
     }
     const health=[...acute(mix,warnings),skinCorrosion(mix),eyeDamage(mix),...sensitization(mix),...cmr(mix),...stot(mix),aspiration(mix)];
-    const physicalSections=[aerosol(mix),chemicalUnderPressure(mix),flammableGas(mix),oxidizingGas(mix),gasUnderPressure(mix),corrosiveToMetals(mix)];
+    const pyro=pyrophoric(mix);
+    const physicalSections=[explosives(mix),desensitizedExplosives(mix),aerosol(mix),chemicalUnderPressure(mix),flammableGas(mix),oxidizingGas(mix),gasUnderPressure(mix),
+      flammableSolid(mix),selfReactive(mix),pyro,selfHeating(mix,pyro.outcomes.length>0),waterReactive(mix),oxidizer(mix),organicPeroxide(mix),corrosiveToMetals(mix)];
+    reconcile([flam,...physicalSections],mix);
     const healthOutcomes=health.flatMap(x=>x.outcomes);
     const sections=[flam,...physicalSections,...health,...oshaDefined(mix,healthOutcomes)];
     const outcomes=sections.flatMap(x=>x.outcomes);
     const labelled=outcomes.filter(o=>o.labelRequired!==false);
     const signal=labelled.some(o=>o.signal==="Danger")?"Danger":labelled.some(o=>o.signal==="Warning")?"Warning":null;
     const unverifiedCutoffs=Object.entries(CUTOFFS).filter(([,c])=>!c.verified).map(([id,c])=>({id,label:c.label,value:c.value,unit:c.unit,basis:c.basis}));
-    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 from ingredient data with the HazCom 2024 cut-offs (Appendix A as amended through "+SOURCE.amendedThrough.split(" (")[0]+"); flammable liquids, aerosols, chemicals under pressure, flammable and oxidizing gases, gases under pressure and corrosive to metals from mixture test data; OSHA-defined hazards as recorded. Other Appendix B classes, tested-mixture data, bridging and the full Appendix C/D label and SDS content still need independent assessment.");
+    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 from ingredient data with the HazCom 2024 cut-offs (Appendix A as amended through "+SOURCE.amendedThrough.split(" (")[0]+"); all Appendix B physical classes from mixture test data and screening outcomes; OSHA-defined hazards as recorded. Tested-mixture health data, bridging and the full Appendix C/D label and SDS content still need independent assessment.");
     if(unverifiedCutoffs.length)warnings.push(unverifiedCutoffs.length+" Appendix A cut-off value(s) used here have not yet been verified against the current 29 CFR 1910.1200 text (see the cut-off list). Treat results as provisional.");
     return {jurisdiction:"US",regulation:"OSHA HazCom 2024 (29 CFR 1910.1200)",status:"partial-screen",source:SOURCE,outcomes,sections,warnings,signal,unverifiedCutoffs,notAssessed:UNASSESSED.slice(),notRequired:["Aquatic environmental hazards are not classification requirements of OSHA HazCom; other US environmental laws may apply.","EU CLP endocrine disruption / PBT / PMT / ozone categories are not automatically US OSHA HCS classifications."],deadline:"Mixture manufacturer/importer/distributor compliance date: November 19, 2027 (January 2026 extension)."};
   }

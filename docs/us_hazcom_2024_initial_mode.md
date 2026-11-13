@@ -80,6 +80,15 @@ Physical hazards are classified from data on the mixture as supplied, entered in
 | Oxidizing gases (B.4) | Oxidizing power >23.5 % (ISO 10156) → Category 1 |
 | Gases under pressure (B.5) | Compressed / liquefied (high or low pressure by critical temperature −50 °C / +65 °C) / refrigerated liquefied / dissolved |
 | Corrosive to metals (B.16) | Corrosion rate >6.25 mm/year at 55 °C on steel or aluminium → Category 1; a negative needs both metals |
+| Explosives (B.1) | Screening exemptions B.1.3.4(a)–(d), not available when an ingredient is a known explosive (H200–H205; B.1.3.3); otherwise the UN Part I outcome: unstable explosive or Division 1.1–1.6 |
+| Desensitized explosives (B.17) | Corrected burning rate Ac: 300–1200 kg/min Category 1; 140–<300 Category 2; 60–<140 Category 3; <60 Category 4; >1200 → classify as an explosive. Not additionally explosive, flammable liquid or flammable solid (note 3) |
+| Flammable solids (B.7) | UN N.1: burning time <45 s or rate >2.2 mm/s; wetted zone does not stop the fire → Category 1, stops it ≥4 min → Category 2 (unrecorded → Category 1). Metal powders: ≤5 min → 1, >5–10 min → 2 |
+| Self-reactive chemicals (B.8) | UN test series A–H Type A–G; not considered when decomposition energy <300 J/g or SADT >75 °C, or when classified as explosive / organic peroxide. Type G has no label elements |
+| Pyrophoric liquids / solids (B.9–B.10) | Ignites within 5 min in air → Category 1; handling experience may exempt |
+| Self-heating chemicals (B.11) | 25 mm cube at 140 °C positive → Category 1; 25 mm negative and 100 mm positive at 140 °C with unit volume >3 m³, or 100 mm positive at 120 °C and >450 L, or 100 mm positive at 100 °C → Category 2. Not applied to pyrophorics |
+| Water-reactive (B.12) | Spontaneous ignition or ≥10 L/kg in any one minute → 1; ≥20 L/kg/h → 2; >1 L/kg/h → 3; screening exemptions B.12.3(a)–(c) |
+| Oxidizing liquids / solids (B.13–B.14) | UN O.2 (liquids) or O.1/O.3 (solids) category 1–3 as reported; screening exemptions B.13.3 / B.14.3 |
+| Organic peroxides (B.15) | Not considered when available oxygen ≤1.0 % with H₂O₂ ≤1.0 %, or ≤0.5 % with H₂O₂ >1.0–7.0 %; otherwise Type A–G. Type G has no label elements |
 | Simple asphyxiant, combustible dust (1910.1200(c), C.4.31) | As recorded; combustible dust wording depends on whether it is shipped as dust or may form in processing |
 | Respiratory tract corrosivity (A.1.2.4) | Lethal effect → corrosion pictogram and statement in addition to acute inhalation toxicity; non-lethal → address under STOT (or skin/eye) |
 | HNOC (1910.1200(c), (f)(1), C.2.3.3) | One per line; SDS required, not required on the shipped-container label |
@@ -114,8 +123,15 @@ Appendix B and C rows checked against the same retrieval (osha.gov Appendices B 
 | B.4.1 | oxidizing power >23.5 % (ISO 10156) |
 | B.5.1 | compressed (critical temperature ≤−50 °C), liquefied high (−50 to +65 °C) / low (>+65 °C), refrigerated, dissolved |
 | B.16.1 | >6.25 mm/year at 55 °C on steel or aluminium |
+| B.1.2, B.1.3.3–B.1.3.4 | divisions and unstable explosives; known-explosive mixtures need the acceptance procedure; screening exemptions (a)–(d) |
+| B.7.1, B.7.2 | burning time <45 s or rate >2.2 mm/s; wetted zone; metal powders ≤5 min / >5–≤10 min |
+| B.8.2–B.8.3, B.15.2 | Types A–G; self-reactive exclusions (<300 J/g, SADT >75 °C, explosive/OP/oxidizer); OP available-oxygen exemption |
+| B.9.1, B.10.1, B.11.1–B.11.2, B.12.1–B.12.3, B.13.1, B.14.1, B.17.1–B.17.3 | as in the table above |
+| C.4.14, C.4.20–C.4.28, C.4.30 | signal words, pictograms and statements as implemented (Division 1.5: no pictogram; 1.6: no label elements; Type G: none allocated) |
 | C.4.15–C.4.18, C.4.29, C.4.31 | signal words, pictograms and hazard statements as implemented (e.g. Aerosol 3 and Flammable Gas 2: no pictogram; Chemical under pressure 3: gas cylinder) |
 | 1910.1200(c) | definitions of combustible dust, simple asphyxiant, HNOC; (f)(1) HNOCs need not be on shipped-container labels |
+
+Two further points in Appendices B/C: (1) B.17.2.1 prints its three exclusion criteria as "(a) … (a) … (b)" while note 1 refers to (a), (b) and (c); they are read as three criteria. (2) The C.4.28 hazard-statement column for organic peroxide Type B reads "Heating may cause an explosion", whereas GHS H241, the self-reactive Type B row (C.4.21) and text displaced into the C.4.28 response column read "Heating may cause a fire or explosion". The engine follows the published column and the result flags the difference for label review.
 
 Two apparent typographical errors in the published tables are read in line with the surrounding text: Table A.3.3 prints "≥1% but >3%" (read as <3 %), and Table A.3.4 prints "Acid with pH >2" (read as ≤2, as in A.3.3.1.2 and Table A.2.4).
 
@@ -125,7 +141,7 @@ To re-verify after an OSHA amendment: compare each table above with the amended 
 
 ## Explicitly not implemented
 
-Explosives (B.1), flammable solids (B.7), self-reactive chemicals (B.8), pyrophoric liquids and solids (B.9–B.10), self-heating chemicals (B.11), water-reactive chemicals (B.12), oxidizing liquids and solids (B.13–B.14), organic peroxides (B.15) and desensitized explosives (B.17); hazards from changes in physical form or chemical reactions during use, tested-mixture data and bridging principles, and full Appendix C label/Appendix D SDS outputs. The US result explicitly enumerates omitted groups. No US-compliant final label or SDS is produced.
+Solids that may cause fire through friction (B.7.2.3, by analogy); hazards from changes in physical form or chemical reactions during use, tested-mixture data and bridging principles, and full Appendix C label/Appendix D SDS outputs. The US result explicitly enumerates omitted groups. No US-compliant final label or SDS is produced.
 
 **OSHA's HazCom does not require environmental hazard classification.** EU CLP aquatic, ED, PBT, PMT and ozone classifications must not automatically appear as US OSHA classifications. Other US environmental legislation may have separate requirements.
 

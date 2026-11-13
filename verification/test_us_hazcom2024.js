@@ -79,7 +79,8 @@ test("Outcomes exclude EU CLP aquatic, endocrine, PBT and EUH classes",()=>{
 });
 test("US hazard classes not yet implemented are explicitly shown",()=>{
   const r=classify();
-  assert.ok(r.notAssessed.some(x=>/Explosives \(B\.1\)/.test(x)&&/organic peroxides/.test(x)));
+  assert.ok(r.notAssessed.some(x=>/friction \(B\.7\.2\.3/.test(x)));
+  assert.ok(["explosive","organicPeroxide","selfReactive"].every(id=>r.sections.some(x=>x.id===id)),"batch 2 classes have their own sections");
   assert.ok(r.sections.some(x=>x.id==="hnoc"),"HNOC now has its own section");
   assert.ok(r.notAssessed.some(x=>/labeling/.test(x)));
   assert.ok(!r.notAssessed.some(x=>/Skin corrosion|Carcinogenicity/.test(x)),"implemented health classes are no longer listed as not assessed");
