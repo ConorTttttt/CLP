@@ -1,0 +1,265 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brazil GHS — NBR 14725:2023 Mixture Classification Calculator</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1c1f23;--mute:#5d6570;--line:#dcdfe3;--accent:#0b5cad;--accent-ink:#fff;--warn-bg:#fff4d6;--warn-ink:#6b4a00;--ok:#1d7a3e;--bad:#b3261e;--red:#d1262b;--br:#1d7a3e;--br-tint:#eaf5ee}
+@media (prefers-color-scheme:dark){:root{--bg:#14161a;--panel:#1c1f25;--ink:#e8eaed;--mute:#9aa3ad;--line:#333842;--accent:#5aa2f0;--accent-ink:#0b1320;--warn-bg:#3a2f10;--warn-ink:#f0d48a;--ok:#58c47e;--bad:#f2867f;--red:#ef5350;--br:#58c47e;--br-tint:#1f2e25}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+header h1{margin:0;font-size:18px}
+header .sub{color:var(--mute);font-size:12.5px}
+.workspace-nav{display:flex;gap:5px;align-items:center;overflow-x:auto;padding:8px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+.workspace-nav a{color:var(--mute);text-decoration:none;font-size:12px;font-weight:650;padding:5px 10px;border-radius:7px;white-space:nowrap}
+.workspace-nav a:hover,.workspace-nav a:focus-visible{color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.banner{background:var(--warn-bg);color:var(--warn-ink);padding:8px 20px;font-size:13px;border-bottom:1px solid var(--line)}
+.banner details{display:inline-block;margin-left:7px}.banner details[open]{display:block;margin:7px 0 0}.banner summary{cursor:pointer;text-decoration:underline}
+.wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:16px 20px;align-items:start}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+@media(max-width:420px){.wrap{padding:12px}}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:0 0 8px}
+h3{font-size:13px;margin:12px 0 6px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
+input,select,textarea,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 8px;min-width:0;max-width:100%}
+input:not([type=checkbox]),select,textarea{width:100%}
+input[type=checkbox]{padding:0;width:17px;height:17px;flex:none;margin:0;accent-color:var(--accent)}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.x{color:var(--bad)}
+label{font-size:12px;color:var(--mute);display:block;margin:0 0 2px}
+.g{display:grid;gap:8px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:620px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hint{color:var(--mute);font-size:12.5px}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink);margin:4px 0}
+.total{color:var(--mute);font-size:12px;font-weight:700}.total.invalid{color:var(--bad)}
+.ing{border:1px solid var(--line);border-left:4px solid var(--br);border-radius:9px;margin:12px 0;padding:10px 12px;background:var(--panel)}
+.ing.open{background:var(--br-tint)}
+.ing-head{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,2fr);gap:8px}
+@media(max-width:620px){.ing-head{grid-template-columns:1fr 1fr}.ing-head>div:first-child{grid-column:1/-1}.ing-head>div:last-child{grid-column:1/-1}}
+.ing-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ing-bar .sp{flex:1}
+.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:7px;border:1px solid var(--line);background:color-mix(in srgb,var(--br) 12%,var(--panel));color:var(--ink);font-weight:600}
+.chip.review{background:var(--warn-bg);color:var(--warn-ink)}
+.chip.phys{border-style:dashed;background:transparent}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px}
+.detail fieldset{border:1px solid var(--line);border-radius:7px;margin:0 0 8px;padding:6px 10px 8px;min-width:0}
+.detail legend{font-size:12px;color:var(--mute);padding:0 4px;font-weight:650}
+.sig{font-weight:700;font-size:20px;letter-spacing:.03em}
+.sig.Danger{color:var(--red)}.sig.Warning{color:#b26a00}
+.pics{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+.pic{width:78px;text-align:center;font-size:11px;color:var(--mute)}
+.pic img{width:64px;height:64px;display:block;margin:0 auto 3px;background:#fff;border-radius:4px}
+.hrow{display:grid;grid-template-columns:52px 1fr;gap:6px;padding:2px 0;font-size:13.5px}
+.hrow code{font-weight:700}
+.alert{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:6px 10px;margin:0 0 8px;font-size:13px}
+.alert.bad{background:color-mix(in srgb,var(--bad) 14%,var(--panel));color:var(--ink);border-left:3px solid var(--bad)}
+.outcome{display:flex;justify-content:space-between;gap:8px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel));border-radius:7px;padding:7px 10px;margin:6px 0;font-size:13px}
+.outcome small{color:var(--mute)}
+details.calc{border-top:1px solid var(--line);padding:5px 0}
+details.calc>summary{cursor:pointer;font-weight:600;font-size:13px}
+.badge{display:inline-block;font-size:11px;padding:0 7px;border-radius:99px;margin-left:6px;vertical-align:1px}
+.badge.classified{background:var(--accent);color:var(--accent-ink)}
+.badge.notc{background:var(--line);color:var(--mute)}
+.badge.incomplete{background:var(--warn-bg);color:var(--warn-ink)}
+.step{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:1px 0}
+.ref{color:var(--mute);font-size:12px}
+ul.tight{padding-left:20px;font-size:12.5px;margin:4px 0}ul.tight li{margin:4px 0}
+footer{color:var(--mute);font-size:12px;padding:8px 20px 24px}
+@media print{.workspace-nav,.banner details,.no-print,.ing-bar button{display:none!important}.wrap{grid-template-columns:1fr}.card{break-inside:avoid}}
+</style></head><body>
+<header><h1>Brazil GHS Mixture Calculator</h1><span class="sub">Brasil &middot; ABNT NBR 14725:2023 (UN GHS Rev. 7) &middot; NR-26 &middot; Local and offline &middot; Regulatory review required</span></header>
+<nav class="workspace-nav" aria-label="Calculator sections"><a href="#mixture-card">Mixture</a><a href="#ingredients-card">Ingredients</a><a href="#results">Results</a><a href="#source-card">Regulatory scope</a></nav>
+<div class="banner" role="note"><b>Decision-support only — not a final classification, rótulo or FDS.</b> Ingredient-based GHS Rev. 7 mixture rules; results still require review.
+ <details><summary>Read calculation scope and regulatory limitations</summary><p>The ABNT NBR 14725:2023 text was not available when this module was written. Thresholds come from the UN GHS Rev. 7 mixture criteria that the standard is based on; building-block adoption and the generic cut-off option must be verified against the NBR text. Physical hazards other than flammable liquids, whole-mixture test data, bridging principles, specific concentration limits, Portuguese label wording, precautionary statements and the FDS are not generated. A missing result does not establish that a product is non-hazardous.</p></details>
+</div>
+<main class="wrap">
+<section id="inputs">
+ <div class="card" id="mixture-card">
+  <h2>Mixture</h2>
+  <div class="g g2"><div><label for="m-name">Product name</label><input id="m-name"></div>
+   <div><label for="m-state">Physical state</label><select id="m-state"><option value="liquid">Liquid</option><option value="solid">Solid</option><option value="gas">Gas</option></select></div></div>
+  <div class="g g4" style="margin-top:8px">
+   <div><label for="m-fp">Flash point (°C)</label><input id="m-fp" type="number" step="any"></div>
+   <div><label for="m-ibp">Initial boiling point (°C)</label><input id="m-ibp" type="number" step="any"></div>
+   <div><label for="m-visc">Kinematic viscosity 40 °C (mm²/s)</label><input id="m-visc" type="number" step="any" min="0"></div>
+   <div><label for="m-ph">pH</label><input id="m-ph" type="number" step="any" min="0" max="14"></div>
+  </div>
+  <div style="margin-top:8px"><label for="m-cutoff">Generic cut-off values where GHS Rev. 7 offers two options</label>
+   <select id="m-cutoff"><option value="lower">Lower option — most protective (e.g. Carc. 2 ≥0.1 %, Repr. 1 ≥0.1 %, STOT 1 ≥1 %)</option><option value="upper">Upper option (e.g. Carc. 2 ≥1 %, Repr. 1 ≥0.3 %, Repr. 2 ≥3 %, STOT 1 ≥10 %)</option></select>
+   <div class="hint">Confirm which values ABNT NBR 14725:2023 adopts before relying on the result.</div></div>
+ </div>
+ <div class="card" id="ingredients-card">
+  <div class="row" style="justify-content:space-between"><h2 style="margin:0">Ingredients</h2><span id="total" class="total">Total 0 %</span></div>
+  <p class="hint">Enter the ingredient's H-codes from the supplier FDS (e.g. <code>H302 H315 H411</code>). Open <b>Details</b> to set exact categories, ATEs and M-factors — explicit details override the defaults implied by H-codes.</p>
+  <div id="rows"></div>
+  <div class="row no-print"><button id="add" class="primary" type="button">+ Add ingredient</button><button id="example" type="button">Load example</button>
+   <button id="save" type="button">Save JSON</button><label class="chk" style="margin:0"><span class="hint">Load JSON</span><input id="load" type="file" accept="application/json,.json" style="width:auto;padding:2px"></label>
+   <button id="print" type="button">Print</button><button id="clear" class="x" type="button">Clear</button></div>
+ </div>
+</section>
+<section id="results" aria-live="polite"></section>
+</main>
+<div class="wrap" style="padding-top:0"><div class="card" id="source-card" style="grid-column:1/-1">
+ <h2>Regulatory scope and sources</h2>
+ <ul class="tight">
+  <li><b>ABNT NBR 14725:2023</b> — Produtos químicos: informações sobre segurança, saúde e meio ambiente. Consolidates former parts 1–4 (terminology, classification, labelling, FDS); published 2023-07-03, mandatory from 2025-07-04. Based on UN GHS Rev. 7.</li>
+  <li><b>NR-26</b> (Ministério do Trabalho e Emprego) — requires hazardous chemicals at work to be classified, labelled and accompanied by an FDS in accordance with NBR 14725.</li>
+  <li><b>UN GHS Rev. 7</b> (ST/SG/AC.10/30/Rev.7) — source of the mixture criteria implemented here.</li>
+  <li>Transport (ANTT), pesticides, ANVISA-regulated products, medicines and cosmetics may follow separate rules.</li>
+ </ul>
+ <p class="hint">Engine: <code>verification/brazil_ghs_engine.js</code>. Documentation: <code>docs/brazil_ghs_nbr14725.md</code>.</p>
+</div></div>
+<footer>No data leaves your browser. Brazilian labels and FDS must be in Portuguese; text shown here is an English GHS reference.</footer>
+<script src="verification/brazil_ghs_engine.js"></script>
+<script>
+(function(){
+"use strict";
+const B=window.BRAZIL_GHS;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let ingredients=[];
+const open=new Set();
+const PICTO_NAME={GHS01:"Exploding bomb",GHS02:"Flame",GHS03:"Flame over circle",GHS04:"Gas cylinder",GHS05:"Corrosion",GHS06:"Skull and crossbones",GHS07:"Exclamation mark",GHS08:"Health hazard",GHS09:"Environment"};
+const opt=(vals)=>vals.map(v=>Array.isArray(v)?v:[v,v||"—"]);
+/* Detail fields: [path, label, type, options] */
+const DETAIL=[
+ ["Acute toxicity (GHS 3.1)",[
+  ["acute.oral.ate","Oral ATE (mg/kg)","number"],["acute.oral.category","Oral category","select",opt(["","1","2","3","4","5"])],["acute.oral.notAcute","Oral: no acute hazard (evidence)","check"],
+  ["acute.dermal.ate","Dermal ATE (mg/kg)","number"],["acute.dermal.category","Dermal category","select",opt(["","1","2","3","4","5"])],["acute.dermal.notAcute","Dermal: no acute hazard (evidence)","check"],
+  ["acute.inhalation.form","Inhalation form","select",[["","—"],["gas","Gas (ppmV)"],["vapour","Vapour (mg/l)"],["dustMist","Dust/mist (mg/l)"]]],
+  ["acute.inhalation.ate","Inhalation ATE (4 h)","number"],["acute.inhalation.category","Inhalation category","select",opt(["","1","2","3","4","5"])],
+  ["acute.inhalation.volumePct","Gas: concentration (% v/v)","number"],["acute.inhalation.notAcute","Inhalation: no acute hazard (evidence)","check"]]],
+ ["Skin and eye (GHS 3.2, 3.3)",[
+  ["skin","Skin corrosion/irritation","select",opt(["","1","1A","1B","1C","2","3"])],["eye","Eye damage/irritation","select",opt(["","1","2A","2B"])],
+  ["nonAdditive","Additivity not applicable (acid, base, surfactant…)","check"]]],
+ ["Sensitisation, CMR (GHS 3.4–3.7)",[
+  ["respSens","Respiratory sensitiser","select",opt(["","1","1A","1B"])],["skinSens","Skin sensitiser","select",opt(["","1","1A","1B"])],
+  ["state","Ingredient physical state","select",[["","—"],["solid","Solid"],["liquid","Liquid"],["gas","Gas"]]],
+  ["mutagen","Germ cell mutagenicity","select",opt(["","1A","1B","2"])],["carcinogen","Carcinogenicity","select",opt(["","1A","1B","2"])],
+  ["repro","Reproductive toxicity","select",opt(["","1A","1B","2"])],["lactation","Effects on or via lactation","check"]]],
+ ["Target organ, aspiration (GHS 3.8–3.10)",[
+  ["stotSE","STOT SE","select",opt(["","1","2"])],["stotSE3Resp","STOT SE 3 — respiratory irritation","check"],["stotSE3Narcotic","STOT SE 3 — narcotic effects","check"],
+  ["stotRE","STOT RE","select",opt(["","1","2"])],["aspiration","Aspiration hazard","select",opt(["","1","2"])]]],
+ ["Environment (GHS 4.1, 4.2)",[
+  ["aquaticAcute","Aquatic acute","select",opt(["","1","2","3"])],["mAcute","M-factor (acute 1)","number"],
+  ["aquaticChronic","Aquatic chronic","select",opt(["","1","2","3","4"])],["mChronic","M-factor (chronic 1)","number"],
+  ["ozone","Hazardous to the ozone layer","check"]]]
+];
+function getPath(o,p){return p.split(".").reduce((v,k)=>v&&typeof v==="object"?v[k]:undefined,o);}
+function setPath(o,p,val){const ks=p.split(".");let t=o;for(const k of ks.slice(0,-1)){if(!t[k]||typeof t[k]!=="object")t[k]={};t=t[k];}
+ if(val===""||val===false||val===undefined)delete t[ks[ks.length-1]];else t[ks[ks.length-1]]=val;}
+function blank(){return {name:"",pct:"",hcodes:""};}
+function field(ix,f){
+ const [path,label,type,options]=f,v=getPath(ingredients[ix],path),id="f"+ix+"-"+path.replace(/\./g,"-");
+ if(type==="check")return '<label class="chk" for="'+id+'"><input type="checkbox" id="'+id+'" data-ix="'+ix+'" data-path="'+path+'"'+(v===true?" checked":"")+'> '+esc(label)+'</label>';
+ if(type==="select")return '<div><label for="'+id+'">'+esc(label)+'</label><select id="'+id+'" data-ix="'+ix+'" data-path="'+path+'">'+
+  options.map(([val,txt])=>'<option value="'+esc(val)+'"'+(String(v==null?"":v)===val?" selected":"")+'>'+esc(txt)+'</option>').join("")+'</select></div>';
+ return '<div><label for="'+id+'">'+esc(label)+'</label><input id="'+id+'" type="number" step="any" min="0" data-ix="'+ix+'" data-path="'+path+'" value="'+esc(v==null?"":v)+'"></div>';
+}
+function chips(i){
+ const p=B.parseHCodes(i.hcodes||"");
+ const out=p.codes.map(c=>{
+  const cls=p.physical.includes(c)?"chip phys":p.unknown.includes(c)?"chip review":p.ambiguous.some(a=>a.startsWith(c))?"chip review":"chip";
+  return '<span class="'+cls+'" title="'+esc(B.H_TEXT[c]||"Not mapped")+'">'+esc(c)+'</span>';});
+ return out.join(" ")||'<span class="hint">No hazards entered</span>';
+}
+function renderRows(){
+ $("rows").innerHTML=ingredients.map((i,ix)=>{
+  const isOpen=open.has(ix);
+  return '<div class="ing'+(isOpen?" open":"")+'" data-row="'+ix+'">'+
+   '<div class="ing-head"><div><label for="n'+ix+'">Ingredient name</label><input id="n'+ix+'" data-ix="'+ix+'" data-path="name" value="'+esc(i.name)+'"></div>'+
+   '<div><label for="p'+ix+'">Concentration (% w/w)</label><input id="p'+ix+'" type="number" step="any" min="0" max="100" data-ix="'+ix+'" data-path="pct" value="'+esc(i.pct)+'"></div>'+
+   '<div><label for="h'+ix+'">H-codes (supplier FDS)</label><input id="h'+ix+'" data-ix="'+ix+'" data-path="hcodes" placeholder="e.g. H302 H315" value="'+esc(i.hcodes)+'"></div></div>'+
+   '<div class="ing-bar"><span class="chips" id="c'+ix+'">'+chips(i)+'</span><span class="sp"></span>'+
+   '<button type="button" data-toggle="'+ix+'" aria-expanded="'+isOpen+'">'+(isOpen?"Hide details":"Details")+'</button>'+
+   '<button type="button" class="x" data-remove="'+ix+'" aria-label="Remove ingredient '+(ix+1)+'">Remove</button></div>'+
+   (isOpen?'<div class="detail">'+DETAIL.map(([legend,fs])=>'<fieldset><legend>'+esc(legend)+'</legend><div class="g g3">'+fs.map(f=>field(ix,f)).join("")+'</div></fieldset>').join("")+
+    '<div><label for="note'+ix+'">Data source / evidence reference</label><input id="note'+ix+'" data-ix="'+ix+'" data-path="source" value="'+esc(i.source)+'"></div></div>':"")+
+  '</div>';}).join("")||'<p class="hint">No ingredients yet.</p>';
+}
+function mixture(){
+ return {name:$("m-name").value,state:$("m-state").value,flashPoint:$("m-fp").value,ibp:$("m-ibp").value,
+  viscosity40:$("m-visc").value,pH:$("m-ph").value,cutoffOption:$("m-cutoff").value};
+}
+function setMixture(m){m=m||{};$("m-name").value=m.name||"";$("m-state").value=m.state||"liquid";$("m-fp").value=m.flashPoint??"";
+ $("m-ibp").value=m.ibp??"";$("m-visc").value=m.viscosity40??"";$("m-ph").value=m.pH??"";$("m-cutoff").value=m.cutoffOption==="upper"?"upper":"lower";}
+function updateTotal(){
+ const t=ingredients.reduce((s,i)=>s+(Number(i.pct)||0),0);
+ const el=$("total");el.textContent="Total "+Number(t.toFixed(4))+" %";el.classList.toggle("invalid",Math.abs(t-100)>0.01);
+}
+function badge(s){const c=s==="classified"?"classified":s==="incomplete"?"incomplete":"notc";return '<span class="badge '+c+'">'+esc(s)+'</span>';}
+function renderResults(){
+ updateTotal();
+ const r=B.classify({mixture:mixture(),ingredients});
+ let h='<div class="card"><h2>Result</h2>';
+ for(const i of r.issues)h+='<div class="alert bad">'+esc(i)+'</div>';
+ if(r.valid){
+  h+='<h3>Proposed label elements (GHS reference)</h3>';
+  h+=r.label.signalWord?'<div><span class="sig '+esc(r.label.signalWord)+'">'+esc(r.label.signalWordPtBR)+'</span> <span class="hint">('+esc(r.label.signalWord)+')</span></div>':'<div class="hint">No signal word.</div>';
+  h+='<div class="pics">'+(r.label.pictograms.map(p=>'<div class="pic"><img src="pictograms/'+p+'.svg" alt="'+p+' '+esc(PICTO_NAME[p])+'">'+p+'<br>'+esc(PICTO_NAME[p])+'</div>').join("")||'<span class="hint">No pictogram.</span>')+'</div>';
+  h+=r.label.hazardStatements.map(s=>'<div class="hrow"><code>'+esc(s.code)+'</code><div>'+esc(s.english)+'</div></div>').join("")||'<div class="hint">No hazard statements.</div>';
+  for(const n of r.label.reviewNotes)h+='<div class="alert">'+esc(n)+'</div>';
+  h+='<p class="hint">'+esc(r.label.note)+'</p>';
+  h+='<h3>Classification</h3>';
+  h+=r.outcomes.map(o=>'<div class="outcome"><span>'+esc(o.label)+' — <b>'+(o.key==="lactation"?"Additional category":"Category "+esc(o.subcategory||o.category))+'</b></span><small>'+esc(o.ref||"")+'</small></div>').join("")||'<p class="hint">No hazard class was triggered by the implemented ingredient rules. This is not evidence that the mixture is non-hazardous.</p>';
+  const omitted=r.label.pictogramDecisions.filter(d=>!d.kept);
+  if(omitted.length)h+='<h3>Pictogram precedence</h3><ul class="tight">'+omitted.map(d=>'<li>'+esc(d.pictogram)+' from '+esc(d.from)+' omitted: '+esc(d.reason)+'</li>').join("")+'</ul>';
+ }
+ h+='</div>';
+ if(r.valid){
+  h+='<div class="card"><h2>Calculation trail</h2>'+r.results.map(x=>'<details class="calc"><summary>'+esc(x.label)+badge(x.status)+(x.category&&x.key!=="lactation"?' <b>'+esc(x.category)+'</b>':'')+'</summary><div class="ref">'+esc(x.ref)+'</div>'+
+   x.steps.map(s=>'<div class="step">'+esc(s)+'</div>').join("")+(x.notes||[]).map(n=>'<div class="alert">'+esc(n)+'</div>').join("")+'</details>').join("")+'</div>';
+ }
+ h+='<div class="card"><h2>Review required</h2><ul class="tight">'+r.review.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+ h+='<h3>Not assessed by this calculator</h3><ul class="tight">'+r.notAssessed.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';
+ h+='<p class="hint">'+esc(r.note)+'</p></div>';
+ $("results").innerHTML=h;
+}
+function readValue(el){
+ if(el.type==="checkbox")return el.checked;
+ const p=el.dataset.path;
+ if(p==="name"||p==="hcodes"||p==="source"||p==="acute.inhalation.form"||p==="state"||el.tagName==="SELECT")return el.value;
+ return el.value===""?"":Number(el.value);
+}
+$("rows").addEventListener("input",e=>{
+ const el=e.target;if(!el.dataset||el.dataset.ix===undefined)return;
+ const ix=Number(el.dataset.ix);setPath(ingredients[ix],el.dataset.path,readValue(el));
+ if(el.dataset.path==="hcodes")$("c"+ix).innerHTML=chips(ingredients[ix]);
+ renderResults();
+});
+$("rows").addEventListener("click",e=>{
+ const t=e.target.closest("button");if(!t)return;
+ if(t.dataset.toggle!==undefined){const ix=Number(t.dataset.toggle);open.has(ix)?open.delete(ix):open.add(ix);renderRows();}
+ if(t.dataset.remove!==undefined){const ix=Number(t.dataset.remove);ingredients.splice(ix,1);
+  const shifted=[...open].filter(i=>i!==ix).map(i=>i>ix?i-1:i);open.clear();shifted.forEach(i=>open.add(i));renderRows();renderResults();}
+});
+for(const id of ["m-name","m-state","m-fp","m-ibp","m-visc","m-ph","m-cutoff"]){$(id).addEventListener("input",renderResults);$(id).addEventListener("change",renderResults);}
+$("add").addEventListener("click",()=>{ingredients.push(blank());renderRows();renderResults();$("n"+(ingredients.length-1)).focus();});
+$("clear").addEventListener("click",()=>{if(!confirm("Clear the formulation?"))return;ingredients=[];open.clear();setMixture({});renderRows();renderResults();});
+$("print").addEventListener("click",()=>window.print());
+$("example").addEventListener("click",()=>{
+ setMixture({name:"Example alkaline cleaner (illustrative)",state:"liquid",flashPoint:"",ibp:"",viscosity40:2,pH:12.5,cutoffOption:"lower"});
+ ingredients=[
+  {name:"Water",pct:79,hcodes:"",acute:{oral:{notAcute:true},dermal:{notAcute:true}}},
+  {name:"Sodium hydroxide",pct:2,hcodes:"H314",skin:"1A",nonAdditive:true,acute:{oral:{notAcute:true},dermal:{notAcute:true}}},
+  {name:"Alcohol ethoxylate surfactant",pct:12,hcodes:"H302 H318 H412",acute:{oral:{ate:1200},dermal:{notAcute:true}}},
+  {name:"Fragrance (contains sensitiser)",pct:0.5,hcodes:"H317 H411",acute:{oral:{notAcute:true},dermal:{notAcute:true}}},
+  {name:"2-Butoxyethanol",pct:6.5,hcodes:"H302 H312 H332 H319 H315",acute:{oral:{ate:1300},dermal:{ate:1100},inhalation:{form:"vapour",ate:11}}}
+ ];
+ open.clear();renderRows();renderResults();
+});
+$("save").addEventListener("click",()=>{
+ const blob=new Blob([JSON.stringify({format:"brazil-ghs-nbr14725-2023",version:1,mixture:mixture(),ingredients},null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(mixture().name||"mixture").replace(/[^\w.-]+/g,"_")+"_brazil_ghs.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$("load").addEventListener("change",e=>{
+ const f=e.target.files&&e.target.files[0];if(!f)return;
+ f.text().then(t=>{const d=JSON.parse(t);if(!Array.isArray(d.ingredients))throw new Error("No ingredients array");
+  setMixture(d.mixture);ingredients=d.ingredients.map(i=>Object.assign(blank(),i));open.clear();renderRows();renderResults();})
+  .catch(err=>alert("Could not load file: "+err.message)).finally(()=>{e.target.value="";});
+});
+ingredients=[blank()];renderRows();renderResults();
+})();
+</script>
+</body></html>

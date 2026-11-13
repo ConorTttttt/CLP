@@ -158,6 +158,22 @@ For older JSON, fertility/development are inferred from source H-codes where pos
 formulations after loading. Quick-pick changes only reproductive fields and leaves other manually
 reviewed category fields intact.
 
+BRAZIL — ABNT NBR 14725:2023 (GHS REV. 7) MODULE
+Open brazil_ghs_calculator.html (keep pictograms/ and verification/ alongside it).
+A separate, provisional Brazilian mixture classifier. NBR 14725:2023 replaced the
+four-part NBR 14725 and became mandatory on 2025-07-04; NR-26 makes it binding at
+work. It applies the GHS Rev. 7 ingredient-based mixture rules for: acute toxicity
+(oral/dermal Cat 1-5, inhalation gas/vapour/dust-mist Cat 1-4), skin (Cat 1/2/3),
+eye (Cat 1/2A/2B), sensitisation, CMR, lactation, STOT SE/RE, STOT SE 3 (20 %),
+aspiration (Cat 1/2), aquatic acute 1-3 / chronic 1-4 with M-factors, ozone and
+flammable liquids. Label: GHS 1.4.10.5.3 pictogram precedence, signal word in
+Portuguese (Perigo/Atencao), English GHS reference H-statements.
+A setting chooses the GHS lower (default, most protective) or upper generic cut-off.
+LIMITS: the NBR text was not available, so building-block adoption and cut-off
+choice must be verified. No Portuguese H/P wording, P-statements or FDS are
+generated, and no physical hazards except flammable liquids are covered.
+Engine: verification/brazil_ghs_engine.js. Details: docs/brazil_ghs_nbr14725.md
+
 VERIFICATION
 Run every suite from the repository root with:
   npm test
@@ -172,6 +188,8 @@ push and pull request through .github/workflows/tests.yml. Individual suites:
   node verification/test_ui_cleanup.js
   node verification/test_hazard_picker.js
   node verification/test_review_fixes.js
+  node verification/test_brazil_ghs.js
+  node verification/test_brazil_ui.js
 The original engine suite currently has 223 checks; the Article 26 suite has 49 checks and the initial Article 28 suite has 50 checks. UI structure checks verify that the HTML scripts compile,
 the new controls are present and the verification engine matches the inline engine. These are NOT
 a replacement for live browser interaction tests. Earlier headless testing was reported during initial
