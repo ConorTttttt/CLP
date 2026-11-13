@@ -20,6 +20,30 @@ Choose the market in "1. Mixture information" (saved with each formulation; defa
   calculated. Profiles are defined in JURISDICTIONS in verification/engine.js.
 Tests: node verification/test_gb_profile.js
 
+US OSHA HAZCOM 2024 — PARTIAL SCREEN (NOT A FINAL US CLASSIFICATION)
+Choose "US OSHA HazCom 2024" as the jurisdiction. A separate US engine
+(verification/hazcom2024.js) reads the same ingredient data; EU CLP results, EU SCLs and
+EUH statements are never used. It calculates:
+  * Flammable Liquid Categories 1–4 (Category 4: combustible liquid, 60–93 C), Appendix B.6.
+  * All Appendix A health classes from ingredient data: acute toxicity (A.1), skin (A.2),
+    eye incl. 2A/2B (A.3), sensitizers (A.4), mutagenicity (A.5), carcinogenicity (A.6,
+    incl. the Category 2 "SDS required, label optional" band), reproductive toxicity and
+    lactation (A.7), STOT SE/RE incl. Category 3 (A.8–A.9) and aspiration (A.10).
+Not assessed: other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-
+mixture data/bridging, and OSHA Appendix C label / Appendix D SDS elements. No environmental
+classes (not part of OSHA HazCom).
+The Appendix A cut-off values are NOT YET VERIFIED against the regulation text; every US
+result lists them. Where OSHA's choice among GHS options was uncertain, the more protective
+value is used. See docs/us_hazcom_2024_initial_mode.md for the list and how to verify them.
+HazCom 2024 mixture compliance date: 19 November 2027 (2026 OSHA extension).
+Tests: node verification/test_us_hazcom2024.js and verification/test_us_hazcom2024_health.js
+
+EMBEDDED ENGINES
+clp_mixture_calculator.html contains copies of verification/engine.js and
+verification/hazcom2024.js (between BEGIN/END EMBEDDED markers) so it works as one offline
+file. Edit the files in verification/, then run "npm run sync:engines"; tests fail if a copy
+is out of date. Then run "npm run build:mobile" for the mobile version.
+
 MOBILE VERSION
 mobile/index.html is a phone-friendly, local-only build of this calculator: same engine
 and features, no Gemini, and no network access (enforced by a Content-Security-Policy).

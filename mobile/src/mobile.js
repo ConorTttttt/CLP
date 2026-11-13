@@ -57,13 +57,14 @@
 
   // Results badge: number of classifications, coloured by signal word (red =
   // Danger, orange = Warning), plus a dot when input warnings exist.
-  // `last` is the calculator's latest classify() result (a shared global).
+  // `shownResult` is the result currently displayed (EU/GB CLP or US HazCom);
+  // `last` is the CLP result, used if an older calculator build lacks shownResult.
   function refreshBadge() {
     var badge = el('m-result-badge');
     if (!badge) return;
-    var result = typeof last !== 'undefined' ? last : null;
+    var result = typeof shownResult !== 'undefined' ? shownResult : (typeof last !== 'undefined' ? last : null);
     if (!result) { badge.textContent = ''; return; }
-    var signal = (result.label && result.label.signal) || '';
+    var signal = (result.label && result.label.signal) || result.signal || '';
     var count = (result.outcomes || []).length;
     var warnings = (result.warnings || []).length;
     badge.textContent = String(count);

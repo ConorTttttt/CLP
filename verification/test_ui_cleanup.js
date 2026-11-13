@@ -127,7 +127,6 @@ check("Banded STOT Category 2 SCL inputs available",()=>{
 });
 check("Solid physical state selectable",()=>assert.match(html,/<option value="solid">Solid<\/option>/));
 check("Embedded engine is unchanged",()=>{
- const i=html.indexOf("/* CLP mixture classification engine"),j=html.indexOf("\n</script>",i);
- assert.equal(html.slice(i,j).trimEnd(),fs.readFileSync("verification/engine.js","utf8").trimEnd());
+ assert.equal(require("./sync_engines.js").embedded(html,"verification/engine.js"),fs.readFileSync("verification/engine.js","utf8").trimEnd());
 });
 console.log(passed+" UI cleanup checks passed");

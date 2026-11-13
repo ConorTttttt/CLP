@@ -273,7 +273,6 @@ test("Advanced direct-code editor and keyboard navigation retained",()=>{
  assert(html.includes('data-hazard-option='));
 });
 test("Embedded engine stays synchronized",()=>{
- const a=html.indexOf("/* CLP mixture classification engine"),b=html.indexOf("\n</script>",a);
- assert.equal(html.slice(a,b).trimEnd(),fs.readFileSync("verification/engine.js","utf8").trimEnd());
+ assert.equal(require("./sync_engines.js").embedded(html,"verification/engine.js"),fs.readFileSync("verification/engine.js","utf8").trimEnd());
 });
 console.log(n+" hazard picker checks passed");

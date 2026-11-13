@@ -4,6 +4,8 @@
   "description": "CLP mixture classification calculator – verification suites",
   "scripts": {
     "test": "node verification/run_all.js",
+    "sync:engines": "node verification/sync_engines.js",
+    "check:engines": "node verification/sync_engines.js --check",
     "build:mobile": "node mobile/build.js",
     "check:mobile": "node mobile/build.js --check",
     "test:mobile-browser": "node mobile/smoke-test.js"
