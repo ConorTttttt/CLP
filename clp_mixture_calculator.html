@@ -2426,47 +2426,55 @@ pre.rep{padding:14px}
     "Flammable gases, aerosols, chemicals under pressure, flammable solids and other physical hazards (Appendix B)",
     "Hazards not otherwise classified (HNOC), combustible dust, simple asphyxiants and hazards of chemical reactions or changes in physical form",
     "Tested-mixture data, bridging principles and weight-of-evidence for every health class (Appendix A, A.0.4 / class-specific sections)",
-    "Eye Irritation Category 2B from ingredient data: ingredients entered as Eye Irrit. 2 are treated as 2A unless marked 2B",
+    "Corrosivity to the respiratory tract (A.1.2.4, added by HazCom 2024): assess from ingredient and mixture evidence",
+    "Eye Irritation Category 2B needs ingredient data recorded as 2B; Category 2 ingredients are assessed with the 2A criteria (A.3.2.1.2)",
     "Complete OSHA Appendix C labeling and Appendix D SDS preparation"
   ]);
 
-  /* Appendix A ingredient cut-offs for mixtures, one place, each with its table.
-     option: "GHS single value" = GHS gives one value; "OSHA choice" = GHS offers
-     alternatives (e.g. 0.1 % / 1.0 %) and OSHA's selection must be confirmed.
-     verified:false = transcribed without access to the regulation text in the
-     session that wrote it. Confirm each against the current 29 CFR 1910.1200
-     Appendix A and set verified:true; unverified values are listed in every result.
-     Where OSHA's choice was not certain, the more protective value is used. */
+  /* Appendix A ingredient cut-offs for mixtures, one place, each quoting its table.
+     Source: 29 CFR 1910.1200 Appendix A (Mandatory), as amended through 91 FR 566-594
+     (Jan. 8, 2026), retrieved from osha.gov on 2026-11-13. verified:true means the value
+     was checked against that text; docs/us_hazcom_2024_initial_mode.md quotes each row.
+     Re-verify when OSHA amends the standard. */
+  const SOURCE=Object.freeze({
+    title:"29 CFR 1910.1200 Appendix A — Health Hazard Criteria (Mandatory)",
+    url:"https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.1200AppA",
+    amendedThrough:"91 FR 566-594, Jan. 8, 2026 (HazCom 2024: 89 FR 44360, May 20, 2024)",
+    retrieved:"2026-11-13"
+  });
+  const V=(value,unit,basis,label)=>Object.freeze({value,unit,basis,label,verified:true});
   const CUTOFFS=Object.freeze({
-    skinCorrosionSum:{value:5,unit:"%",basis:"A.2, Table A.2.3",option:"GHS single value",verified:false,label:"Skin Category 1 ingredients (sum) → Category 1"},
-    skinCorrosionToIrritation:{value:1,unit:"%",basis:"A.2, Table A.2.3",option:"GHS single value",verified:false,label:"Skin Category 1 ingredients (sum) ≥1 % but <5 % → Category 2"},
-    skinIrritationSum:{value:10,unit:"%",basis:"A.2, Table A.2.3",option:"GHS single value",verified:false,label:"Skin Category 2 ingredients (sum), or 10 × Cat 1 + Cat 2 → Category 2"},
-    skinNonAdditiveCorrosive:{value:1,unit:"%",basis:"A.2, Table A.2.4",option:"GHS single value",verified:false,label:"Additivity not applicable: corrosive ingredient (incl. acids pH ≤2, bases pH ≥11.5) → Category 1"},
-    skinNonAdditiveIrritant:{value:3,unit:"%",basis:"A.2, Table A.2.4",option:"GHS single value",verified:false,label:"Additivity not applicable: irritant ingredient → Category 2"},
-    eyeDamageSum:{value:3,unit:"%",basis:"A.3, Table A.3.3",option:"GHS single value",verified:false,label:"Skin Cat 1 + Eye Cat 1 ingredients (sum) → Eye Category 1"},
-    eyeDamageToIrritation:{value:1,unit:"%",basis:"A.3, Table A.3.3",option:"GHS single value",verified:false,label:"Skin Cat 1 + Eye Cat 1 ingredients (sum) ≥1 % but <3 % → Eye Category 2A"},
-    eyeIrritationSum:{value:10,unit:"%",basis:"A.3, Table A.3.3",option:"GHS single value",verified:false,label:"Eye Category 2 ingredients (sum), or 10 × Cat 1 + Cat 2 → Category 2A (2B only if every eye irritant is 2B)"},
-    eyeNonAdditiveSevere:{value:1,unit:"%",basis:"A.3, Table A.3.4",option:"GHS single value",verified:false,label:"Additivity not applicable: Eye Cat 1 / corrosive ingredient → Eye Category 1"},
-    eyeNonAdditiveIrritant:{value:3,unit:"%",basis:"A.3, Table A.3.4",option:"GHS single value",verified:false,label:"Additivity not applicable: eye irritant → Category 2A"},
-    respiratorySensitizer:{value:0.1,unit:"%",basis:"A.4, Table A.4.3",option:"OSHA choice (GHS: 0.1 % or 1.0 %; gases 0.1 % or 0.2 %); more protective value used",verified:false,label:"Respiratory sensitizer Category 1/1A/1B ingredient"},
-    skinSensitizer:{value:0.1,unit:"%",basis:"A.4, Table A.4.3",option:"OSHA choice (GHS: 0.1 % or 1.0 % for Category 1 and 1B); more protective value used",verified:false,label:"Skin sensitizer Category 1/1A/1B ingredient"},
-    mutagenCategory1:{value:0.1,unit:"%",basis:"A.5, Table A.5.3",option:"GHS single value",verified:false,label:"Germ cell mutagen Category 1A/1B ingredient"},
-    mutagenCategory2:{value:1,unit:"%",basis:"A.5, Table A.5.3",option:"GHS single value",verified:false,label:"Germ cell mutagen Category 2 ingredient"},
-    carcinogenCategory1:{value:0.1,unit:"%",basis:"A.6, Table A.6.1",option:"GHS single value",verified:false,label:"Carcinogen Category 1A/1B ingredient"},
-    carcinogenCategory2:{value:0.1,unit:"%",basis:"A.6, Table A.6.1 and note",option:"OSHA choice (GHS: 0.1 % or 1.0 %); OSHA note: 0.1–<1 % SDS required, label optional; ≥1 % SDS and label",verified:false,label:"Carcinogen Category 2 ingredient (label required from 1 %)"},
-    carcinogenCategory2Label:{value:1,unit:"%",basis:"A.6, Table A.6.1 note",option:"OSHA choice",verified:false,label:"Carcinogen Category 2: label warning required"},
-    reproCategory1:{value:0.1,unit:"%",basis:"A.7, Table A.7.1",option:"OSHA choice (GHS: 0.1 % or 0.3 %); more protective value used",verified:false,label:"Reproductive toxicant Category 1A/1B ingredient"},
-    reproCategory2:{value:0.1,unit:"%",basis:"A.7, Table A.7.1",option:"OSHA choice (GHS: 0.1 % or 3.0 %); more protective value used",verified:false,label:"Reproductive toxicant Category 2 ingredient"},
-    lactation:{value:0.1,unit:"%",basis:"A.7, Table A.7.1",option:"OSHA choice (GHS: 0.1 % or 0.3 %); more protective value used",verified:false,label:"Effects on or via lactation ingredient"},
-    stotCategory1:{value:10,unit:"%",basis:"A.8 Table A.8.3 / A.9 Table A.9.4",option:"OSHA choice (GHS: 1.0 % or 10 %)",verified:false,label:"STOT Category 1 ingredient → mixture Category 1"},
-    stotCategory1ToCategory2:{value:1,unit:"%",basis:"A.8 Table A.8.3 / A.9 Table A.9.4",option:"GHS single value",verified:false,label:"STOT Category 1 ingredient ≥1 % but below the Category 1 limit → Category 2"},
-    stotCategory2:{value:1,unit:"%",basis:"A.8 Table A.8.3 / A.9 Table A.9.4",option:"OSHA choice (GHS: 1.0 % or 10 %); more protective value used",verified:false,label:"STOT Category 2 ingredient → Category 2"},
-    stotCategory3Sum:{value:20,unit:"%",basis:"A.8.3.4.5",option:"GHS guidance value (may be higher or lower with expert judgment)",verified:false,label:"STOT SE Category 3 ingredients (sum, per effect) → Category 3"},
-    aspirationSum:{value:10,unit:"%",basis:"A.10.3.3",option:"GHS single value",verified:false,label:"Aspiration Category 1 ingredients (sum), with kinematic viscosity ≤20.5 mm²/s at 40 °C"},
-    aspirationViscosity:{value:20.5,unit:"mm²/s at 40 °C",basis:"A.10.3.3",option:"GHS single value",verified:false,label:"Aspiration: maximum kinematic viscosity"}
+    skinCorrosionSum:V(5,"%","A.2.3.3, Table A.2.3","Sum of Skin Category 1 ingredients → Skin Category 1 (sub-categories: 1A sum, else 1A+1B, else 1A+1B+1C, each ≥5 %)"),
+    skinCorrosionToIrritation:V(1,"%","A.2.3.3, Table A.2.3","Sum of Skin Category 1 ingredients ≥1 % but <5 % → Skin Category 2"),
+    skinIrritationSum:V(10,"%","A.2.3.3, Table A.2.3","Sum of Skin Category 2, or (10 × Skin Category 1) + Skin Category 2 → Skin Category 2"),
+    skinNonAdditiveCorrosive:V(1,"%","A.2.3.3.4, Table A.2.4","Additivity not applicable: acid pH ≤2, base pH ≥11.5 or other corrosive ingredient → Category 1"),
+    skinNonAdditiveIrritant:V(3,"%","A.2.3.3.4, Table A.2.4","Additivity not applicable: other irritant (Category 2) ingredient, including acids and bases → Category 2"),
+    eyeDamageSum:V(3,"%","A.3.3.3, Table A.3.3","Skin Category 1 + Eye Category 1 ingredients (each counted once) → Eye Category 1"),
+    eyeDamageToIrritation:V(1,"%","A.3.3.3, Table A.3.3","Skin Category 1 + Eye Category 1 ≥1 % but <3 % → Eye Category 2/2A"),
+    eyeIrritationSum:V(10,"%","A.3.3.3, Table A.3.3 and note b","Eye Category 2, or 10 × (Skin 1 + Eye 1) + Eye 2 → Category 2/2A; 2B only if all relevant ingredients are 2B"),
+    eyeNonAdditiveSevere:V(1,"%","A.3.3.3.4, Table A.3.4","Additivity not applicable: acid, base, skin corrosive or Eye Category 1 ingredient → Eye Category 1"),
+    eyeNonAdditiveIrritant:V(3,"%","A.3.3.3.4, Table A.3.4","Additivity not applicable: other eye irritant (Category 2) → Eye Category 2"),
+    respiratorySensitizer:V(0.1,"%","A.4.3.3, Table A.4.5","Respiratory sensitizer Category 1 or Sub-category 1A (solid/liquid and gas)"),
+    respiratorySensitizer1B:V(1,"%","A.4.3.3, Table A.4.5","Respiratory sensitizer Sub-category 1B, solid/liquid"),
+    respiratorySensitizer1BGas:V(0.2,"%","A.4.3.3, Table A.4.5","Respiratory sensitizer Sub-category 1B, gas"),
+    skinSensitizer:V(0.1,"%","A.4.3.3, Table A.4.5","Skin sensitizer Category 1 or Sub-category 1A (all physical states)"),
+    skinSensitizer1B:V(1,"%","A.4.3.3, Table A.4.5","Skin sensitizer Sub-category 1B (all physical states)"),
+    mutagenCategory1:V(0.1,"%","A.5.3.1.2, Table A.5.1","Category 1A/1B mutagen (w/w; v/v for gases)"),
+    mutagenCategory2:V(1,"%","A.5.3.1.2, Table A.5.1","Category 2 mutagen (w/w; v/v for gases)"),
+    carcinogenCategory1:V(0.1,"%","A.6.3.1, Table A.6.1","Category 1 carcinogen"),
+    carcinogenCategory2:V(0.1,"%","A.6.3.1, Table A.6.1 and note 1","Category 2 carcinogen (0.1 % to <1 %: SDS required, label warning optional)"),
+    carcinogenCategory2Label:V(1,"%","A.6.3.1, Table A.6.1 note 1","Category 2 carcinogen: SDS and label required"),
+    reproCategory1:V(0.1,"%","A.7.3.1.1, Table A.7.1","Category 1 reproductive toxicant"),
+    reproCategory2:V(0.1,"%","A.7.3.1.1, Table A.7.1","Category 2 reproductive toxicant"),
+    lactation:V(0.1,"%","A.7.3.1.2, Table A.7.1","Additional category for effects on or via lactation"),
+    stotCategory1:V(1,"%","A.8.3.4.1 Table A.8.2; A.9.3.4.1 Table A.9.3","Category 1 target organ toxicant → mixture Category 1 (single and repeated exposure)"),
+    stotCategory2:V(1,"%","A.8.3.4.1 Table A.8.2; A.9.3.4.1 Table A.9.3","Category 2 target organ toxicant → mixture Category 2"),
+    stotCategory3Sum:V(20,"%","A.8.3.4.5–A.8.3.4.6","Sum of Category 3 ingredients ≥1 %, per effect (may be higher or lower by expert judgment)"),
+    aspirationSum:V(10,"%","A.10.3.3.1–A.10.3.3.2.1","Sum of Category 1 ingredients ≥1 %, with kinematic viscosity ≤20.5 mm²/s at 40 °C"),
+    aspirationViscosity:V(20.5,"mm²/s at 40 °C","A.10.3.3.2.1","Aspiration: maximum kinematic viscosity")
   });
   const cut=k=>CUTOFFS[k].value;
-  const cite=k=>CUTOFFS[k].basis+(CUTOFFS[k].verified?"":" (value not yet verified)");
+  const cite=k=>CUTOFFS[k].basis;
   const outcome=(name,cat,statement,code,basis,extra={})=>({name,category:cat,statement,code,basis,...extra});
   const category=(route,x)=>{for(let j=0;j<4;j++)if(x<=AT[route].limits[j]+EPS)return j+1;return 0;};
   const name=i=>String(i.name||i.cas||"Unnamed ingredient");
@@ -2569,9 +2577,15 @@ pre.rep{padding:14px}
     let cat=null,sub=null;
     if(add.length)s.steps.push("Σ Category 1 = "+fmt(C)+"%; Σ Category 2 = "+fmt(I)+"%; 10 × Cat 1 + Cat 2 = "+fmt(10*C+I)+"% ("+cite("skinCorrosionSum")+").");
     if(ge(C,cut("skinCorrosionSum"))){
-      cat="1";const subs=[...new Set(add.filter(corr).map(x=>field(x,"skinCorr")))];
-      sub=subs.length===1&&subs[0]!=="1"?subs[0]:null;
-      s.steps.push("Σ Category 1 ≥ "+cut("skinCorrosionSum")+"% → Category 1"+(sub?" (all corrosive ingredients are Sub-category "+sub+")":"")+".");
+      cat="1";
+      // Table A.2.3 note: Σ1A ≥5 % → 1A; else Σ(1A+1B) ≥5 % → 1B; else Σ(1A+1B+1C) ≥5 % → 1C.
+      // A relevant Category 1 ingredient without a sub-category → Category 1 without one.
+      const subSum=list=>sum(add.filter(x=>list.includes(field(x,"skinCorr"))));
+      if(add.some(x=>field(x,"skinCorr")==="1"))sub=null;
+      else if(ge(subSum(["1A"]),cut("skinCorrosionSum")))sub="1A";
+      else if(ge(subSum(["1A","1B"]),cut("skinCorrosionSum")))sub="1B";
+      else sub="1C";
+      s.steps.push("Σ Category 1 ≥ "+cut("skinCorrosionSum")+"% → Category 1"+(sub?", Sub-category "+sub+" (Table A.2.3 note: cumulative Σ1A, Σ1A+1B, Σ1A+1B+1C ≥ "+cut("skinCorrosionSum")+"%)":" without sub-category (a relevant ingredient is Category 1 without sub-category; Table A.2.3 note)")+".");
     }else if(ge(C,cut("skinCorrosionToIrritation"))||ge(I,cut("skinIrritationSum"))||ge(10*C+I,cut("skinIrritationSum"))){
       cat="2";s.steps.push("Category 2 threshold met (Table A.2.3).");
     }else if(add.length)s.steps.push("Below the Table A.2.3 thresholds.");
@@ -2597,7 +2611,7 @@ pre.rep{padding:14px}
     const irritant=x=>!severe(x)&&["2","2A","2B"].includes(field(x,"eye"));
     const rel=present(mix).filter(x=>severe(x)||irritant(x));
     const add=rel.filter(x=>!x.i.nonAdditive&&ge(x.p,1)),non=rel.filter(x=>x.i.nonAdditive);
-    if(rel.some(x=>field(x,"eye")==="2"))s.steps.push("Ingredients recorded as Eye Irritation 2 are treated as Category 2A (the more severe sub-category). Mark them 2B only where the source classification says so.");
+    if(rel.some(x=>field(x,"eye")==="2"))s.steps.push("Ingredients recorded as Eye Irritation Category 2 without further categorization use the same criteria as 2A (A.3.2.1.2). Mark an ingredient 2B only where its source says so.");
     const S=sum(add.filter(severe)),E=sum(add.filter(irritant));
     const only2B=add.filter(irritant).length>0&&add.filter(irritant).every(x=>field(x,"eye")==="2B");
     let cat=null;
@@ -2621,7 +2635,7 @@ pre.rep{padding:14px}
   }
 
   // One ingredient at or above its category cut-off classifies the mixture
-  // (no summation), as in Tables A.4.3, A.5.3, A.6.1 and A.7.1.
+  // (no summation): Tables A.4.5, A.5.1, A.6.1 and A.7.1.
   function perIngredient(s,list,key,keys,order){
     const hits=[];
     list.forEach(x=>{
@@ -2633,33 +2647,42 @@ pre.rep{padding:14px}
     const best=order.find(c=>hits.some(h=>h.c===c));
     return {hits,best};
   }
+  // The mixture tables classify a mixture as "Category 1" or "Category 2"; they do not
+  // assign sub-categories to mixtures. Ingredient sub-categories are kept for the trail.
+  const mixtureCategory=c=>c==="2"?"2":"1";
+  const subcategories=hits=>[...new Set(hits.map(h=>h.c))];
   function sensitization(mix){
-    const out=[];
-    [["respSens","Respiratory sensitization","respiratorySensitizer","Respiratory Sensitizer","May cause allergy or asthma symptoms or breathing difficulties if inhaled","H334","Danger",HP],
-     ["skinSens","Skin sensitization","skinSensitizer","Skin Sensitizer","May cause an allergic skin reaction","H317","Warning",EX]].forEach(([key,label,k,oname,stmt,code,signal,pic])=>{
-      const s=section(key,label,"29 CFR 1910.1200 Appendix A.4, Table A.4.3; Appendix C");
-      const r=perIngredient(s,present(mix),key,{"1":k,"1A":k,"1B":k},["1A","1","1B"]);
-      if(!s.steps.length){s.status="not-assessed";s.steps.push("No "+label.toLowerCase()+" ingredient data. Not assessed, not demonstrated non-hazardous.");}
-      if(r.best)s.outcomes.push(outcome(oname,r.best,stmt,code,s.source,{signal,pictogram:pic}));
+    const out=[],gas=mix.state==="gas";
+    [["respSens","Respiratory sensitization",{"1":"respiratorySensitizer","1A":"respiratorySensitizer","1B":gas?"respiratorySensitizer1BGas":"respiratorySensitizer1B"},"Respiratory Sensitizer","May cause allergy or asthma symptoms or breathing difficulties if inhaled","H334","Danger",HP],
+     ["skinSens","Skin sensitization",{"1":"skinSensitizer","1A":"skinSensitizer","1B":"skinSensitizer1B"},"Skin Sensitizer","May cause an allergic skin reaction","H317","Warning",EX]].forEach(([key,label,keys,oname,stmt,code,signal,pic])=>{
+      const s=section(key,label,"29 CFR 1910.1200 Appendix A.4.3.3, Table A.4.5; Appendix C.4.6–C.4.7");
+      if(key==="respSens")s.steps.push("Mixture physical state: "+(gas?"gas (Sub-category 1B limit 0.2%)":"solid/liquid (Sub-category 1B limit 1.0%)")+".");
+      const r=perIngredient(s,present(mix),key,keys,["1A","1","1B"]);
+      if(s.steps.length<=(key==="respSens"?1:0)){s.status="not-assessed";s.steps.push("No "+label.toLowerCase()+" ingredient data. Not assessed, not demonstrated non-hazardous.");}
+      if(r.best){
+        s.steps.push("Mixture classified as Category 1 (Table A.4.5; Appendix C: Category 1 includes sub-categories 1A and 1B).");
+        s.outcomes.push(outcome(oname,"1",stmt,code,s.source,{signal,pictogram:pic,ingredientSubcategories:subcategories(r.hits)}));
+      }
       out.push(s);
     });
     return out;
   }
   function cmr(mix){
     const list=present(mix),out=[];
-    const m=section("muta","Germ cell mutagenicity","29 CFR 1910.1200 Appendix A.5, Table A.5.3; Appendix C");
+    const m=section("muta","Germ cell mutagenicity","29 CFR 1910.1200 Appendix A.5.3.1.2, Table A.5.1; Appendix C.4.8");
     const rm=perIngredient(m,list,"muta",{"1":"mutagenCategory1","1A":"mutagenCategory1","1B":"mutagenCategory1","2":"mutagenCategory2"},["1A","1","1B","2"]);
-    if(rm.best)m.outcomes.push(outcome("Germ Cell Mutagenicity",rm.best,rm.best==="2"?"Suspected of causing genetic defects":"May cause genetic defects",rm.best==="2"?"H341":"H340",m.source,{signal:rm.best==="2"?"Warning":"Danger",pictogram:HP}));
+    if(rm.best)m.outcomes.push(outcome("Germ Cell Mutagenicity",mixtureCategory(rm.best),rm.best==="2"?"Suspected of causing genetic defects":"May cause genetic defects",rm.best==="2"?"H341":"H340",m.source,{signal:rm.best==="2"?"Warning":"Danger",pictogram:HP,ingredientSubcategories:subcategories(rm.hits)}));
     out.push(m);
-    const c=section("carc","Carcinogenicity","29 CFR 1910.1200 Appendix A.6, Table A.6.1 and note; Appendix C");
+    const c=section("carc","Carcinogenicity","29 CFR 1910.1200 Appendix A.6.3.1, Table A.6.1 and note; A.6.4; Appendix C.4.9");
     const rc=perIngredient(c,list,"carc",{"1":"carcinogenCategory1","1A":"carcinogenCategory1","1B":"carcinogenCategory1","2":"carcinogenCategory2"},["1A","1","1B","2"]);
     if(rc.best){
       const cat2=rc.best==="2",labelRequired=!cat2||rc.hits.some(h=>h.c==="2"&&ge(h.x.p,cut("carcinogenCategory2Label")));
       if(cat2&&!labelRequired)c.steps.push("Category 2 carcinogen(s) present at 0.1% to <1%: SDS information required; label warning optional ("+cite("carcinogenCategory2Label")+").");
-      c.outcomes.push(outcome("Carcinogenicity",rc.best,cat2?"Suspected of causing cancer":"May cause cancer",cat2?"H351":"H350",c.source,{signal:cat2?"Warning":"Danger",pictogram:HP,labelRequired}));
+      c.outcomes.push(outcome("Carcinogenicity",mixtureCategory(rc.best),cat2?"Suspected of causing cancer":"May cause cancer",cat2?"H351":"H350",c.source,{signal:cat2?"Warning":"Danger",pictogram:HP,labelRequired,ingredientSubcategories:subcategories(rc.hits)}));
     }
+    c.steps.push("A.6.4: a substance listed by the NTP Report on Carcinogens or the IARC Monographs may be treated as a carcinogen; record such ingredients with the corresponding category.");
     out.push(c);
-    const r=section("repro","Reproductive toxicity","29 CFR 1910.1200 Appendix A.7, Table A.7.1; Appendix C");
+    const r=section("repro","Reproductive toxicity","29 CFR 1910.1200 Appendix A.7.3.1.1, Table A.7.1; Appendix C.4.10");
     const rank={"1A":3,"1":3,"1B":2,"2":1},keys={"1":"reproCategory1","1A":"reproCategory1","1B":"reproCategory1","2":"reproCategory2"};
     const effects={};let best=null;
     [["reproFert","fertility"],["reproDev","development"],["repro","unspecified effect"]].forEach(([k,eff])=>{
@@ -2669,27 +2692,26 @@ pre.rep{padding:14px}
     if(best){
       const one=best!=="2";
       r.steps.push("Effects triggered: "+Object.entries(effects).map(([e,c])=>e+" Category "+c).join("; ")+". The hazard statement may state the specific effect where known.");
-      r.outcomes.push(outcome("Reproductive Toxicity",best,one?"May damage fertility or the unborn child":"Suspected of damaging fertility or the unborn child",one?"H360":"H361",r.source,{signal:one?"Danger":"Warning",pictogram:HP,effects}));
+      r.outcomes.push(outcome("Reproductive Toxicity",mixtureCategory(best),one?"May damage fertility or the unborn child":"Suspected of damaging fertility or the unborn child",one?"H360":"H361",r.source,{signal:one?"Danger":"Warning",pictogram:HP,effects}));
     }
     out.push(r);
-    const l=section("lact","Effects on or via lactation","29 CFR 1910.1200 Appendix A.7, Table A.7.1; Appendix C");
+    const l=section("lact","Effects on or via lactation","29 CFR 1910.1200 Appendix A.7.3.1.2, Table A.7.1; Appendix C.4.10");
     list.filter(x=>x.i.lact).forEach(x=>{const ok=ge(x.p,cut("lactation"));l.steps.push(name(x.i)+" "+fmt(x.p)+"% "+(ok?"≥":"<")+" "+cut("lactation")+"% ("+cite("lactation")+")"+(ok?" → triggers":""));if(ok&&!l.outcomes.length)l.outcomes.push(outcome("Effects on or via Lactation","—","May cause harm to breast-fed children","H362",l.source,{signal:null,pictogram:null}));});
     out.push(l);
-    out.filter(x=>!x.steps.length).forEach(x=>{x.status="not-assessed";x.steps.push("No ingredient data for this class. Not assessed, not demonstrated non-hazardous.");});
+    out.filter(x=>!x.steps.length||(x.id==="carc"&&x.steps.length===1)).forEach(x=>{x.status="not-assessed";x.steps.push("No ingredient data for this class. Not assessed, not demonstrated non-hazardous.");});
     return out;
   }
   function stot(mix){
     const list=present(mix),out=[];
-    [["stotSE","STOT — single exposure","Specific Target Organ Toxicity, Single Exposure","A.8, Table A.8.3",["Causes damage to organs","May cause damage to organs"],["H370","H371"]],
-     ["stotRE","STOT — repeated exposure","Specific Target Organ Toxicity, Repeated Exposure","A.9, Table A.9.4",["Causes damage to organs through prolonged or repeated exposure","May cause damage to organs through prolonged or repeated exposure"],["H372","H373"]]].forEach(([key,label,oname,table,stmts,codes])=>{
+    [["stotSE","STOT — single exposure","Specific Target Organ Toxicity, Single Exposure","A.8.3.4, Table A.8.2",["Causes damage to organs","May cause damage to organs"],["H370","H371"]],
+     ["stotRE","STOT — repeated exposure","Specific Target Organ Toxicity, Repeated Exposure","A.9.3.4, Table A.9.3",["Causes damage to organs through prolonged or repeated exposure","May cause damage to organs through prolonged or repeated exposure"],["H372","H373"]]].forEach(([key,label,oname,table,stmts,codes])=>{
       const s=section(key,label,"29 CFR 1910.1200 Appendix "+table+"; Appendix C");
       let cat=null;
       list.forEach(x=>{
         const c=field(x,key);
         if(c==="1"){
           if(ge(x.p,cut("stotCategory1"))){cat="1";s.steps.push(name(x.i)+" [Category 1] "+fmt(x.p)+"% ≥ "+cut("stotCategory1")+"% → Category 1 ("+cite("stotCategory1")+").");}
-          else if(ge(x.p,cut("stotCategory1ToCategory2"))){if(!cat)cat="2";s.steps.push(name(x.i)+" [Category 1] "+fmt(x.p)+"% ≥ "+cut("stotCategory1ToCategory2")+"% but < "+cut("stotCategory1")+"% → Category 2 ("+cite("stotCategory1ToCategory2")+").");}
-          else s.steps.push(name(x.i)+" [Category 1] "+fmt(x.p)+"% < "+cut("stotCategory1ToCategory2")+"%.");
+          else s.steps.push(name(x.i)+" [Category 1] "+fmt(x.p)+"% < "+cut("stotCategory1")+"%: below the cut-off; potentiation by other ingredients can still matter (A.8.3.4.4 / A.9.3.4.4).");
         }else if(c==="2"){
           if(ge(x.p,cut("stotCategory2"))){if(!cat)cat="2";s.steps.push(name(x.i)+" [Category 2] "+fmt(x.p)+"% ≥ "+cut("stotCategory2")+"% → Category 2 ("+cite("stotCategory2")+").");}
           else s.steps.push(name(x.i)+" [Category 2] "+fmt(x.p)+"% < "+cut("stotCategory2")+"%.");
@@ -2738,13 +2760,14 @@ pre.rep{padding:14px}
     const outcomes=sections.flatMap(x=>x.outcomes);
     const labelled=outcomes.filter(o=>o.labelRequired!==false);
     const signal=labelled.some(o=>o.signal==="Danger")?"Danger":labelled.some(o=>o.signal==="Warning")?"Warning":null;
-    const unverifiedCutoffs=Object.entries(CUTOFFS).filter(([,c])=>!c.verified).map(([id,c])=>({id,label:c.label,value:c.value,unit:c.unit,basis:c.basis,option:c.option}));
-    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 and flammable liquids are calculated from ingredient data only. Other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-mixture data, bridging and all Appendix C label elements still need independent assessment.");
+    const unverifiedCutoffs=Object.entries(CUTOFFS).filter(([,c])=>!c.verified).map(([id,c])=>({id,label:c.label,value:c.value,unit:c.unit,basis:c.basis}));
+    warnings.unshift("PARTIAL HAZCOM SCREEN: health classes A.1–A.10 and flammable liquids are calculated from ingredient data with the HazCom 2024 cut-offs (Appendix A as amended through "+SOURCE.amendedThrough.split(" (")[0]+"). Other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-mixture data, bridging and all Appendix C label elements still need independent assessment.");
     if(unverifiedCutoffs.length)warnings.push(unverifiedCutoffs.length+" Appendix A cut-off value(s) used here have not yet been verified against the current 29 CFR 1910.1200 text (see the cut-off list). Treat results as provisional.");
-    return {jurisdiction:"US",regulation:"OSHA HazCom 2024 (29 CFR 1910.1200)",status:"partial-screen",outcomes,sections,warnings,signal,unverifiedCutoffs,notAssessed:UNASSESSED.slice(),notRequired:["Aquatic environmental hazards are not classification requirements of OSHA HazCom; other US environmental laws may apply.","EU CLP endocrine disruption / PBT / PMT / ozone categories are not automatically US OSHA HCS classifications."],deadline:"Mixture manufacturer/importer/distributor compliance date: November 19, 2027 (January 2026 extension)."};
+    return {jurisdiction:"US",regulation:"OSHA HazCom 2024 (29 CFR 1910.1200)",status:"partial-screen",source:SOURCE,outcomes,sections,warnings,signal,unverifiedCutoffs,notAssessed:UNASSESSED.slice(),notRequired:["Aquatic environmental hazards are not classification requirements of OSHA HazCom; other US environmental laws may apply.","EU CLP endocrine disruption / PBT / PMT / ozone categories are not automatically US OSHA HCS classifications."],deadline:"Mixture manufacturer/importer/distributor compliance date: November 19, 2027 (January 2026 extension)."};
   }
   function report(mix,r){
-    const lines=[r.regulation+" — PARTIAL SCREEN, NOT FINAL CLASSIFICATION",String(mix?.name||"Unnamed mixture"),r.deadline,"", "SCREENED OUTCOMES"];
+    const lines=[r.regulation+" — PARTIAL SCREEN, NOT FINAL CLASSIFICATION",String(mix?.name||"Unnamed mixture"),r.deadline,
+      "Rules: "+r.source.title+", as amended through "+r.source.amendedThrough+"; text retrieved "+r.source.retrieved+".","", "SCREENED OUTCOMES"];
     for(const o of r.outcomes)lines.push(o.name+" Cat. "+o.category+" — "+o.statement+" ("+o.code+" reference; check Appendix C)"+(o.labelRequired===false?" [SDS required; label warning optional]":""));
     if(!r.outcomes.length)lines.push("No positive outcome in the limited supported screens; this is NOT evidence that the mixture is non-hazardous.");
     lines.push("Signal word (screen): "+(r.signal||"none"));
@@ -2753,12 +2776,12 @@ pre.rep{padding:14px}
     lines.push("REQUIRES SEPARATE HAZCOM ASSESSMENT",...r.notAssessed,"","WARNINGS",...r.warnings);
     if(r.unverifiedCutoffs&&r.unverifiedCutoffs.length){
       lines.push("","CUT-OFF VALUES NOT YET VERIFIED AGAINST 29 CFR 1910.1200");
-      for(const c of r.unverifiedCutoffs)lines.push("- "+c.label+": "+c.value+" "+c.unit+" ["+c.basis+"; "+c.option+"]");
+      for(const c of r.unverifiedCutoffs)lines.push("- "+c.label+": "+c.value+" "+c.unit+" ["+c.basis+"]");
     }
     lines.push("","This is not an OSHA-compliant final label or SDS.");
     return lines.join("\n");
   }
-  return Object.freeze({classify,report,AT,UNASSESSED,CUTOFFS});
+  return Object.freeze({classify,report,AT,UNASSESSED,CUTOFFS,SOURCE});
 });
 /* END EMBEDDED verification/hazcom2024.js */
 </script>
@@ -4229,13 +4252,14 @@ function renderHazCom2024Result(r) {
   $("result-overview").innerHTML = [
     {value:r.outcomes.length,label:"HazCom screening outcomes"},
     {value:r.warnings.length,label:"Review notes"},
-    {value:r.notAssessed.length+(r.unverifiedCutoffs||[]).length,label:"Still to assess / verify"}
+    {value:r.notAssessed.length+(r.unverifiedCutoffs||[]).length,label:"Still to assess"}
   ].map(x=>'<div class="result-stat"><strong>'+esc(x.value)+'</strong><span>'+esc(x.label)+'</span></div>').join("");
   html.push('<div class="card jurisdiction-card" id="jurisdiction-result"><h2>Jurisdiction: US OSHA HazCom 2024</h2>'+
     '<div><b>'+esc(r.regulation)+'</b></div><div class="hint">Partial screen from ingredient data, calculated by a separate US engine. EU CLP results, SCLs and EUH statements are not used.</div>'+
     '<div class="us-summary"><b>'+esc(r.deadline)+'</b><div class="hint">During the applicable transition period, HazCom 2012 and HazCom 2024 may both be used. This view uses 2024 criteria only.</div></div></div>');
-  html.push('<div class="alert bad"><b>Partial US HazCom 2024 screening, NOT a complete OSHA classification or final label.</b> Health classes (Appendix A.1–A.10) and flammable liquids (B.6) are calculated from ingredient data. Other physical hazards, HNOC, combustible dust and simple asphyxiants are not assessed, and '+
-    esc((r.unverifiedCutoffs||[]).length)+' Appendix A cut-off values are not yet verified against the regulation text.</div>');
+  html.push('<div class="alert bad"><b>Partial US HazCom 2024 screening, NOT a complete OSHA classification or final label.</b> Health classes (Appendix A.1–A.10) and flammable liquids (B.6) are calculated from ingredient data. Other physical hazards, HNOC, combustible dust and simple asphyxiants are not assessed.'+
+    ((r.unverifiedCutoffs||[]).length?' '+esc(r.unverifiedCutoffs.length)+' Appendix A cut-off values are not yet verified against the regulation text.':'')+'</div>');
+  if(r.source)html.push('<div class="hint" style="margin:-4px 0 10px">Rules: '+esc(r.source.title)+', as amended through '+esc(r.source.amendedThrough)+'. Text retrieved '+esc(r.source.retrieved)+'.</div>');
   if(r.warnings.length)html.push('<details class="us-result" open><summary>Data quality and scope warnings ('+r.warnings.length+')</summary>'+
     r.warnings.map(x=>'<div class="note">'+esc(x)+'</div>').join("")+'</details>');
   html.push('<div class="card"><h2>US HazCom 2024 screening outcomes</h2>'+
@@ -4253,9 +4277,9 @@ function renderHazCom2024Result(r) {
       (sec.outcomes.length?'<div class="calc-kind">Screened outcome: '+sec.outcomes.map(o=>esc(o.name+' Cat. '+o.category)).join(", ")+'</div>':'')+
       '</details>').join("")+'</div>');
   if((r.unverifiedCutoffs||[]).length)html.push('<details class="card" id="us-cutoffs"><summary><b>Cut-off values to verify against 29 CFR 1910.1200 ('+r.unverifiedCutoffs.length+')</b></summary>'+
-    '<div class="hint" style="margin:6px 0">These values were transcribed without access to the regulation text. Where OSHA chose between GHS options and the choice was uncertain, the more protective value is used. Verify each and mark it verified in verification/hazcom2024.js.</div>'+
+    '<div class="hint" style="margin:6px 0">These values have not been checked against the current regulation text. Verify each and mark it verified in verification/hazcom2024.js.</div>'+
     '<table class="us-cutoffs"><thead><tr><th>Rule</th><th>Value</th><th>Basis</th></tr></thead><tbody>'+
-    r.unverifiedCutoffs.map(c=>'<tr><td>'+esc(c.label)+'</td><td>'+esc(c.value+' '+c.unit)+'</td><td>'+esc(c.basis)+'<div class="hint">'+esc(c.option)+'</div></td></tr>').join("")+
+    r.unverifiedCutoffs.map(c=>'<tr><td>'+esc(c.label)+'</td><td>'+esc(c.value+' '+c.unit)+'</td><td>'+esc(c.basis)+'</td></tr>').join("")+
     '</tbody></table></details>');
   html.push('<div class="card"><h2>Still to be assessed under OSHA</h2>'+
     '<ul class="us-notassessed">'+r.notAssessed.map(n=>'<li>'+esc(n)+'</li>').join("")+'</ul>'+

@@ -32,9 +32,9 @@ EUH statements are never used. It calculates:
 Not assessed: other physical hazards, HNOC, combustible dust, simple asphyxiants, tested-
 mixture data/bridging, and OSHA Appendix C label / Appendix D SDS elements. No environmental
 classes (not part of OSHA HazCom).
-The Appendix A cut-off values are NOT YET VERIFIED against the regulation text; every US
-result lists them. Where OSHA's choice among GHS options was uncertain, the more protective
-value is used. See docs/us_hazcom_2024_initial_mode.md for the list and how to verify them.
+Cut-offs and label elements follow the HazCom 2024 text of 29 CFR 1910.1200 Appendices A–C
+(as amended through 91 FR 566, Jan. 8, 2026), verified 2026-11-13; the verification record is
+in docs/us_hazcom_2024_initial_mode.md.
 HazCom 2024 mixture compliance date: 19 November 2027 (2026 OSHA extension).
 Tests: node verification/test_us_hazcom2024.js and verification/test_us_hazcom2024_health.js
 

@@ -16,20 +16,28 @@ const section = (r, id) => r.sections.find((s) => s.id === id);
 
 // --- Cut-off table -------------------------------------------------------------------
 const C = US.CUTOFFS;
-check('every cut-off has a value, unit, Appendix A basis and option', Object.values(C).every((c) =>
-  Number.isFinite(c.value) && c.unit && /^A\.\d/.test(c.basis) && c.option && typeof c.verified === 'boolean'));
+check('every cut-off has a value, unit, Appendix A table and label', Object.values(C).every((c) =>
+  Number.isFinite(c.value) && c.unit && /^A\.\d/.test(c.basis) && /Table|A\.\d+\.\d/.test(c.basis) && c.label));
+check('every cut-off verified against the HazCom 2024 text', Object.values(C).every((c) => c.verified === true));
+check('source records the amendment and retrieval date', /91 FR 566/.test(US.SOURCE.amendedThrough) && /89 FR 44360/.test(US.SOURCE.amendedThrough) && /^\d{4}-\d{2}-\d{2}$/.test(US.SOURCE.retrieved));
 const r0 = run([ing('Water', 100)]);
-check('every unverified cut-off is reported in the result', r0.unverifiedCutoffs.length === Object.values(C).filter((c) => !c.verified).length);
-check('unverified cut-offs raise a provisional warning', r0.warnings.some((w) => /not yet been verified/.test(w)));
-check('report lists the cut-offs to verify', /CUT-OFF VALUES NOT YET VERIFIED/.test(US.report({}, r0)));
+check('no unverified cut-offs reported', r0.unverifiedCutoffs.length === 0 && !r0.warnings.some((w) => /not yet been verified/.test(w)));
+check('report states the rules source', /Rules: 29 CFR 1910\.1200 Appendix A .* as amended through 91 FR 566/.test(US.report({}, r0)) && !/NOT YET VERIFIED/.test(US.report({}, r0)));
+check('respiratory-tract corrosivity (A.1.2.4, HazCom 2024) listed as not assessed', r0.notAssessed.some((x) => /respiratory tract \(A\.1\.2\.4/.test(x)));
 
 // --- A.2 Skin -------------------------------------------------------------------------
 check('Skin Cat 1 sum 5 % → Category 1', cat(one(5, 'H314'), 'Skin Corrosion') === '1');
 check('Skin Cat 1 4.99 % → Skin Irritation 2', cat(one(4.99, 'H314'), 'Skin Irritation') === '2' && !find(one(4.99, 'H314'), 'Skin Corrosion'));
 check('Skin Cat 1 0.99 % → not classified', !find(one(0.99, 'H314'), 'Skin'));
 check('single sub-category 1B carried through', cat(one(6, 'H314', { skinCorr: '1B' }), 'Skin Corrosion') === '1B');
-check('mixed sub-categories → Category 1',
-  cat(run([ing('A', 3, 'H314', { skinCorr: '1A' }), ing('B', 3, 'H314', { skinCorr: '1B' }), ing('W', 94)]), 'Skin Corrosion') === '1');
+check('Table A.2.3 note: 1A 3 % + 1B 3 % → 1B (cumulative)',
+  cat(run([ing('A', 3, 'H314', { skinCorr: '1A' }), ing('B', 3, 'H314', { skinCorr: '1B' }), ing('W', 94)]), 'Skin Corrosion') === '1B');
+check('Table A.2.3 note: 1A 5 % + 1C 3 % → 1A',
+  cat(run([ing('A', 5, 'H314', { skinCorr: '1A' }), ing('B', 3, 'H314', { skinCorr: '1C' }), ing('W', 92)]), 'Skin Corrosion') === '1A');
+check('Table A.2.3 note: 1B 3 % + 1C 3 % → 1C',
+  cat(run([ing('A', 3, 'H314', { skinCorr: '1B' }), ing('B', 3, 'H314', { skinCorr: '1C' }), ing('W', 94)]), 'Skin Corrosion') === '1C');
+check('Table A.2.3 note: a Category 1 ingredient without sub-category → Category 1',
+  cat(run([ing('A', 5, 'H314', { skinCorr: '1A' }), ing('B', 1, 'H314', { skinCorr: '1' }), ing('W', 94)]), 'Skin Corrosion') === '1');
 check('Skin Irrit 2 sum 10 % → Category 2', cat(one(10, 'H315'), 'Skin Irritation') === '2');
 check('Skin Irrit 2 sum 9.9 % → not classified', !find(one(9.9, 'H315'), 'Skin'));
 check('corrosive ingredient below 1 % is left out of additivity and flagged for review', (() => {
@@ -54,24 +62,35 @@ check('extreme pH → Eye Category 1', cat(one(1, '', {}, { pH: '11.5' }), 'Seri
 // --- A.4 Sensitizers -------------------------------------------------------------------
 check('skin sensitizer 0.1 % → Category 1', cat(one(0.1, 'H317'), 'Skin Sensitizer') === '1');
 check('skin sensitizer 0.09 % → not classified', !find(one(0.09, 'H317'), 'Skin Sensitizer'));
-check('1A takes precedence', cat(run([ing('A', 0.2, 'H317', { skinSens: '1A' }), ing('B', 2, 'H317', { skinSens: '1B' }), ing('W', 97.8)]), 'Skin Sensitizer') === '1A');
+check('mixture classified Category 1, ingredient sub-categories recorded', (() => { const o = find(run([ing('A', 0.2, 'H317', { skinSens: '1A' }), ing('B', 2, 'H317', { skinSens: '1B' }), ing('W', 97.8)]), 'Skin Sensitizer'); return o.category === '1' && o.ingredientSubcategories.join() === '1A,1B'; })());
+check('skin sensitizer 1B 0.99 % → not classified (Table A.4.5: 1B ≥1.0 %)', !find(one(0.99, 'H317', { skinSens: '1B' }), 'Skin Sensitizer'));
+check('skin sensitizer 1B 1.0 % → Category 1', cat(one(1, 'H317', { skinSens: '1B' }), 'Skin Sensitizer') === '1');
+check('skin sensitizer 1A 0.1 % → Category 1', cat(one(0.1, 'H317', { skinSens: '1A' }), 'Skin Sensitizer') === '1');
+check('respiratory 1B liquid 0.99 % → not classified; 1.0 % → Category 1', !find(one(0.99, 'H334', { respSens: '1B' }), 'Respiratory') && cat(one(1, 'H334', { respSens: '1B' }), 'Respiratory') === '1');
+check('respiratory 1B gas 0.19 % → not classified; 0.2 % → Category 1', !find(one(0.19, 'H334', { respSens: '1B' }, { state: 'gas' }), 'Respiratory') && cat(one(0.2, 'H334', { respSens: '1B' }, { state: 'gas' }), 'Respiratory') === '1');
 check('respiratory sensitizer 0.1 % → Category 1, Danger', (() => { const o = find(one(0.1, 'H334'), 'Respiratory Sensitizer'); return o && o.signal === 'Danger' && o.pictogram === 'Health hazard'; })());
 
 // --- A.5–A.7 CMR -------------------------------------------------------------------------
-check('mutagen 1B 0.1 % → 1B', cat(one(0.1, 'H340'), 'Germ Cell') === '1B');
+check('mutagen 1B 0.1 % → mixture Category 1 (Table A.5.1)', cat(one(0.1, 'H340'), 'Germ Cell') === '1');
+check('mutagen 1B 0.09 % → not classified', !find(one(0.09, 'H340'), 'Germ Cell'));
 check('mutagen 2 at 0.99 % → not classified', !find(one(0.99, 'H341'), 'Germ Cell'));
 check('mutagen 2 at 1 % → Category 2', cat(one(1, 'H341'), 'Germ Cell') === '2');
-check('carcinogen 1B 0.1 % → 1B, label required', (() => { const o = find(one(0.1, 'H350'), 'Carcinogenicity'); return o && o.category === '1B' && o.labelRequired === true; })());
+check('carcinogen 1B 0.1 % → Category 1, label required', (() => { const o = find(one(0.1, 'H350'), 'Carcinogenicity'); return o && o.category === '1' && o.labelRequired === true && o.ingredientSubcategories.join() === '1B'; })());
+check('carcinogen trail cites A.6.4 (NTP / IARC)', section(one(0.1, 'H350'), 'carc').steps.some((x) => /A\.6\.4.*NTP.*IARC/.test(x)));
 check('carcinogen 2 at 0.5 % → Category 2, SDS required, label optional', (() => { const r = one(0.5, 'H351'); const o = find(r, 'Carcinogenicity'); return o && o.labelRequired === false && r.signal === null; })());
 check('carcinogen 2 at 1 % → label required, Warning', (() => { const r = one(1, 'H351'); return find(r, 'Carcinogenicity').labelRequired === true && r.signal === 'Warning'; })());
 check('carcinogen 2 at 0.09 % → not classified', !find(one(0.09, 'H351'), 'Carcinogenicity'));
-check('repro 1B development 0.1 % → 1B, H360, effect recorded', (() => { const o = find(one(0.1, 'H360D'), 'Reproductive'); return o && o.category === '1B' && o.code === 'H360' && o.effects.development === '1B'; })());
+check('repro 1B development 0.1 % → Category 1, H360, effect recorded', (() => { const o = find(one(0.1, 'H360D'), 'Reproductive'); return o && o.category === '1' && o.code === 'H360' && o.effects.development === '1B'; })());
+check('repro 2 at 0.09 % → not classified', !find(one(0.09, 'H361'), 'Reproductive'));
 check('repro 2 at 0.1 % → Category 2, H361', (() => { const o = find(one(0.1, 'H361'), 'Reproductive'); return o && o.category === '2' && o.code === 'H361'; })());
 check('lactation 0.1 % → H362, no signal word', (() => { const o = find(one(0.1, 'H362'), 'Effects on or via Lactation'); return o && o.signal === null && o.pictogram === null; })());
 
 // --- A.8/A.9 STOT ---------------------------------------------------------------------------
 check('STOT RE 1 at 10 % → Category 1', cat(one(10, 'H372'), 'Specific Target Organ Toxicity, Repeated') === '1');
-check('STOT RE 1 at 5 % → Category 2', cat(one(5, 'H372'), 'Specific Target Organ Toxicity, Repeated') === '2');
+check('STOT RE 1 at 5 % → Category 1 (Table A.9.3: ≥1.0 %)', cat(one(5, 'H372'), 'Specific Target Organ Toxicity, Repeated') === '1');
+check('STOT RE 1 at 1.0 % → Category 1', cat(one(1, 'H372'), 'Specific Target Organ Toxicity, Repeated') === '1');
+check('STOT SE 1 at 1.0 % → Category 1 (Table A.8.2)', cat(one(1, 'H370'), 'Specific Target Organ Toxicity, Single Exposure') === '1');
+check('STOT SE 2 at 0.99 % → not classified', !find(one(0.99, 'H371'), 'Specific Target Organ Toxicity, Single Exposure'));
 check('STOT RE 1 at 0.9 % → not classified', !find(one(0.9, 'H372'), 'Specific Target Organ Toxicity, Repeated'));
 check('STOT SE 2 at 1 % → Category 2', cat(one(1, 'H371'), 'Specific Target Organ Toxicity, Single Exposure') === '2');
 check('STOT SE 3 narcotic 20 % → Category 3 (H336)', (() => { const o = one(20, 'H336').outcomes.find((x) => x.code === 'H336'); return o && o.category === 3 && o.signal === 'Warning'; })());
